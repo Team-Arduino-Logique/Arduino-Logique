@@ -107,3 +107,33 @@ Ici nous aurons un 1/2 espace sur l'horizontal et un autre sur la verticale.
 
 le résultat : 
 ![résultat du code 3:](Images/ResultatMini170-3.png)
+
+Réécrivons le code pour le rendre plus lisible et voir comment fonctionne la modularité:
+
+```python
+bandeDistribution = [(pe.demiPlat,1,{"sens":pe.HORIZONTAL}),(pe.demiPlat,1,{"sens":pe.VERTICAL}),(ligneDistribution,5, {"sens":pe.VERTICAL})]
+plaqueMini170 = [(pe.planche,1,{"lgLigne":18, "lgColonne":12, "sepAlim":[], "sepDistribution":[(3,5.5)]}), (bandeDistribution,1,{"sens":pe.VERTICAL})]
+
+```
+Nous ne faisons que créer une nouvelle liste contenant nos 5 lignes de distributions, puis cette liste est insérée dans le modèle de plaqueMini170.
+Cela ne change rien au résultat mais simplifie la lecture du code mais va surtout nous permettre de réutiliser le code pour la suite.
+
+La suite du modèle de plaqueMini170 est une deuxième bande de distribution placée plus bas. 
+
+Nous changeons le modèle de plaqueMini170 ainsi:
+
+```python
+plaqueMini170 = [(pe.planche,1,{"lgLigne":18, "lgColonne":12, "sepAlim":[], "sepDistribution":[(3,5.5)]}), (bandeDistribution,1,{"sens":pe.VERTICAL}), \
+                   (bandeDistribution,1)]
+
+```
+Nous ajoutons juste une nouvelle bande de distribution et le résultat est le suivant :
+
+![résultat du code 4:](Images/ResultatMini170-4.png)
+
+Assez proche dur réel :
+![résultat du code 4:](Images/ReelleMini170.png)
+
+Voilà pour la miniPlaque170 qui n'existait pas encore et que l'on peut intégrer à la bibliothèque.
+
+Il reste le modèle Half Size Breadboard que je laisse en exercice...;-)
