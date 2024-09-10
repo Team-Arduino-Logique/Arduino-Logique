@@ -137,3 +137,28 @@ Assez proche dur réel :
 Voilà pour la miniPlaque170 qui n'existait pas encore et que l'on peut intégrer à la bibliothèque.
 
 Il reste le modèle Half Size Breadboard que je laisse en exercice...;-)
+
+Ah! le code au complet :
+
+```python
+import platineEssai as pe
+from tkinter import font
+
+fen = tk.Tk()
+fen.title("Laboratoire virtuel de circuit logique - GIF-1002")
+
+# Créer un canvas (surface sur laquelle on dessine)
+canvas = tk.Canvas(fen, width=1500, height=900)
+canvas.pack()
+
+xPlaque, yPlaque = 50,10
+pe.init(canvas)
+ligneDistribution = [ (pe.trou, 17)] 
+bandeDistribution = [(pe.demiPlat,1,{"sens":pe.HORIZONTAL}),(pe.demiPlat,1,{"sens":pe.VERTICAL}),(ligneDistribution,5, {"sens":pe.VERTICAL})]
+plaqueMini170 = [(pe.planche,1,{"lgLigne":18, "lgColonne":12, "sepAlim":[], "sepDistribution":[(3,5.5)]}), (bandeDistribution,1,{"sens":pe.VERTICAL}), \
+                   (bandeDistribution,1)]
+pe.circuit(canvas,xPlaque ,yPlaque, modele = plaqueMini170)
+
+fen.mainloop()
+```
+
