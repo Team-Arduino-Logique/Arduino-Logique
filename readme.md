@@ -93,3 +93,17 @@ Dans la liste plaqueMini170 on ajoute (ligneDistribution,5, {"sens":pe.VERTICAL}
 Voici le résultat :
 
 ![résultat du code 2:](Images/ResultatMini170-2.png)
+
+Il reste à ajuster les lignes de distributions pour cela on va ajouter ceci :
+
+```python
+plaqueMini170 = [(pe.planche,1,{"lgLigne":18, "lgColonne":12, "sepAlim":[], "sepDistribution":[(3,5.5)]}), (pe.demiPlat,1,{"sens":pe.HORIZONTAL}),(pe.demiPlat,1,{"sens":pe.VERTICAL}),(ligneDistribution,5, {"sens":pe.VERTICAL})]
+
+```
+voici l'ajout isolé : (pe.demiPlat,1,{"sens":pe.HORIZONTAL}),(pe.demiPlat,1,{"sens":pe.VERTICAL}),
+
+le demiPlat est une fonction qui permet d'ajouter un 1/2 espace à notre modèle. Un espace est la distance entre 2 trous.
+Ici nous aurons un 1/2 espace sur l'horizontal et un autre sur la verticale.
+
+le résultat : 
+![résultat du code 3:](Images/ResultatMini170-3.png)
