@@ -2,7 +2,7 @@ import tkinter as tk
 import platineEssai as pe
 from tkinter import font
 
-def zoum(echelle):
+def zoom(echelle):
     canvas.delete("all")
     pe.init(canvas)
     pe.remplirMatrice1260pts()
@@ -39,13 +39,13 @@ pe.remplirMatrice1260pts()
 nouveauCable = [(pe.cabler,1,{"id": "pcable_1", "couleur":(255,0,0,255), "mode":pe.AUTO, "coords":[(1,5,3,2)], "matrice": pe.matrice1260pts})]
 moveBoitier = [(pe.boitier,1,{"id": "_boitier_5", "XY":(500, 161.5)})]
 ech=10.0
-zoum(ech)
+zoom(ech)
 #pe.symbNOR(canvas, 350,500,echelle=8)
 #pe.plaqueEssai(canvas,xPlaque ,yPlaque , echelle=ech, modele=pe.plaquette830pts)
 #pe.boitier(canvas,xPlaque + (1.4*15)*ech, yPlaque + (10.09*15)*ech,echelle=ech)
 #pe.boitier(canvas,xPlaque + (1.4*15 + 7*15)*ech, yPlaque + (10.09*15)*ech,echelle=ech)
 
-h_slider = tk.Scale(fen, from_=10, to=30, orient='horizontal', command=zoum)
+h_slider = tk.Scale(fen, from_=10, to=30, orient='horizontal', command=zoom)
 h_slider.pack(fill='x', padx=10, pady=10)
 
 #pe.plaqueEssai(canvas,xPlaque + 15,yPlaque + 75)
