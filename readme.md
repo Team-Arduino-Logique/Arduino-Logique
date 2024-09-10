@@ -66,4 +66,30 @@ pe.circuit(canvas,xPlaque ,yPlaque, modele = plaqueMini170)
 
 fen.mainloop()
 ```
+![résultat du code 1:](Images/ResultatMini170-1.png)
 
+Les lignes de code les plus essentielles sont:
+
+```python
+plaqueMini170 = [(pe.planche,1,{"lgLigne":17, "lgColonne":10, "sepAlim":[], "sepDistribution":[(2,4.5)]})]
+pe.circuit(canvas,xPlaque ,yPlaque, modele = plaqueMini170)
+```
+
+On crée un modèle plaqueMini170 c'est une liste contenant un appel de fonction et ses paramètres :
+[(appel d'une fonction ou une autre liste, nombre d'appel, paramètres)]
+
+La fonction appelée est planche() avec ses paramètres ici 10 bandes(lgColonne) de 17 trous (lgLigne) et un séparateur situé en x= 2+1 trous et y = 4.5 +1 bande de trou.
+Quand le modèle est défini, on peut l'utiliser comme paramètre dans la fonction circuit qui en fait crée et gère le circuit modèle.
+c'est la fonction circuit qui est le point d'entré du programme, c'est une fonction récursive qui lit les listes et les interprète.
+
+Ajoutons nos lignes de trous  en modifiant le code :
+
+```python
+ligneDistribution = [ (pe.trou, 17)] 
+plaqueMini170 = [(pe.planche,1,{"lgLigne":18, "lgColonne":12, "sepAlim":[], "sepDistribution":[(3,5.5)]}), (ligneDistribution,5, {"sens":pe.VERTICAL})]
+```
+Nous créons une liste ligneDistribution qui dit à circuit d'appeler 17 fois la fonction trou, ce qui affiche une rangée de 17 trous.
+Dans la liste plaqueMini170 on ajoute (ligneDistribution,5, {"sens":pe.VERTICAL}), on appelle donc 5 fois lignedistribution avec le paramètre sens=VERTICAL, ce qui indique qu'après une ligne on fait un saut vertical(une nouvelle ligne comme un retour chariot).
+Voici le résultat :
+
+![résultat du code 2:](Images/ResultatMini170-2.png)
