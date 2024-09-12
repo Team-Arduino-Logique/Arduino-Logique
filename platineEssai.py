@@ -407,19 +407,21 @@ def planche(canvas,xD=0,yD=0,echelle=1,largeur=-1, sens = VERTICAL, **kwargs ):
     couleur ="#F5F5DC"
     sepAlim = dim["sepAlim"]
     sepDist = dim["sepDistribution"]
+    rayon = 20
     for key, value in kwargs.items():
         if key == "lgLigne"             : dim["lgLigne"]        = value
         if key == "lgColonne"           : dim["lgColonne"]      = value
         if key == "couleur"             : couleur               = value
         if key == "sepAlim"             : sepAlim               = value
         if key == "sepDistribution"     : sepDist               = value
+        if key == "rayon"               : rayon               = value
         
     epaisseur = 1*echelle   
     dimLigne = dim["lgLigne"]*interSpace
     dimColone = dim["lgColonne"]*interSpace   
     #sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
     #sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
-    rectangleArrondi(canvas, xD, yD, dimLigne,  dimColone, 20, outline=couleur, fill=couleur, width=epaisseur)
+    rectangleArrondi(canvas, xD, yD, dimLigne,  dimColone, rayon, outline=couleur, fill=couleur, width=epaisseur)
     for sepA in sepAlim:
         canvas.create_line(xD + interSpace*sepA[0], yD+interSpace*sepA[1], xD - interSpace*sepA[0] + dimLigne, yD + interSpace*sepA[1], fill="#707070", width=epaisseur) 
     facteurNoirceur = 0.9
