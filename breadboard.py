@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk, ImageFilter, ImageGrab
 
 import math
 from dataCDLT import *
-from ElectroComponent import *
+from ComponentSketch import *
 from dataComponent import *
 
 

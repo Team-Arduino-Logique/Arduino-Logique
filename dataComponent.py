@@ -1,4 +1,4 @@
-from ElectroComponent import *
+from ComponentSketch import *
 from dataCDLT import *
 
 
