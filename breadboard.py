@@ -11,7 +11,6 @@ Attributes:
     id_origin (dict): A dictionary to store the origin coordinates.
     current_cursor (None): The current cursor state.
     cursor_save (None): The saved cursor state.
-    base_dict_circuit (dict): The base dictionary for the circuit.
     id_type (dict): A dictionary to store the types of components.
     current_dict_circuit (dict): The current dictionary for the circuit.
     num_id (int): The current ID number.
@@ -32,8 +31,9 @@ Methods:
 from tkinter import Canvas
 from PIL import Image, ImageDraw, ImageFont, ImageTk, ImageGrab
 
-from dataCDLT import matrix830pts, matrix1260pts, base_dict_circuit, ICO_PDF, VERTICAL, HORIZONTAL, PERSO, FREE
-from dataComponent import line_distribution
+from component_sketch import ComponentSketcher
+from dataCDLT import matrix830pts, matrix1260pts, ICO_PDF, VERTICAL, HORIZONTAL, PERSO, FREE
+from dataComponent import ComponentData
 
 
 class Breadboard:
@@ -51,8 +51,6 @@ class Breadboard:
         The current cursor state.
     cursor_save : None
         The saved cursor state.
-    base_dict_circuit : dict
-        The base dictionary for the circuit.
     id_type : dict
         A dictionary to store the types of components.
     current_dict_circuit : dict
@@ -91,14 +89,13 @@ class Breadboard:
         self.id_origin = {"xyOrigin": (0, 0)}
         self.current_cursor = None
         self.cursor_save = None
-        self.base_dict_circuit = {}
         self.id_type = {}
-        self.current_dict_circuit = base_dict_circuit
+        self.current_dict_circuit = {}
         self.num_id = 1
         self.mouse_x, self.mouse_y = 0, 0
         self.drag_mouse_x, self.drag_mouse_y = 0, 0
         self.id_type.update(
-            {"dip14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0, "id_circuit": 0}
+            {"DIP14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0, "id_circuit": 0}
         )
 
         self.canvas.config(cursor="")
@@ -107,6 +104,7 @@ class Breadboard:
 
         self.image_ico_pdf = ImageTk.PhotoImage(self.image.resize((32, 32)))
         canvas.bind("<Motion>", self.follow_mouse)
+        self.sketcher = ComponentSketcher(canvas)
 
     def follow_mouse(self, event):
         """
@@ -293,8 +291,9 @@ class Breadboard:
         if width != -1:
             scale = width / 9.0
         inter_space = 15 * scale
-
-        model = line_distribution
+        
+        component_data = ComponentData(self.sketcher)
+        model = component_data.line_distribution
         for key, value in kwargs.items():
             if key == "model":
                 model = value
@@ -306,9 +305,9 @@ class Breadboard:
             if callable(element[0]) and isinstance(element[1], int):
                 for _ in range(element[1]):
                     if len(element) == 3:
-                        (x, y) = element[0](self.canvas, x, y, scale, width, **element[2])
+                        (x, y) = element[0](x, y, scale, width, **element[2])
                     else:
-                        (x, y) = element[0](self.canvas, x, y, scale, width)
+                        (x, y) = element[0](x, y, scale, width)
             elif isinstance(element[0], list) and isinstance(element[1], int):
                 for _ in range(element[1]):
                     if len(element) == 3:
