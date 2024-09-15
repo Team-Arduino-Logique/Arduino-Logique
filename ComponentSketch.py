@@ -270,14 +270,14 @@ def drawredRail(canvas, xD,yD,scale=1,width=-1, direction = HORIZONTAL, **kwargs
 
 
 def drawBoard(canvas,xD=0,yD=0,scale=1,width=-1, direction = VERTICAL, **kwargs ):
-    from dataComponent import board830pts
+    from dataComponent import paramBoard830pts
     
     if (width !=-1):
         scale = width / 9.0
     interSpace = 15*scale 
     thickness = 1*scale
     
-    dim=board830pts
+    dim=paramBoard830pts
     color ="#F5F5DC"
     sepAlim = dim["sepAlim"]
     sepDist = dim["sepDistribution"]

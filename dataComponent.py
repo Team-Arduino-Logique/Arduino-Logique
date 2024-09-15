@@ -1,8 +1,8 @@
 from ComponentSketch import *
-from dataCDLT import *
+#from dataCDLT import *
 
 
-board830pts = {"dimLine":66, "dimColumn":22, "sepAlim":[(0,4),(0,18.5)], "sepDistribution":[(0,10.7)]}
+paramBoard830pts = {"dimLine":66, "dimColumn":22, "sepAlim":[(0,4),(0,18.5)], "sepDistribution":[(0,10.7)]}
 
     
 dip14 = {"pinCount":14, "chipWidth":2.4, "label":"DIP 14",  "type":"dip14"}
@@ -58,13 +58,13 @@ bandeAlim = [(railAlimMoins,1,{"direction":VERTICAL}), (lineAlim,2,{"direction":
 bandeDistribution = [(lineDistribution,5,{"direction":VERTICAL})]  
 numerotation = [(drawBlank,1), (drawNumIter,1,{"beginNum":1, "endNum":63, "direction":HORIZONTAL, "deltaY":-1.5})]
 #board600pts = [(drawBoard,1),(drawHalfBlank,1,HORIZONTAL),(drawHalfBlank,1,VERTICAL),(bandeAlim,1,VERTICAL), (drawBlank,1,VERTICAL), (bandeDistribution,1,VERTICAL), ([(drawBlank,1)],2,VERTICAL), (bandeDistribution,1,VERTICAL),(drawBlank,1,VERTICAL),(bandeAlim,1,VERTICAL)]
-board830pts = [(setXYOrigin,1,{"idOrigin":"plq830"}),(drawBoard,1),(drawHalfBlank,1,{"direction":HORIZONTAL}),(drawHalfBlank,1,{"direction":VERTICAL}),(bandeAlim,1,{"direction":VERTICAL}), \
-                   (numerotation,1,{"direction":VERTICAL}), (goXY,1,{"line":5.5, "column":0.5, "idOrigin":"plq830"}), \
-                   (drawCharIter,1,{"beginChar":"f", "numChars":5, "anchor":"center", "deltaY":0.7}),(bandeDistribution,1,{"direction":VERTICAL}),(goXY,1,{"line":5.5, "column":64.5, "idOrigin":"plq830"}),(drawHalfBlank,1),(drawCharIter,1,{"beginChar":"f", "numChars":5, "direction":VERTICAL, "deltaY":0.7}), \
-                   (goXY,1,{"line":12.5, "column":0.5, "idOrigin":"plq830"}), \
-                   (drawCharIter,1,{"beginChar":"a", "numChars":5, "deltaY":0.7}), (bandeDistribution,1,{"direction":VERTICAL}), (goXY,1,{"line":12.5, "column":64.5, "idOrigin":"plq830"}),(drawHalfBlank,1),(drawCharIter,1,{"beginChar":"a", "numChars":5, "direction":VERTICAL, "deltaY":0.7}), \
-                   (goXY,1,{"line":18.8, "column":0.5, "idOrigin":"plq830"}), (numerotation,1,{"direction":VERTICAL}),
-                   (goXY,1,{"line":18.5, "column":0.5, "idOrigin":"plq830"}), (bandeAlim,1,{"direction":VERTICAL})]    # ,1,{"direction":VERTICAL})]
+board830pts = [(setXYOrigin,1,{"idOrigin":"bboard830"}),(drawBoard,1),(drawHalfBlank,1,{"direction":HORIZONTAL}),(drawHalfBlank,1,{"direction":VERTICAL}),(bandeAlim,1,{"direction":VERTICAL}), \
+                   (numerotation,1,{"direction":VERTICAL}), (goXY,1,{"line":5.5, "column":0.5, "idOrigin":"bboard830"}), \
+                   (drawCharIter,1,{"beginChar":"f", "numChars":5, "anchor":"center", "deltaY":0.7}),(bandeDistribution,1,{"direction":VERTICAL}),(goXY,1,{"line":5.5, "column":64.5, "idOrigin":"bboard830"}),(drawHalfBlank,1),(drawCharIter,1,{"beginChar":"f", "numChars":5, "direction":VERTICAL, "deltaY":0.7}), \
+                   (goXY,1,{"line":12.5, "column":0.5, "idOrigin":"bboard830"}), \
+                   (drawCharIter,1,{"beginChar":"a", "numChars":5, "deltaY":0.7}), (bandeDistribution,1,{"direction":VERTICAL}), (goXY,1,{"line":12.5, "column":64.5, "idOrigin":"bboard830"}),(drawHalfBlank,1),(drawCharIter,1,{"beginChar":"a", "numChars":5, "direction":VERTICAL, "deltaY":0.7}), \
+                   (goXY,1,{"line":18.8, "column":0.5, "idOrigin":"bboard830"}), (numerotation,1,{"direction":VERTICAL}),
+                   (goXY,1,{"line":18.5, "column":0.5, "idOrigin":"bboard830"}), (bandeAlim,1,{"direction":VERTICAL})]    # ,1,{"direction":VERTICAL})]
 #,(setFoncTrou,1,{"function":drawRoundHole})
 boardTest = [(setXYOrigin,1),(bandeAlim,1,{"direction":HORIZONTAL})]
 boardTestMinimal = [(setXYOrigin,1),(railAlimPlus,4,{"direction":VERTICAL})]
