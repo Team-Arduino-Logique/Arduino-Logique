@@ -1,13 +1,12 @@
 """
-This module provides a Breadboard class for circuit design using the Tkinter Canvas and PIL libraries.
-It includes methods for mouse tracking, canvas area capture, text-to-image conversion, and matrix filling 
+This module provides a Breadboard class for circuit design using the Tkinter Canvas library.
+It includes methods for mouse tracking, and matrix filling 
 for breadboards with 830 and 1260 points. Additionally, it provides a method for generating circuit layouts 
 on the canvas.
 Classes:
     Breadboard: A class to represent a breadboard for circuit design.
 Attributes:
     canvas (Canvas): The canvas on which the breadboard is drawn.
-    img_save (list): A list to save images.
     id_origin (dict): A dictionary to store the origin coordinates.
     current_cursor (None): The current cursor state.
     cursor_save (None): The saved cursor state.
@@ -21,15 +20,13 @@ Attributes:
     matrix (dict): The matrix representing the breadboard.
 Methods:
     follow_mouse(event): Updates the mouse coordinates based on the event.
-    capture_canvas_area(x1, y1, x2, y2): Captures a specified area of the canvas.
-    text_to_img(text, angle=90, font_path="FiraCode-Light", font_size=15, color=(0, 0, 0, 255), size=(15, 15)):
     fill_matrix_830_pts(col_distance=1, line_distance=1, **kwargs): Fills the breadboard matrix with 830 points.
     fill_matrix_1260_pts(): Fills the breadboard matrix with 1260 points.
     circuit(x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
 """
 
 from tkinter import Canvas
-from PIL import Image, ImageDraw, ImageFont, ImageTk, ImageGrab
+
 
 from component_sketch import ComponentSketcher
 from dataCDLT import matrix830pts, matrix1260pts, ICO_PDF, VERTICAL, HORIZONTAL, PERSO, FREE
@@ -43,8 +40,6 @@ class Breadboard:
     ----------
     canvas : Canvas
         The canvas on which the breadboard is drawn.
-    img_save : list
-        A list to save images.
     id_origin : dict
         A dictionary to store the origin coordinates.
     current_cursor : None
@@ -71,10 +66,6 @@ class Breadboard:
     -------
     follow_mouse(event):
         Updates the mouse coordinates based on the event.
-    captureCanvasArea(x1, y1, x2, y2):
-        Captures a specified area of the canvas.
-    text2Img(text, angle=90, fontPath="FiraCode-Light", fontSize=15, color=(0, 0, 0, 255), size=(15, 15)):
-        Converts text to an image with specified properties.
     fill_matrix_830_pts(colD=1, lineD=1, **kwargs):
         Fills the breadboard matrix with 830 points.
     fill_matrix_1260_pts(colD=1, lineD=1, **kwargs):
@@ -85,7 +76,6 @@ class Breadboard:
 
     def __init__(self, canvas: Canvas):
         self.canvas = canvas
-        self.img_save = []
         self.id_origin = {"xyOrigin": (0, 0)}
         self.current_cursor = None
         self.cursor_save = None
@@ -100,9 +90,6 @@ class Breadboard:
 
         self.canvas.config(cursor="")
 
-        self.image = Image.open(ICO_PDF["path"])
-
-        self.image_ico_pdf = ImageTk.PhotoImage(self.image.resize((32, 32)))
         canvas.bind("<Motion>", self.follow_mouse)
         self.sketcher = ComponentSketcher(canvas)
 
@@ -113,58 +100,6 @@ class Breadboard:
             event: An event object that contains the current mouse position.
         """
         self.mouse_x, self.mouse_y = event.x, event.y
-
-    def capture_canvas_area(self, x1, y1, x2, y2):
-        """
-        Capture a specified area of the canvas and return it as an image.
-        This method converts the given canvas coordinates to screen coordinates
-        and captures the specified area directly from the screen.
-        Args:
-            x1 (int): The x-coordinate of the top-left corner of the area to capture.
-            y1 (int): The y-coordinate of the top-left corner of the area to capture.
-            x2 (int): The x-coordinate of the bottom-right corner of the area to capture.
-            y2 (int): The y-coordinate of the bottom-right corner of the area to capture.
-        Returns:
-            Image: An image object representing the captured area.
-        """
-
-        # Convertir les coordonnées canvas en coordonnées de l'écran
-        x1 = self.canvas.winfo_rootx() + x1
-        y1 = self.canvas.winfo_rooty() + y1
-        x2 = self.canvas.winfo_rootx() + x2
-        y2 = self.canvas.winfo_rooty() + y2
-
-        # Capturer la zone spécifiée directement à partir de l'écran
-        image = ImageGrab.grab(bbox=(x1, y1, x2, y2))
-
-        return image
-
-    def text_to_img(
-        self, text, angle=90, font_path="FiraCode-Light", font_size=15, color=(0, 0, 0, 255), size=(15, 15)
-    ):
-        """
-        Converts a given text to an image with specified properties and rotates it.
-        Args:
-            text (str): The text to be converted into an image.
-            angle (int, optional): The angle to rotate the image. Default is 90 degrees.
-            font_path (str, optional): The path to the font file to be used. Default is "FiraCode-Light".
-            font_size (int, optional): The size of the font. Default is 15.
-            color (tuple, optional): The color of the text in RGBA format. Default is (0, 0, 0, 255).
-            size (tuple, optional): The size of the image in pixels (width, height). Default is (15, 15).
-        Returns:
-            ImageTk.PhotoImage: The resulting image with the text, rotated by the specified angle.
-        """
-
-        police = ImageFont.truetype(font_path, font_size)
-
-        image = Image.new("RGBA", size, (255, 255, 255, 0))
-        draw = ImageDraw.Draw(image)
-
-        draw.text((0, 0), text, font=police, fill=color)
-
-        image_rotation = image.rotate(angle, expand=1)
-
-        return ImageTk.PhotoImage(image_rotation)
 
     def fill_matrix_830_pts(self, col_distance=1, line_distance=1, **kwargs):
         """
