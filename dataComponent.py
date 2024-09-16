@@ -8,19 +8,19 @@ class ComponentData:
     def __init__(self, sketcher: ComponentSketcher):
         self.sketcher = sketcher
 
-        dip7400 = DIP14_PARAMS
+        dip7400 = DIP14_PARAMS.copy()
         dip7400["label"] = "74HC00"  # 74HC00
         dip7400["type"] = "74HC00"  # 74HC00
-        dip7402 = DIP14_PARAMS
+        dip7402 = DIP14_PARAMS.copy()
         dip7402["label"] = "74HC02"  # 74HC02
         dip7402["type"] = "74HC02"  # 74HC02
-        dip7408 = DIP14_PARAMS
+        dip7408 = DIP14_PARAMS.copy()
         dip7408["label"] = "74HC08"  # 74HC08
         dip7408["type"] = "74HC08"  # 74HC08
-        dip7404 = DIP14_PARAMS
+        dip7404 = DIP14_PARAMS.copy()
         dip7404["label"] = "74HC04"  # 74HC04
         dip7404["type"] = "74HC04"  # 74HC04
-        dip7432 = DIP14_PARAMS
+        dip7432 = DIP14_PARAMS.copy()
         dip7432["label"] = "74HC32"  # 74HC32
         dip7432["type"] = "74HC32"  # 74HC32
         chipCoverOpen = {"open": YES}
