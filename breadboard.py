@@ -29,7 +29,7 @@ from tkinter import Canvas
 
 
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix830pts, matrix1260pts, ICO_PDF, VERTICAL, HORIZONTAL, PERSO, FREE
+from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, PERSO, FREE
 from dataComponent import ComponentData
 
 
@@ -226,7 +226,7 @@ class Breadboard:
         if width != -1:
             scale = width / 9.0
         inter_space = 15 * scale
-        
+
         component_data = ComponentData(self.sketcher)
         model = component_data.line_distribution
         for key, value in kwargs.items():
