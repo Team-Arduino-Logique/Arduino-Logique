@@ -180,13 +180,13 @@ class XnorGate(ChipFunction):
 
 
 class Chip:
-    def __init__(self, name: str, package: Package, functions: tuple[ChipFunction]):
+    def __init__(self, name: str, pkg: Package, functions: tuple[ChipFunction]):
         self.name = name
-        self.package = package
+        self.package = pkg
         self.functions = functions
 
     @staticmethod
-    def from_json(json_data: dict, packages: dict[str, Package] = None):
+    def from_json(json_data: dict, package_dict: dict[str, Package] = None):
         functions = []
         for func_data in json_data["functions"]:
             func_type = func_data["func_type"]
@@ -209,8 +209,8 @@ class Chip:
             else:
                 raise ValueError(f"Unknown function type: {func_type}")
 
-        if packages is not None and isinstance(json_data["package"], str):
-            return Chip(json_data["name"], packages[json_data["package"]], tuple(functions))
+        if package_dict is not None and isinstance(json_data["package"], str):
+            return Chip(json_data["name"], package_dict[json_data["package"]], tuple(functions))
 
         raise ValueError("The package does not exist in the Components/Packages directory.")
 
@@ -238,8 +238,8 @@ if __name__ == "__main__":
     for filename in os.listdir(PACKAGES_DIR):
         if filename.endswith(".json"):
             with open(os.path.join(PACKAGES_DIR, filename), "r", encoding="utf-8") as file:
-                json_data = json.load(file)
-                package = Package.from_json(json_data)
+                pkg_data = json.load(file)
+                package = Package.from_json(pkg_data)
                 packages[package.type_name] = package
 
     chips = {}
@@ -247,8 +247,8 @@ if __name__ == "__main__":
     for filename in os.listdir(CHIPS_DIR):
         if filename.endswith(".json"):
             with open(os.path.join(CHIPS_DIR, filename), "r", encoding="utf-8") as file:
-                json_data = json.load(file)
-                chip = Chip.from_json(json_data, packages)
+                chip_data = json.load(file)
+                chip = Chip.from_json(chip_data, packages)
                 chips[chip.name] = chip
 
     print("-------------------LOADED PACKAGES-------------------")
