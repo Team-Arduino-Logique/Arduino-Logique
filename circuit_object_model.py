@@ -1,3 +1,26 @@
+"""
+This module defines classes and functions for modeling electronic components and circuits.
+Classes:
+- Package: Represents an electronic component package.
+- ChipFunction: A base class representing a generic chip function.
+- AndGate: Represents an AND gate chip function.
+- OrGate: Represents an OR gate chip function.
+- NotGate: Represents a NOT gate chip function.
+- XorGate: Represents an XOR gate chip function.
+- NandGate: Represents a NAND gate chip function.
+- NorGate: Represents a NOR gate chip function.
+- XnorGate: Represents an XNOR gate chip function.
+- Chip: Represents an electronic chip composed of multiple functions.
+- Wire: Represents a wire in a circuit (currently not implemented).
+- Breadboard: Represents a breadboard for building circuits (currently not implemented).
+- Circuit: Represents an electronic circuit (currently not implemented).
+Usage:
+------
+The module can be used to load and represent electronic components and circuits from JSON files. 
+The main block demonstrates loading packages and chips from JSON files in specified directories and
+printing their details.
+"""
+
 import json
 import os
 
@@ -57,12 +80,63 @@ class Package:
 
 
 class ChipFunction:
-    def function(self):
+    """
+    A base class representing a generic chip function.
+
+    This class serves as a template for specific chip functions.
+    It contains a method that should be overridden by subclasses to
+    implement the specific internal function of the chip to link inputs and outputs.
+    """
+
+    def __init__(self):
+        raise NotImplementedError("Do not instanciate base ChipFunction.")
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the ChipFunction object.
+
+        This method should be overridden by subclasses to provide
+        a specific string representation of the chip function.
+
+        Returns:
+            str: A string representation of the chip function.
+        """
+        raise NotImplementedError("Function not implemented.")
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the chip's internal function linking the inputs and outputs.
+
+        This method should be overridden by subclasses to provide
+        the specific implementation of the chip's internal function.
+
+        Raises:
+            NotImplementedError: If the method is not overridden.
+        """
         raise NotImplementedError("Function not implemented.")
 
 
 class AndGate(ChipFunction):
+    """
+    Represents an AND gate in a digital circuit.
+    Attributes:
+        input_pins (tuple[int]): A tuple containing the input pins.
+        output_pins (tuple[int]): A tuple containing the output pins.
+    Methods:
+        __str__(): Returns a string representation of the AND gate.
+        chip_internal_function(): Placeholder for the internal function of the AND gate.
+    """
+
     def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+        """
+        Initializes an AND gate with the specified input and output pins.
+        Args:
+            input_pins (tuple[int]): A tuple containing the input pins.
+            output_pins (tuple[int]): A tuple containing the output pin.
+        Raises:
+            ValueError: If the number of input pins is less than two.
+            ValueError: If the number of output pins is not exactly one.
+        """
         self.input_pins = input_pins
         self.output_pins = output_pins
         if len(self.input_pins) < 2:
@@ -71,14 +145,46 @@ class AndGate(ChipFunction):
             raise ValueError("AND gate must have exactly one output pin.")
 
     def __str__(self):
+        """
+        Returns a string representation of the AND gate.
+        Returns:
+            str: A string describing the AND gate with its input and output pins.
+        """
         return f"AND Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
-        pass
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the AND gate.
+        This method should be implemented to define the behavior of the AND gate.
+        """
+        # TODO: Implement the internal function of the AND gate
 
 
 class OrGate(ChipFunction):
+    """
+    Represents an OR gate in a digital circuit.
+    Attributes:
+        input_pins (tuple[int]): A tuple containing the indices of the input pins.
+        output_pins (tuple[int]): A tuple containing the index of the output pin.
+    Methods:
+        __str__(): Returns a string representation of the OR gate.
+        chip_internal_function(): Placeholder for the internal logic of the OR gate.
+    Raises:
+        ValueError: If the number of input pins is less than two.
+        ValueError: If the number of output pins is not exactly one.
+    """
+
     def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+        """
+        Initializes an OR gate with the specified input and output pins.
+        Args:
+            input_pins (tuple[int]): A tuple containing the input pin numbers.
+            output_pins (tuple[int]): A tuple containing the output pin number.
+        Raises:
+            ValueError: If the number of input pins is less than two.
+            ValueError: If the number of output pins is not exactly one.
+        """
+
         self.input_pins = input_pins
         self.output_pins = output_pins
         if len(self.input_pins) < 2:
@@ -87,14 +193,47 @@ class OrGate(ChipFunction):
             raise ValueError("OR gate must have exactly one output pin.")
 
     def __str__(self):
+        """
+        Returns a string representation of the OR Gate object.
+        The string includes the input pins and output pins of the OR Gate.
+        Returns:
+            str: A formatted string describing the OR Gate with its input and output pins.
+        """
+
         return f"OR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
-        pass
+    def chip_internal_function(self):
+        """
+        A placeholder method for the internal functionality of a chip.
+        This method is intended to be overridden by subclasses to implement
+        specific internal behaviors of a chip. Currently, it does nothing.
+        Returns:
+            None
+        """
+        # TODO: Implement the internal function of the OR gate
 
 
 class NotGate(ChipFunction):
+    """
+    Represents a NOT gate in a digital circuit.
+    Attributes:
+        input_pins (tuple[int]): A tuple containing the input pin number(s).
+        output_pins (tuple[int]): A tuple containing the output pin number(s).
+    Methods:
+        __str__(): Returns a string representation of the NOT gate.
+        chip_internal_function(): Placeholder for the internal logic of the NOT gate.
+    """
+
     def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+        """
+        Initializes a NOT gate with the specified input and output pins.
+        Args:
+            input_pins (tuple[int]): A tuple containing the input pin number(s).
+            output_pins (tuple[int]): A tuple containing the output pin number(s).
+        Raises:
+            ValueError: If the number of input pins is not exactly one.
+            ValueError: If the number of output pins is not exactly one.
+        """
         self.input_pins = input_pins
         self.output_pins = output_pins
         if len(self.input_pins) != 1:
@@ -103,10 +242,18 @@ class NotGate(ChipFunction):
             raise ValueError("NOT gate must have exactly one output pin.")
 
     def __str__(self):
+        """
+        Returns a string representation of the NOT gate.
+        Returns:
+            str: A string describing the NOT gate, including its input and output pins.
+        """
         return f"NOT Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
-        pass
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal logic of the NOT gate.
+        """
+        # TODO: Implement the internal function of the NOT gate
 
 
 class XorGate(ChipFunction):
@@ -121,7 +268,7 @@ class XorGate(ChipFunction):
     def __str__(self):
         return f"XOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
+    def chip_internal_function(self):
         pass
 
 
@@ -137,7 +284,7 @@ class NandGate(ChipFunction):
     def __str__(self):
         return f"NAND Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
+    def chip_internal_function(self):
         pass
 
 
@@ -153,7 +300,7 @@ class NorGate(ChipFunction):
     def __str__(self):
         return f"NOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
+    def chip_internal_function(self):
         pass
 
 
@@ -169,7 +316,7 @@ class XnorGate(ChipFunction):
     def __str__(self):
         return f"XNOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def function(self):
+    def chip_internal_function(self):
         pass
 
 
