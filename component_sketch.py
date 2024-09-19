@@ -20,7 +20,7 @@ from dataCDLT import (
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
 class ComponentSketcher:
-    def __init__(self, canvas: tk.Canvas):
+    def __init__(self, canvas):
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
 
@@ -1208,7 +1208,6 @@ class ComponentSketcher:
             tagCapot = "chipCover" + id
             tagSouris = "activeArea" + id
             for i in range(dim["pinCount"]):
-                # Pin - wider part
                 self.canvas.create_rectangle(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
                     yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
@@ -1218,8 +1217,6 @@ class ComponentSketcher:
                     outline="#000000",
                     tags=tagBase,
                 )
-
-                # Pin - narrower part
                 self.canvas.create_polygon(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
                     yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
@@ -1234,14 +1231,10 @@ class ComponentSketcher:
                     smooth=False,
                     tags=tagBase,
                 )
-            
-            # Body - contour
+
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
             params["tags"] = [tagBase]
-
-            # Internal logic function view
-            # Black background
             self.canvas.create_rectangle(
                 xD + 2 * scale,
                 yD + 2 * scale,
@@ -1251,23 +1244,15 @@ class ComponentSketcher:
                 outline="#000000",
                 tags=tagBase,
             )
-
-            # Draw internal logic function with logic symbols and connections
             if dim["internalFunc"] is not None:
                 dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
-            # Cover with black rectangle
             self.rounded_rect(
                 xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
             )
-
-            # Chip decorations
-            # Top line
             self.canvas.create_line(
                 xD, yD + 1 * space // 3, xD + dimLine, yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
             )
-
-            # Bottom line
             self.canvas.create_line(
                 xD,
                 yD + dimColumn - 1 * space // 3,
@@ -1277,8 +1262,6 @@ class ComponentSketcher:
                 width=thickness,
                 tags=tagCapot,
             )
-
-            # Pin 1 circle
             self.canvas.create_oval(
                 xD + 4 * scale,
                 yD + dimColumn - 1 * space // 3 - 6 * scale,
@@ -1288,8 +1271,6 @@ class ComponentSketcher:
                 outline="#ffffff",
                 tags=tagCapot,
             )
-
-            # Half-circle dip
             self.canvas.create_arc(
                 xD - 5 * scale,
                 yD + dimColumn // 2 - 5 * scale,
@@ -1302,8 +1283,6 @@ class ComponentSketcher:
                 style=tk.PIESLICE,
                 tags=tagCapot,
             )
-
-            # Label
             self.drawChar(
                 xD + dimLine // 2,
                 yD + dimColumn // 2,
@@ -1313,9 +1292,7 @@ class ComponentSketcher:
                 color="#ffffff",
                 anchor="center",
                 tags=tagCapot,
-            ) 
-
-            # Active area (clickable)
+            )  # xD + 30*scale,yD - 10*scale
             self.canvas.create_rectangle(
                 xD + 2 * scale,
                 yD + 2 * scale,
