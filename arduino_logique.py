@@ -1,5 +1,11 @@
+"""
+ArduinoLogique.py
+Main module for the ArduinoLogique program. This module provides a graphical interface for 
+simulating logic circuits using Tkinter. It includes functionality to initialize a canvas, 
+draw a breadboard, and zoom in and out on the circuit diagram.
+"""
+
 import tkinter as tk
-from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from dataComponent import ComponentData
@@ -72,6 +78,6 @@ if __name__ == "__main__":
     )
     h_slider.pack(fill="x", padx=10, pady=10)
 
-    firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=15)
+    firaCodeFont = tk.font.Font(family="FiraCode-Bold.ttf", size=15)
 
     win.mainloop()
