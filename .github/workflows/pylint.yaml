@@ -15,11 +15,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Get all changed python files
-        id: changed-python-files
-        uses: tj-actions/changed-files@v45
-        with:
-          files: |
-             **.py
+      id: changed-python-files
+      uses: tj-actions/changed-files@v45
+      with:
+        files: |
+            **.py
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
