@@ -1,7 +1,5 @@
-from enum import Enum
 import json
 import os
-from utils import Dimensions
 
 
 class Package:
@@ -56,10 +54,6 @@ class Package:
             The Package object constructed from the JSON data.
         """
         return Package(json_data["type_name"], json_data["chip_width"], json_data["pin_count"])
-
-
-class ChipFunctionTypes(Enum):
-    pass
 
 
 class ChipFunction:
@@ -228,7 +222,7 @@ class Breadboard:
 
 
 class Circuit:
-    def __init__(self, size: Dimensions):
+    def __init__(self):
         pass
 
 
