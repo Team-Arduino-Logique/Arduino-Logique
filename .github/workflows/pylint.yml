@@ -27,11 +27,13 @@ jobs:
           for file in ${ALL_CHANGED_FILES}; do
             echo "$file was changed"
           done
+
       - name: Install dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install pylint
+          pip install pylint python-tk
+
       - name: Analysing the code with pylint
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
