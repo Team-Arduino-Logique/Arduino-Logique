@@ -21,9 +21,49 @@ The main block demonstrates loading packages and chips from JSON files in specif
 printing their details.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 import json
 import os
+
+
+@dataclass
+class ConnectionPointID:
+    """
+    ConnectionPointID class represents an identifier for a connection point in a circuit model.
+    Attributes:
+        group (int): The group (top/bottom of divider) to which the connection point belongs.
+        column_num (int): The column number of the connection point within the group.
+    """
+
+    group: int
+    column_num: int
+
+
+@dataclass
+class ConnectionPoint:
+    """
+    Represents a connection point in a circuit.
+    Attributes:
+        connection_id (ConnectionPointID): The unique identifier for the connection point.
+        connected_component (Pin | None): The component connected to this point, if any.
+    """
+
+    connection_id: ConnectionPointID
+    connected_component: Pin | None
+
+
+@dataclass
+class Pin:
+    """
+    Represents a pin on an electronic component.
+    Attributes:
+        pin_num (int): The pin number.
+        connection_point (ConnectionPoint): The connection point of the pin.
+    """
+
+    pin_num: int
+    connection_point: ConnectionPoint
 
 
 class Package:
@@ -121,19 +161,19 @@ class AndGate(ChipFunction):
     """
     Represents an AND gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pins.
-        output_pins (tuple[int]): A tuple containing the output pins.
+        input_pins (tuple[Pin]): A tuple containing the input pins.
+        output_pins (tuple[Pin]): A tuple containing the output pins.
     Methods:
         __str__(): Returns a string representation of the AND gate.
         chip_internal_function(): Placeholder for the internal function of the AND gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes an AND gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pins.
-            output_pins (tuple[int]): A tuple containing the output pin.
+            input_pins (tuple[Pin]): A tuple containing the input pins.
+            output_pins (tuple[Pin]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -165,8 +205,8 @@ class OrGate(ChipFunction):
     """
     Represents an OR gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the indices of the input pins.
-        output_pins (tuple[int]): A tuple containing the index of the output pin.
+        input_pins (tuple[Pin]): A tuple containing the indices of the input pins.
+        output_pins (tuple[Pin]): A tuple containing the index of the output pin.
     Methods:
         __str__(): Returns a string representation of the OR gate.
         chip_internal_function(): Placeholder for the internal logic of the OR gate.
@@ -175,12 +215,12 @@ class OrGate(ChipFunction):
         ValueError: If the number of output pins is not exactly one.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes an OR gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pin numbers.
-            output_pins (tuple[int]): A tuple containing the output pin number.
+            input_pins (tuple[Pin]): A tuple containing the input pin numbers.
+            output_pins (tuple[Pin]): A tuple containing the output pin number.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -218,19 +258,19 @@ class NotGate(ChipFunction):
     """
     Represents a NOT gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pin number(s).
-        output_pins (tuple[int]): A tuple containing the output pin number(s).
+        input_pins (tuple[Pin]): A tuple containing the input pin number(s).
+        output_pins (tuple[Pin]): A tuple containing the output pin number(s).
     Methods:
         __str__(): Returns a string representation of the NOT gate.
         chip_internal_function(): Placeholder for the internal logic of the NOT gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes a NOT gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pin number(s).
-            output_pins (tuple[int]): A tuple containing the output pin number(s).
+            input_pins (tuple[Pin]): A tuple containing the input pin number(s).
+            output_pins (tuple[Pin]): A tuple containing the output pin number(s).
         Raises:
             ValueError: If the number of input pins is not exactly one.
             ValueError: If the number of output pins is not exactly one.
@@ -261,19 +301,19 @@ class XorGate(ChipFunction):
     """
     Represents an XOR gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pins.
-        output_pins (tuple[int]): A tuple containing the output pins.
+        input_pins (tuple[Pin]): A tuple containing the input pins.
+        output_pins (tuple[Pin]): A tuple containing the output pins.
     Methods:
         __str__(): Returns a string representation of the XOR gate.
         chip_internal_function(): Placeholder for the internal function of the XOR gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes an XOR gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pins.
-            output_pins (tuple[int]): A tuple containing the output pin.
+            input_pins (tuple[Pin]): A tuple containing the input pins.
+            output_pins (tuple[Pin]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -305,19 +345,19 @@ class NandGate(ChipFunction):
     """
     Represents a NAND gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pins.
-        output_pins (tuple[int]): A tuple containing the output pins.
+        input_pins (tuple[Pin]): A tuple containing the input pins.
+        output_pins (tuple[Pin]): A tuple containing the output pins.
     Methods:
         __str__(): Returns a string representation of the NAND gate.
         chip_internal_function(): Placeholder for the internal function of the NAND gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes a NAND gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pins.
-            output_pins (tuple[int]): A tuple containing the output pin.
+            input_pins (tuple[Pin]): A tuple containing the input pins.
+            output_pins (tuple[Pin]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -349,19 +389,19 @@ class NorGate(ChipFunction):
     """
     Represents a NOR gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pins.
-        output_pins (tuple[int]): A tuple containing the output pins.
+        input_pins (tuple[Pin]): A tuple containing the input pins.
+        output_pins (tuple[Pin]): A tuple containing the output pins.
     Methods:
         __str__(): Returns a string representation of the NOR gate.
         chip_internal_function(): Placeholder for the internal function of the NOR gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes a NOR gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pins.
-            output_pins (tuple[int]): A tuple containing the output pin.
+            input_pins (tuple[Pin]): A tuple containing the input pins.
+            output_pins (tuple[Pin]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -393,19 +433,19 @@ class XnorGate(ChipFunction):
     """
     Represents an XNOR gate in a digital circuit.
     Attributes:
-        input_pins (tuple[int]): A tuple containing the input pins.
-        output_pins (tuple[int]): A tuple containing the output pins.
+        input_pins (tuple[Pin]): A tuple containing the input pins.
+        output_pins (tuple[Pin]): A tuple containing the output pins.
     Methods:
         __str__(): Returns a string representation of the XNOR gate.
         chip_internal_function(): Placeholder for the internal function of the XNOR gate.
     """
 
-    def __init__(self, input_pins: tuple[int], output_pins: tuple[int]):
+    def __init__(self, input_pins: tuple[Pin], output_pins: tuple[Pin]):
         """
         Initializes an XNOR gate with the specified input and output pins.
         Args:
-            input_pins (tuple[int]): A tuple containing the input pins.
-            output_pins (tuple[int]): A tuple containing the output pin.
+            input_pins (tuple[Pin]): A tuple containing the input pins.
+            output_pins (tuple[Pin]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
@@ -447,21 +487,22 @@ class Chip:
             Returns a string representation of the Chip instance.
     """
 
-    def __init__(self, name: str, pkg: Package, functions: tuple[ChipFunction]):
+    def __init__(self, name: str, pkg: Package, functions: list[ChipFunction]):
         """
         Initializes a CircuitObject instance.
         Args:
             name (str): The name of the circuit object.
             pkg (Package): The package associated with the circuit object.
-            functions (tuple[ChipFunction]): A tuple containing the functions of the chip.
+            functions (list[ChipFunction]): A list containing the functions of the chip.
         """
 
-        self.name = name
-        self.package = pkg
-        self.functions = functions
+        self.name: str = name
+        self.package: Package = pkg
+        # TODO get number of pins from package and assign to functions
+        self.functions: list[ChipFunction] = functions
 
     @staticmethod
-    def from_json(json_data: dict, package_dict: dict[str, Package] = None):
+    def from_json(json_data: dict, package_dict: dict[str, Package] | None = None):
         """
         Create a Chip object from JSON data.
         Args:
@@ -483,7 +524,7 @@ class Chip:
             in the provided package_dict.
         """
 
-        functions = []
+        functions: list[ChipFunction] = []
         for func_data in json_data["functions"]:
             func_type = func_data["func_type"]
             input_pins = tuple(func_data["input_pins"])
@@ -506,7 +547,7 @@ class Chip:
                 raise ValueError(f"Unknown function type: {func_type}")
 
         if package_dict is not None and isinstance(json_data["package"], str):
-            return Chip(json_data["name"], package_dict[json_data["package"]], tuple(functions))
+            return Chip(json_data["name"], package_dict[json_data["package"]], functions)
 
         raise ValueError("The package does not exist in the Components/Packages directory.")
 
@@ -537,13 +578,13 @@ class Wire:
         end_pin: The ending pin of the wire.
     """
 
-    start_pin: int
-    end_pin: int
+    start_pin: Pin
+    end_pin: Pin
 
 
 class Breadboard:
     """
-    A class to represent a breadboard used in electronic circuits. 
+    A class to represent a breadboard used in electronic circuits.
 
     It stores the info on the size of the board, the pin groupings, the power rails
     Attributes:
@@ -568,30 +609,25 @@ class Circuit:
         add_chip(chip: Chip, position: tuple[int, int]): Adds a chip to the circuit at the specified position.
         add_wire(start_pin: int, end_pin: int): Adds a wire to the circuit connecting the specified pins.
         validate_pins(): Validates the pins and connections in the circuit.
-        get_logic_functions(): Returns the logic functions of the circuit by following connections and 
+        get_logic_functions(): Returns the logic functions of the circuit by following connections and
                                 calling internal_chip_function.
     """
 
     def __init__(self, breadboard: Breadboard):
         self.breadboard = breadboard
-        self.chips = []
-        self.wires = []
+        self.chips: list[Chip] = []
+        self.wires: list[Wire] = []
 
-    def add_chip(self, new_chip: Chip, position: tuple[int, int]):
-        """
-        Adds a chip to the circuit at the specified position.
-        Args:
-            new_chip (Chip): The chip to be added.
-            position (tuple[int, int]): The position on the breadboard where the chip will be placed.
-        """
-        self.chips.append((new_chip, position))
+    def add_chip(self, new_chip: Chip, top_left_connection: ConnectionPointID):
+        # TODO
+        pass
 
-    def add_wire(self, start_pin: int, end_pin: int):
+    def add_wire(self, start_pin: Pin, end_pin: Pin):
         """
         Adds a wire to the circuit connecting the specified pins.
         Args:
-            start_pin (int): The starting pin of the wire.
-            end_pin (int): The ending pin of the wire.
+            start_pin (Pin): The starting pin of the wire.
+            end_pin (Pin): The ending pin of the wire.
         """
         self.wires.append(Wire(start_pin, end_pin))
 
