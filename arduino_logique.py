@@ -13,7 +13,7 @@ from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from dataComponent import ComponentData
-
+from dataCDLT import current_dict_circuit
 
 def zoom(
     p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list
@@ -34,7 +34,6 @@ def zoom(
     p_board.fill_matrix_1260_pts()
     p_board.circuit(p_board_x, p_board_y, scale=int(p_scale) / 10.0, model=p_model)
 
-
 if __name__ == "__main__":
     # Create main window
     win = tk.Tk()
@@ -51,6 +50,37 @@ if __name__ == "__main__":
     model = component_data.circuitTest
     zoom(canvas, 10.0, board, 50, 10, model)
 
+    # **Wait for the components to be drawn by processing events**
+    win.update_idletasks()
+
+    # Print current_dict_circuit to (je debug ici)
+    print("Current Circuit Components:")
+    for comp_id, comp_data in current_dict_circuit.items():
+        print(f"ID: {comp_id}, Position: {comp_data.get('XY')}")
+
+    # essai de mouvement
+
+    chip_id = "_chip_1"
+
+    if chip_id in current_dict_circuit:
+        new_x, new_y = 200, 150
+
+        current_x, current_y = current_dict_circuit[chip_id]["XY"]
+
+        # Calculate the difference
+        dx = new_x - current_x
+        dy = new_y - current_y
+
+        for tag in current_dict_circuit[chip_id]["tags"]:
+            canvas.move(tag, dx, dy)
+
+        current_dict_circuit[chip_id]["XY"] = (new_x, new_y)
+
+        print(f"Moved chip {chip_id} to new position: ({new_x}, {new_y})")
+    else:
+        print(f"Chip ID {chip_id} not found in current_dict_circuit.")
+
+    # Create a slider or other UI elements as needed
     h_slider = tk.Scale(
         win,
         from_=10,
