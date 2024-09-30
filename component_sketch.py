@@ -13,6 +13,7 @@ from dataCDLT import (
     current_dict_circuit,
     id_type,
     num_id,
+    matrix1260pts,
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
@@ -71,7 +72,7 @@ class ComponentSketcher:
     def on_stop_drag(self, event):
         """
         Event handler for ending the drag.
-        Resets drag_data and updates the chip's position in current_dict_circuit.
+        Snaps the chip's top-left corner to the nearest grid point and updates position.
         """
         chip_id = self.drag_data["chip_id"]
         if chip_id:
@@ -83,17 +84,50 @@ class ComponentSketcher:
             # Reset outline color to blue
             tagSouris = "activeArea_" + chip_id
             self.canvas.itemconfig(tagSouris, outline="blue")
-            print(f"Chip {chip_id} outline reset to blue")
 
-            # Update the chip's position in current_dict_circuit
+            # Get current chip position (top-left corner)
             base_tag = current_dict_circuit[chip_id]["tags"][0]
             coords = self.canvas.coords(base_tag)
-            new_x, new_y = coords[0], coords[1]
+            current_x, current_y = coords[0], coords[1]  # Top-left corner
 
-            current_dict_circuit[chip_id]["XY"] = (new_x, new_y)
-            print(f"Moved chip {chip_id} to new position: ({new_x}, {new_y})")
+            # Find the nearest grid point based on top-left corner
+            nearest_x, nearest_y = self.find_nearest_grid(current_x, current_y)
 
+            # Calculate the difference
+            dx = nearest_x - current_x
+            dy = nearest_y - current_y
 
+            for tag in current_dict_circuit[chip_id]["tags"]:
+                self.canvas.move(tag, dx, dy)
+
+            current_dict_circuit[chip_id]["XY"] = (nearest_x, nearest_y)
+            print(f"Moved chip {chip_id} to new grid position: ({nearest_x}, {nearest_y})")
+
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates based on top-left snapping.
+
+        Parameters:
+            x (float): The current x-coordinate of the chip's top-left corner.
+            y (float): The current y-coordinate of the chip's top-left corner.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix830pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+        nearest_point = (0, 0)
+        for point in matrix.values():
+            grid_x, grid_y = point["xy"]
+            distance = math.hypot(x - grid_x, y - grid_y)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = (grid_x, grid_y)
+
+        return nearest_point
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -1365,13 +1399,13 @@ class ComponentSketcher:
                 tags=tagCapot,
             )  # xD + 30*scale,yD - 10*scale
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD + 2 * scale,
-                xD - 2 * scale + dimLine,
-                yD - 2 * scale + dimColumn,
-                fill="",
-                outline="",
-                tags=tagSouris,
+                xD,
+                yD,
+                xD + dimLine,
+                yD + dimColumn,
+                fill="#909090",
+                outline="#000000",
+                tags=tagBase,
             )
             self.canvas.tag_raise(tagCapot)
             self.canvas.tag_raise(tagSouris)
