@@ -24,6 +24,7 @@ printing their details.
 from __future__ import annotations
 from dataclasses import dataclass
 import json
+from math import log2
 import os
 
 
@@ -473,6 +474,138 @@ class XnorGate(ChipFunction):
         # TODO: Implement the internal function of the XNOR gate
 
 
+class Mux(ChipFunction):
+    """
+    Represents a multiplexer in a digital circuit.
+    Attributes:
+        input_pins (list[Pin]): A tuple containing the input pins.
+        output_pins (list[Pin]): A tuple containing the output pins.
+        inv_output_pins (list[Pin]): A tuple containing the inverted output pins.
+        select_pins (list[Pin]): A tuple containing the select pins.
+        enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
+        inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+    Methods:
+        __str__(): Returns a string representation of the MUX.
+        chip_internal_function(): Placeholder for the internal function of the MUX.
+    """
+
+    def __init__(
+        self,
+        input_pins: list[Pin],
+        output_pins: list[Pin],
+        inv_output_pins: list[Pin],
+        select_pins: list[Pin],
+        enable_pins: list[Pin],
+        inv_enable_pins: list[Pin],
+    ):
+        """
+        Initializes a Mux with the specified input and output pins.
+        Args:
+            input_pins (list[Pin]): A tuple containing the input pins.
+            output_pins (list[Pin]): A tuple containing the output pins.
+            inv_output_pins (list[Pin]): A tuple containing the inverted output pins.
+            select_pins (list[Pin]): A tuple containing the select pins.
+            enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
+            inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+        Raises:
+
+        """
+        self.input_pins = input_pins
+        self.output_pins = output_pins
+        self.inv_output_pins = inv_output_pins
+        self.select_pins = select_pins
+        self.enable_pins = enable_pins
+        self.inv_enable_pins = inv_enable_pins
+        if len(self.input_pins) < 2:
+            raise ValueError("MUX must have at least two input pins.")
+        if len(self.output_pins) < 1 or len(self.inv_output_pins) < 1:
+            raise ValueError("MUX must have at least one output pin or inverted output pin.")
+        if len(self.select_pins) != log2(len(self.input_pins)):
+            raise ValueError("MUX must have log2(num input pins) select pins.")
+
+    def __str__(self):
+        """
+        Returns a string representation of the MUX.
+        Returns:
+            str: A string describing the MUX with its input and output pins.
+        """
+        return (
+            f"MUX:\n\t\tInput Pins: {self.input_pins},"
+            f"\n\t\tOutput Pins: {self.output_pins},"
+            f"\n\t\tInverted Output Pins: {self.inv_output_pins},"
+            f"\n\t\tSelect Pins: {self.select_pins},"
+            f"\n\t\tEnable Pins: {self.enable_pins},"
+            f"\n\t\tInverted Enable Pins: {self.inv_enable_pins}"
+        )
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the MUX.
+        This method should be implemented to define the behavior of the MUX.
+        """
+        # TODO: Implement the internal function of the MUX
+
+class Demux(ChipFunction):
+    """
+    Represents an demultiplexer in a digital circuit.
+    Attributes:
+        address_pins (list[Pin]): A tuple containing the address pins.
+        output_pins (list[Pin]): A tuple containing the output pins.
+        enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
+        inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+    Methods:
+        __str__(): Returns a string representation of the DEMUX.
+        chip_internal_function(): Placeholder for the internal function of the DEMUX.
+    """
+
+    def __init__(
+        self,
+        address_pins: list[Pin],
+        output_pins: list[Pin],
+        enable_pins: list[Pin],
+        inv_enable_pins: list[Pin],
+    ):
+        """
+        Initializes a DEMUX with the specified input and output pins.
+        Args:
+            address_pins (list[Pin]): A tuple containing the address pins.
+            output_pins (list[Pin]): A tuple containing the output pins.
+            enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
+            inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+        Raises:
+
+        """
+        self.address_pins = address_pins
+        self.output_pins = output_pins
+        self.enable_pins = enable_pins
+        self.inv_enable_pins = inv_enable_pins
+        if len(self.output_pins) < 2:
+            raise ValueError("DEMUX must have at least two input pins.")
+        if len(self.address_pins) < 1:
+            raise ValueError("DEMUX must have at least one address pin.")
+        if len(self.address_pins) != log2(len(self.output_pins)):
+            raise ValueError("DEMUX must have log2(num output_pins) address pins.")
+
+    def __str__(self):
+        """
+        Returns a string representation of the DEMUX.
+        Returns:
+            str: A string describing the DEMUX with its input and output pins.
+        """
+        return (
+            f"DEMUX:\n\t\tAddress Pins: {self.address_pins},"
+            f"\n\t\tOutput Pins: {self.output_pins},"
+            f"\n\t\tEnable Pins: {self.enable_pins},"
+            f"\n\t\tInverted Enable Pins: {self.inv_enable_pins}"
+        )
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the DEMUX.
+        This method should be implemented to define the behavior of the DEMUX.
+        """
+        # TODO: Implement the internal function of the DEMUX
+
 class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
@@ -541,6 +674,26 @@ class Chip:
                 functions.append(NorGate(func_data["input_pins"], func_data["output_pins"]))
             elif func_type == "XNOR":
                 functions.append(XnorGate(func_data["input_pins"], func_data["output_pins"]))
+            elif func_type == "MUX":
+                functions.append(
+                    Mux(
+                        func_data["input_pins"],
+                        func_data["output_pins"],
+                        func_data["inv_output_pins"],
+                        func_data["select_pins"],
+                        func_data["enable_pins"],
+                        func_data["inv_enable_pins"],
+                    )
+                )
+            elif func_type == "DEMUX":
+                functions.append(
+                    Demux(
+                        func_data["address_pins"],
+                        func_data["output_pins"],
+                        func_data["enable_pins"],
+                        func_data["inv_enable_pins"],
+                    )
+                )
             else:
                 raise ValueError(f"Unknown function type: {func_type}")
 
