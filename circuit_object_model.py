@@ -693,6 +693,116 @@ class DFlipFlop(ChipFunction):
         """
         # TODO: Implement the internal function of the D Flip Flop
 
+class JKFlipFlop(ChipFunction):
+    """
+    Represents an JK Flip Flop in a digital circuit.
+    Attributes:
+
+    Methods:
+        __str__(): Returns a string representation of the JK Flip Flop.
+        chip_internal_function(): Placeholder for the internal function of the JK Flip Flop.
+    """
+
+    def __init__(
+        self,
+        clock_pin: Pin,
+        clock_type: str,
+        reset_pin: Pin,
+        inv_reset_pin: Pin,
+        set_pin: Pin,
+        inv_set_pin: Pin,
+        j_input_pin: Pin,
+        inv_j_input_pin: Pin,
+        k_input_pin: Pin,
+        inv_k_input_pin: Pin,
+        output_pin: Pin,
+        inv_output_pin: Pin
+    ):
+        """
+        Initializes a JK Flip Flop with the specified input and output pins.
+        Args:
+            clock_pin (Pin): The clock pin.
+            clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
+            reset_pin (Pin): The reset pin.
+            inv_reset_pin (Pin): The inverted reset pin (Active LOW).
+            set_pin (Pin): The set pin.
+            inv_set_pin (Pin): The inverted set pin (Active LOW).
+            j_input_pin (Pin): The J input pin.
+            inv_j_input_pin (Pin): The inverted J input pin (Active LOW).
+            k_input_pin (Pin): The K input pin.
+            inv_k_input_pin (Pin): The inverted K input pin (Active LOW).
+            output_pin (Pin): The output pin.
+            inv_output_pin (Pin): The inverted output pin (Active LOW).
+        Raises:
+            ValueError: If the JK Flip Flop does not have either J or inverted J input pin.
+            ValueError: If the JK Flip Flop has both J and inverted J input pins.
+            ValueError: If the JK Flip Flop does not have either K or inverted K input pin.
+            ValueError: If the JK Flip Flop has both K and inverted K input pins.
+            ValueError: If the JK Flip Flop does not have either set or inverted set pin.
+            ValueError: If the JK Flip Flop has both set and inverted set pins.
+            ValueError: If the JK Flip Flop does not have either reset or inverted reset pin.
+            ValueError: If the JK Flip Flop has both reset and inverted reset pins.
+        """
+        self.clock_pin = clock_pin
+        self.clock_type = clock_type
+        self.reset_pin = reset_pin
+        self.inv_reset_pin = inv_reset_pin
+        self.set_pin = set_pin
+        self.inv_set_pin = inv_set_pin
+        self.j_input_pin = j_input_pin
+        self.inv_j_input_pin = inv_j_input_pin
+        self.k_input_pin = k_input_pin
+        self.inv_k_input_pin = inv_k_input_pin
+        self.output_pin = output_pin
+        self.inv_output_pin = inv_output_pin
+
+        if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
+            raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
+        if self.j_input_pin is None and self.inv_j_input_pin is None:
+            raise ValueError("JK Flip Flop must have either J or inverted J input pin.")
+        if self.j_input_pin is not None and self.inv_j_input_pin is not None:
+            raise ValueError("JK Flip Flop cannot have both J and inverted J input pins.")
+        if self.k_input_pin is None and self.inv_k_input_pin is None:
+            raise ValueError("JK Flip Flop must have either K or inverted K input pin.")
+        if self.k_input_pin is not None and self.inv_k_input_pin is not None:
+            raise ValueError("JK Flip Flop cannot have both K and inverted K input pins.")
+        if self.inv_set_pin is None and self.set_pin is None:
+            raise ValueError("JK Flip Flop must have either set or inverted set pin.")
+        if self.inv_set_pin is not None and self.set_pin is not None:
+            raise ValueError("JK Flip Flop cannot have both set and inverted set pins.")
+        if self.inv_reset_pin is None and self.reset_pin is None:
+            raise ValueError("JK Flip Flop must have either reset or inverted reset pin.")
+        if self.inv_reset_pin is not None and self.reset_pin is not None:
+            raise ValueError("JK Flip Flop cannot have both reset and inverted reset pins.")
+
+    def __str__(self):
+        """
+        Returns a string representation of the JK Flip Flop.
+        Returns:
+            str: A string describing the JK Flip Flop with its input and output pins.
+        """
+        return (
+            f"JK Flip Flop:\n\t\tClock Pin: {self.clock_pin},"
+            f"\n\t\tClock Type: {self.clock_type},"
+            f"\n\t\tReset Pin: {self.reset_pin},"
+            f"\n\t\tInverted Reset Pin: {self.inv_reset_pin},"
+            f"\n\t\tSet Pin: {self.set_pin},"
+            f"\n\t\tInverted Set Pin: {self.inv_set_pin},"
+            f"\n\t\tJ Input Pin: {self.j_input_pin},"
+            f"\n\t\tInverted J Input Pin: {self.inv_j_input_pin},"
+            f"\n\t\tK Input Pin: {self.k_input_pin},"
+            f"\n\t\tInverted K Input Pin: {self.inv_k_input_pin},"
+            f"\n\t\tOutput Pin: {self.output_pin},"
+            f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
+        )
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the JK Flip Flop.
+        This method should be implemented to define the behavior of the JK Flip Flop.
+        """
+        # TODO: Implement the internal function of the JK Flip Flop
+
 class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
@@ -791,6 +901,23 @@ class Chip:
                         func_data["set_pin"],
                         func_data["inv_set_pin"],
                         func_data["data_pin"],
+                        func_data["output_pin"],
+                        func_data["inv_output_pin"],
+                    )
+                )
+            elif func_type == "JK_FLIP_FLOP":
+                functions.append(
+                    JKFlipFlop(
+                        func_data["clock_pin"],
+                        func_data["clock_type"],
+                        func_data["reset_pin"],
+                        func_data["inv_reset_pin"],
+                        func_data["set_pin"],
+                        func_data["inv_set_pin"],
+                        func_data["j_input_pin"],
+                        func_data["inv_j_input_pin"],
+                        func_data["k_input_pin"],
+                        func_data["inv_k_input_pin"],
                         func_data["output_pin"],
                         func_data["inv_output_pin"],
                     )

@@ -1,0 +1,37 @@
+{
+    "name": "74HC109",
+    "package": "DIP16",
+    "functions": [
+        {
+            "func_type": "JK_FLIP_FLOP",
+            "clock_pin": 4,
+            "clock_type": "RISING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": 1,
+            "set_pin": null,
+            "inv_set_pin": 5,
+            "j_input_pin": 2,
+            "inv_j_input_pin": null,
+            "k_input_pin": null,
+            "inv_k_input_pin": 3,
+            "output_pin": 6,
+            "inv_output_pin": 7
+        },
+        {
+            "func_type": "JK_FLIP_FLOP",
+            "clock_pin": 12,
+            "clock_type": "RISING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": 15,
+            "set_pin": null,
+            "inv_set_pin": 11,
+            "j_input_pin": 14,
+            "inv_j_input_pin": null,
+            "k_input_pin": null,
+            "inv_k_input_pin": 13,
+            "output_pin": 10,
+            "inv_output_pin": 9
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15527/PHILIPS/74HC109.html"
+}
