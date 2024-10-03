@@ -8,7 +8,7 @@
             "reset_pin": null,
             "inv_reset_pin": 1,
             "set_pin": null,
-            "inv_set_pun": 4,
+            "inv_set_pin": 4,
             "data_pin": 2,
             "output_pin": 5,
             "inv_output_pin": 6
@@ -19,7 +19,7 @@
             "reset_pin": null,
             "inv_reset_pin": 13,
             "set_pin": null,
-            "inv_set_pun": 10,
+            "inv_set_pin": 10,
             "data_pin": 12,
             "output_pin": 9,
             "inv_output_pin": 8

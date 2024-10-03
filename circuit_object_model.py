@@ -774,6 +774,19 @@ class Chip:
                         func_data["inv_enable_pins"],
                     )
                 )
+            elif func_type == "D_FLIP_FLOP":
+                functions.append(
+                    DFlipFlop(
+                        func_data["clock_pin"],
+                        func_data["reset_pin"],
+                        func_data["inv_reset_pin"],
+                        func_data["set_pin"],
+                        func_data["inv_set_pin"],
+                        func_data["data_pin"],
+                        func_data["output_pin"],
+                        func_data["inv_output_pin"],
+                    )
+                )
             else:
                 raise ValueError(f"Unknown function type: {func_type}")
 
@@ -897,8 +910,11 @@ if __name__ == "__main__":
             if filename.endswith(".json"):
                 with open(os.path.join(root, filename), "r", encoding="utf-8") as file:
                     chip_data = json.load(file)
-                    chip = Chip.from_json(chip_data, packages)
-                    chips[chip.name] = chip
+                    try:
+                        chip = Chip.from_json(chip_data, packages)
+                        chips[chip.name] = chip
+                    except ValueError as e:
+                        print(f"Error loading chip from {filename}: {e}")
 
     print("-------------------LOADED PACKAGES-------------------")
     for package in packages.values():
