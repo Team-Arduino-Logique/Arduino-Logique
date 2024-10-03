@@ -619,6 +619,7 @@ class DFlipFlop(ChipFunction):
     def __init__(
         self,
         clock_pin: Pin,
+        clock_type: str,
         reset_pin: Pin,
         inv_reset_pin: Pin,
         set_pin: Pin,
@@ -631,6 +632,7 @@ class DFlipFlop(ChipFunction):
         Initializes a D Flip Flop with the specified input and output pins.
         Args:
             clock_pin (Pin): The clock pin.
+            clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
             reset_pin (Pin): The reset pin.
             inv_reset_pin (Pin): The inverted reset pin (Active LOW).
             set_pin (Pin): The set pin.
@@ -645,6 +647,7 @@ class DFlipFlop(ChipFunction):
             ValueError: If the D Flip Flop has both reset and inverted reset pins.
         """
         self.clock_pin = clock_pin
+        self.clock_type = clock_type
         self.reset_pin = reset_pin
         self.inv_reset_pin = inv_reset_pin
         self.set_pin = set_pin
@@ -652,6 +655,9 @@ class DFlipFlop(ChipFunction):
         self.data_pin = data_pin
         self.output_pin = output_pin
         self.inv_output_pin = inv_output_pin
+
+        if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
+            raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
 
         if self.inv_set_pin is None and self.set_pin is None:
             raise ValueError("D Flip Flop must have either set or inverted set pin.")
@@ -670,6 +676,7 @@ class DFlipFlop(ChipFunction):
         """
         return (
             f"D Flip Flop:\n\t\tClock Pin: {self.clock_pin},"
+            f"\n\t\tClock Type: {self.clock_type},"
             f"\n\t\tReset Pin: {self.reset_pin},"
             f"\n\t\tInverted Reset Pin: {self.inv_reset_pin},"
             f"\n\t\tSet Pin: {self.set_pin},"
@@ -778,6 +785,7 @@ class Chip:
                 functions.append(
                     DFlipFlop(
                         func_data["clock_pin"],
+                        func_data["clock_type"],
                         func_data["reset_pin"],
                         func_data["inv_reset_pin"],
                         func_data["set_pin"],

@@ -5,6 +5,7 @@
         {
             "func_type": "D_FLIP_FLOP",
             "clock_pin": 3,
+            "clock_type": "RISING_EDGE",
             "reset_pin": null,
             "inv_reset_pin": 1,
             "set_pin": null,
@@ -16,6 +17,7 @@
         {
             "func_type": "D_FLIP_FLOP",
             "clock_pin": 11,
+            "clock_type": "RISING_EDGE",
             "reset_pin": null,
             "inv_reset_pin": 13,
             "set_pin": null,
