@@ -606,6 +606,86 @@ class Demux(ChipFunction):
         """
         # TODO: Implement the internal function of the DEMUX
 
+class DFlipFlop(ChipFunction):
+    """
+    Represents an D flip flop in a digital circuit.
+    Attributes:
+
+    Methods:
+        __str__(): Returns a string representation of the D flip flop.
+        chip_internal_function(): Placeholder for the internal function of the D flip flop.
+    """
+
+    def __init__(
+        self,
+        clock_pin: Pin,
+        reset_pin: Pin,
+        inv_reset_pin: Pin,
+        set_pin: Pin,
+        inv_set_pin: Pin,
+        data_pin: Pin,
+        output_pin: Pin,
+        inv_output_pin: Pin
+    ):
+        """
+        Initializes a D Flip Flop with the specified input and output pins.
+        Args:
+            clock_pin (Pin): The clock pin.
+            reset_pin (Pin): The reset pin.
+            inv_reset_pin (Pin): The inverted reset pin (Active LOW).
+            set_pin (Pin): The set pin.
+            inv_set_pin (Pin): The inverted set pin (Active LOW).
+            data_pin (Pin): The data pin.
+            output_pin (Pin): The output pin.
+            inv_output_pin (Pin): The inverted output pin (Active LOW).
+        Raises:
+            ValueError: If the D Flip Flop does not have either set or inverted set pin.
+            ValueError: If the D Flip Flop has both set and inverted set pins.
+            ValueError: If the D Flip Flop does not have either reset or inverted reset pin.
+            ValueError: If the D Flip Flop has both reset and inverted reset pins.
+        """
+        self.clock_pin = clock_pin
+        self.reset_pin = reset_pin
+        self.inv_reset_pin = inv_reset_pin
+        self.set_pin = set_pin
+        self.inv_set_pin = inv_set_pin
+        self.data_pin = data_pin
+        self.output_pin = output_pin
+        self.inv_output_pin = inv_output_pin
+
+        if self.inv_set_pin is None and self.set_pin is None:
+            raise ValueError("D Flip Flop must have either set or inverted set pin.")
+        if self.inv_set_pin is not None and self.set_pin is not None:
+            raise ValueError("D Flip Flop cannot have both set and inverted set pins.")
+        if self.inv_reset_pin is None and self.reset_pin is None:
+            raise ValueError("D Flip Flop must have either reset or inverted reset pin.")
+        if self.inv_reset_pin is not None and self.reset_pin is not None:
+            raise ValueError("D Flip Flop cannot have both reset and inverted reset pins.")
+
+    def __str__(self):
+        """
+        Returns a string representation of the D flip flop.
+        Returns:
+            str: A string describing the D flip flop with its input and output pins.
+        """
+        return (
+            f"D Flip Flop:\n\t\tClock Pin: {self.clock_pin},"
+            f"\n\t\tReset Pin: {self.reset_pin},"
+            f"\n\t\tInverted Reset Pin: {self.inv_reset_pin},"
+            f"\n\t\tSet Pin: {self.set_pin},"
+            f"\n\t\tInverted Set Pin: {self.inv_set_pin},"
+            f"\n\t\tData Pin: {self.data_pin},"
+            f"\n\t\tOutput Pin: {self.output_pin},"
+            f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
+        )
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the D Flip Flop.
+        This method should be implemented to define the behavior of the D Flip Flop.
+        """
+        # TODO: Implement the internal function of the D Flip Flop
+
 class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
