@@ -1,11 +1,10 @@
+# arduino_logique.py
+
 """
 ArduinoLogique.py
 Main module for the ArduinoLogique program. This module provides a graphical interface for 
 simulating logic circuits using Tkinter. It includes functionality to initialize a canvas, 
 draw a breadboard, and zoom in and out on the circuit diagram.
-Functions:
-    zoom(p_canvas: tk.Canvas, p_scale: float, x_board: int, y_board: int) -> None
-
 """
 
 import tkinter as tk
@@ -13,37 +12,73 @@ from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from dataComponent import ComponentData
+from dataCDLT import current_dict_circuit
+import json
 
+from menus import Menus
+from sidebar import Sidebar 
+from topbar2 import TopBar2
 
-def zoom(
-    p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list
-) -> None:
+def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list) -> None:
     """
     Adjusts the zoom level of the given canvas by scaling the board and redrawing it.
+
     Parameters:
-    p_canvas (tk.Canvas): The canvas on which the board is drawn.
-    p_scale (float): The scale factor to apply to the board.
-    p_board_x (int): The x-coordinate of the board's position.
-    p_board_y (int): The y-coordinate of the board's position.
-    p_model (list): The model data for the circuit.
+    - p_canvas (tk.Canvas): The canvas on which the board is drawn.
+    - p_scale (float): The scale factor to apply to the board.
+    - p_board_x (int): The x-coordinate of the board's position.
+    - p_board_y (int): The y-coordinate of the board's position.
+    - p_model (list): The model data for the circuit.
+
     Returns:
-    None
+    - None
     """
     p_canvas.delete("all")
     p_board = Breadboard(p_canvas)
     p_board.fill_matrix_1260_pts()
     p_board.circuit(p_board_x, p_board_y, scale=int(p_scale) / 10.0, model=p_model)
 
-
-if __name__ == "__main__":
-    # Create main window
+def main():
+    # Creating main window
     win = tk.Tk()
     win.title("Laboratoire virtuel de circuit logique - GIF-1002")
+    win.geometry("1600x900")  # Initial window size
+    win.configure(bg="#333333")  # Setting consistent background color
 
-    # Create the canvas (surface to draw on)
-    canvas = tk.Canvas(win, width=1500, height=900)
-    canvas.pack()
+    # Configuring grid layout for the main window
+    win.grid_rowconfigure(0, weight=0)  # Menu bar
+    win.grid_rowconfigure(1, weight=0)  # Secondary TopBar2
+    win.grid_rowconfigure(2, weight=1)  # Canvas and sidebar
+    win.grid_rowconfigure(3, weight=0)  # Slider
+    win.grid_columnconfigure(0, weight=0)  # Sidebar
+    win.grid_columnconfigure(1, weight=1)  # Canvas
 
+    # Creating the Menus instance
+    menus = Menus(
+        parent=win,
+        canvas=None,  # To be set later
+        board=None,
+        component_data=None,
+        model=None,
+        current_dict_circuit=None,
+        zoom_function=zoom
+    )
+    # Placing the menu_bar in row=0, spanning both columns
+    menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+    # Creating the TopBar2 instance
+    topbar2 = TopBar2(parent=win)
+    # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
+    topbar2.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
+
+    # Creating the Sidebar instance
+    sidebar = Sidebar(parent=win, chip_images_path="chips")
+
+    # Creating the canvas in row=2, column=1
+    canvas = tk.Canvas(win, bg="#1e1e1e", highlightthickness=0, bd=0)
+    canvas.grid(row=2, column=1, sticky="nsew")
+
+    # Initializing the breadboard and components
     board = Breadboard(canvas)
     board.fill_matrix_1260_pts()
 
@@ -51,15 +86,38 @@ if __name__ == "__main__":
     model = component_data.circuitTest
     zoom(canvas, 10.0, board, 50, 10, model)
 
+    # Assignin the references to menus
+    menus.canvas = canvas
+    menus.board = board
+    menus.component_data = component_data
+    menus.model = model
+    menus.current_dict_circuit = current_dict_circuit
+    menus.zoom_function = zoom
+
+    # Creating a slider and place it in row=3, spanning both columns
     h_slider = tk.Scale(
         win,
         from_=10,
         to=30,
         orient="horizontal",
         command=lambda scale: zoom(canvas, float(scale), board, 50, 10, model),
+        bg="#333333",
+        fg="white",
+        activebackground="#444444",
+        troughcolor="#555555",
+        highlightbackground="#333333",
+        sliderrelief="flat",
+        bd=0,
+        highlightthickness=0
     )
-    h_slider.pack(fill="x", padx=10, pady=10)
+    h_slider.set(10)  # Setting initial slider value
+    h_slider.grid(row=3, column=0, columnspan=2, sticky="ew", padx=0, pady=0)
 
-    firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=15)
+    # Setting default font for all widgets
+    default_font = font.Font(family="Arial", size=10)
+    win.option_add("*Font", default_font)
 
     win.mainloop()
+
+if __name__ == "__main__":
+    main()

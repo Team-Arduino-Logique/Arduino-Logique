@@ -13,6 +13,7 @@ from dataCDLT import (
     current_dict_circuit,
     id_type,
     num_id,
+    matrix1260pts,
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
@@ -23,6 +24,110 @@ class ComponentSketcher:
     def __init__(self, canvas):
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
+
+        self.drag_data = {
+            "chip_id": None,
+            "x": 0,
+            "y": 0
+        }
+
+    def on_chip_click(self, event, chip_id):
+        """
+        Event handler for chip clicks.
+        Prints the ID of the clicked chip and initiates drag.
+        """
+        print(f"Chip clicked: {chip_id}")
+        # Initiate drag by setting drag_data
+        self.drag_data["chip_id"] = chip_id
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+
+        # Change outline to indicate selection
+        tagSouris = "activeArea_" + chip_id
+        self.canvas.itemconfig(tagSouris, outline="red")
+        self.canvas.tag_raise(tagSouris)
+        print(f"Chip {chip_id} outline changed to red")
+
+    def on_drag(self, event):
+        """
+        Event handler for dragging the chip.
+        Moves the chip based on mouse movement.
+        """
+        chip_id = self.drag_data["chip_id"]
+        if chip_id:
+            # Calculate the distance moved by the mouse
+            dx = event.x - self.drag_data["x"]
+            dy = event.y - self.drag_data["y"]
+
+            # Move all items associated with the chip
+            for tag in current_dict_circuit[chip_id]["tags"]:
+                self.canvas.move(tag, dx, dy)
+
+            # Update the drag_data with the new mouse position
+            self.drag_data["x"] = event.x
+            self.drag_data["y"] = event.y
+
+            print(f"Dragging chip {chip_id}: moved by ({dx}, {dy})")
+
+    def on_stop_drag(self, event):
+        """
+        Event handler for ending the drag.
+        Snaps the chip's top-left corner to the nearest grid point and updates position.
+        """
+        chip_id = self.drag_data["chip_id"]
+        if chip_id:
+            # Reset drag_data
+            self.drag_data["chip_id"] = None
+            self.drag_data["x"] = 0
+            self.drag_data["y"] = 0
+
+            # Reset outline color to blue
+            tagSouris = "activeArea_" + chip_id
+            self.canvas.itemconfig(tagSouris, outline="blue")
+
+            # Get current chip position (top-left corner)
+            base_tag = current_dict_circuit[chip_id]["tags"][0]
+            coords = self.canvas.coords(base_tag)
+            current_x, current_y = coords[0], coords[1]  # Top-left corner
+
+            # Find the nearest grid point based on top-left corner
+            nearest_x, nearest_y = self.find_nearest_grid(current_x, current_y)
+
+            # Calculate the difference
+            dx = nearest_x - current_x
+            dy = nearest_y - current_y
+
+            for tag in current_dict_circuit[chip_id]["tags"]:
+                self.canvas.move(tag, dx, dy)
+
+            current_dict_circuit[chip_id]["XY"] = (nearest_x, nearest_y)
+            print(f"Moved chip {chip_id} to new grid position: ({nearest_x}, {nearest_y})")
+
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates based on top-left snapping.
+
+        Parameters:
+            x (float): The current x-coordinate of the chip's top-left corner.
+            y (float): The current y-coordinate of the chip's top-left corner.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix830pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+        nearest_point = (0, 0)
+        for point in matrix.values():
+            grid_x, grid_y = point["xy"]
+            distance = math.hypot(x - grid_x, y - grid_y)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = (grid_x, grid_y)
+
+        return nearest_point
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -1234,16 +1339,16 @@ class ComponentSketcher:
 
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
-            params["tags"] = [tagBase]
+            params["tags"] = [tagBase, tagSouris] 
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD + 2 * scale,
-                xD - 2 * scale + dimLine,
-                yD - 2 * scale + dimColumn,
-                fill="#000000",
-                outline="#000000",
-                tags=tagBase,
-            )
+            xD + 2 * scale,
+            yD + 2 * scale,
+            xD - 2 * scale + dimLine,
+            yD - 2 * scale + dimColumn,
+            fill="",
+            outline="",
+            tags=tagSouris,
+    )
             if dim["internalFunc"] is not None:
                 dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
@@ -1294,13 +1399,13 @@ class ComponentSketcher:
                 tags=tagCapot,
             )  # xD + 30*scale,yD - 10*scale
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD + 2 * scale,
-                xD - 2 * scale + dimLine,
-                yD - 2 * scale + dimColumn,
-                fill="",
-                outline="",
-                tags=tagSouris,
+                xD,
+                yD,
+                xD + dimLine,
+                yD + dimColumn,
+                fill="#909090",
+                outline="#000000",
+                tags=tagBase,
             )
             self.canvas.tag_raise(tagCapot)
             self.canvas.tag_raise(tagSouris)
@@ -1314,6 +1419,15 @@ class ComponentSketcher:
             self.canvas.tag_bind(
                 tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
             )
+
+            # **Bind left-click to print chip ID and initiate drag**
+            self.canvas.tag_bind(
+                tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id)
+            )
+
+            # **Bind drag and release events specifically to the activeArea tag**
+            self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_drag)
+            self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_drag)
         else:
             X, Y = params["XY"]
             dX = xD - X
