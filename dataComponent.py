@@ -249,6 +249,7 @@ class ComponentData:
         ]  # ,1,{"direction":VERTICAL})]
         # ,(setFoncTrou,1,{"function":drawRoundHole})
         boardTest = [(self.sketcher.setXYOrigin, 1), (bandeAlim, 1, {"direction": HORIZONTAL})]
+        newObjectBoard = BreadBoard(radius=3, dimLine=17.5, dimColumn=12, sepAlim=[], sepDistribution=[(3,5.5)])
         boardTestMinimal = [(self.sketcher.setXYOrigin, 1), (railAlimPlus, 4, {"direction": VERTICAL})]
         board1260pts = [(board830pts, 2, {"direction": PERSO, "dXY": (0, 1.3)})]
         self.circuitTest = [
