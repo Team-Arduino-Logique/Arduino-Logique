@@ -7,9 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v4
 
@@ -49,4 +46,4 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          mypy $ALL_CHANGED_FILES
+          mypy $ALL_CHANGED_FILES --explicit-package-bases .
