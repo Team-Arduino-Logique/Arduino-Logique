@@ -1,0 +1,14 @@
+{
+    "name": "74HC238",
+    "package": "DIP16",
+    "functions": [
+        {
+            "func_type": "DEMUX",
+            "address_pins": [1, 2, 3],
+            "output_pins": [15, 14, 13, 12, 11, 10, 9, 7],
+            "enable_pins": [6],
+            "inv_enable_pins": [4, 5]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15566/PHILIPS/74HC238.html"
+}
