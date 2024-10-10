@@ -26,6 +26,7 @@ from dataclasses import dataclass
 import json
 from math import log2
 import os
+from typing import Callable, Dict, Any
 
 
 @dataclass
@@ -119,6 +120,194 @@ class Package:
             The Package object constructed from the JSON data.
         """
         return Package(json_data["type_name"], json_data["chip_width"], json_data["pin_count"])
+
+
+def create_and_gate(data: dict) -> AndGate:
+    """
+    Creates an AndGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the AND gate.
+    Returns:
+        AndGate: An AndGate object initialized with the provided pins.
+    """
+    return AndGate(data["input_pins"], data["output_pins"])
+
+
+def create_or_gate(data: dict) -> OrGate:
+    """
+    Creates an OrGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the OR gate.
+    Returns:
+        OrGate: An OrGate object initialized with the provided pins.
+    """
+    return OrGate(data["input_pins"], data["output_pins"])
+
+
+def create_not_gate(data: dict) -> NotGate:
+    """
+    Creates a NotGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the NOT gate.
+    Returns:
+        NotGate: A NotGate object initialized with the provided pins.
+    """
+    return NotGate(data["input_pins"], data["output_pins"])
+
+
+def create_xor_gate(data: dict) -> XorGate:
+    """
+    Creates an XorGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the XOR gate.
+    Returns:
+        XorGate: An XorGate object initialized with the provided pins.
+    """
+    return XorGate(data["input_pins"], data["output_pins"])
+
+
+def create_nand_gate(data: dict) -> NandGate:
+    """
+    Creates a NandGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the NAND gate.
+    Returns:
+        NandGate: A NandGate object initialized with the provided pins.
+    """
+    return NandGate(data["input_pins"], data["output_pins"])
+
+
+def create_nor_gate(data: dict) -> NorGate:
+    """
+    Creates a NorGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the NOR gate.
+    Returns:
+        NorGate: A NorGate object initialized with the provided pins.
+    """
+    return NorGate(data["input_pins"], data["output_pins"])
+
+
+def create_xnor_gate(data: dict) -> XnorGate:
+    """
+    Creates an XnorGate object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input and output pins for the XNOR gate.
+    Returns:
+        XnorGate: An XnorGate object initialized with the provided pins.
+    """
+    return XnorGate(data["input_pins"], data["output_pins"])
+
+
+def create_mux(data: dict) -> Mux:
+    """
+    Creates a Mux object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the input, output,
+        inverted output, select, enable, and inverted enable pins for the MUX.
+    Returns:
+        Mux: A Mux object initialized with the provided pins.
+    """
+    return Mux(
+        data["input_pins"],
+        data["output_pins"],
+        data["inv_output_pins"],
+        data["select_pins"],
+        data["enable_pins"],
+        data["inv_enable_pins"],
+    )
+
+
+def create_demux(data: dict) -> Demux:
+    """
+    Creates a Demux object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the address, output, enable, and inverted enable pins for the DEMUX.
+    Returns:
+        Demux: A Demux object initialized with the provided pins.
+    """
+    return Demux(
+        data["address_pins"],
+        data["output_pins"],
+        data["enable_pins"],
+        data["inv_enable_pins"],
+    )
+
+
+def create_d_flip_flop(data: dict) -> DFlipFlop:
+    """
+    Creates a DFlipFlop object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the clock, reset,
+        set, data, output, and inverted output pins for the D Flip Flop.
+    Returns:
+        DFlipFlop: A DFlipFlop object initialized with the provided pins.
+    """
+    return DFlipFlop(
+        data["clock_pin"],
+        data["clock_type"],
+        data["reset_pin"],
+        data["inv_reset_pin"],
+        data["set_pin"],
+        data["inv_set_pin"],
+        data["data_pin"],
+        data["output_pin"],
+        data["inv_output_pin"],
+    )
+
+
+def create_jk_flip_flop(data: dict) -> JKFlipFlop:
+    """
+    Creates a JKFlipFlop object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the clock, reset, set,
+        J input, K input, output, and inverted output pins for the JK Flip Flop.
+    Returns:
+        JKFlipFlop: A JKFlipFlop object initialized with the provided pins.
+    """
+    return JKFlipFlop(
+        data["clock_pin"],
+        data["clock_type"],
+        data["reset_pin"],
+        data["inv_reset_pin"],
+        data["set_pin"],
+        data["inv_set_pin"],
+        data["j_input_pin"],
+        data["inv_j_input_pin"],
+        data["k_input_pin"],
+        data["inv_k_input_pin"],
+        data["output_pin"],
+        data["inv_output_pin"],
+    )
+
+
+def create_binary_counter(data: dict) -> BinaryCounter:
+    """
+    Creates a BinaryCounter object from the provided data dictionary.
+    Args:
+        data (dict): A dictionary containing the clock, reset, enable,
+        load, up/down, terminal count, ripple clock, data, and output
+        pins for the binary counter.
+    Returns:
+        BinaryCounter: A BinaryCounter object initialized with the provided pins.
+    """
+    return BinaryCounter(
+        data["clock_pin"],
+        data["clock_type"],
+        data["synch_reset_pin"],
+        data["inv_synch_reset_pin"],
+        data["count_enable_parallel_pin"],
+        data["inv_count_enable_parallel_pin"],
+        data["count_enable_trickle_pin"],
+        data["inv_count_enable_trickle_pin"],
+        data["load_enable_pin"],
+        data["inv_load_enable_pin"],
+        data["up_down_input_pin"],
+        data["terminal_count_pin"],
+        data["ripple_clock_output_pin"],
+        data["data_pins"],
+        data["output_pins"],
+    )
 
 
 class ChipFunction:
@@ -545,6 +734,7 @@ class Mux(ChipFunction):
         """
         # TODO: Implement the internal function of the MUX
 
+
 class Demux(ChipFunction):
     """
     Represents an demultiplexer in a digital circuit.
@@ -606,6 +796,7 @@ class Demux(ChipFunction):
         """
         # TODO: Implement the internal function of the DEMUX
 
+
 class DFlipFlop(ChipFunction):
     """
     Represents an D flip flop in a digital circuit.
@@ -626,7 +817,7 @@ class DFlipFlop(ChipFunction):
         inv_set_pin: Pin,
         data_pin: Pin,
         output_pin: Pin,
-        inv_output_pin: Pin
+        inv_output_pin: Pin,
     ):
         """
         Initializes a D Flip Flop with the specified input and output pins.
@@ -693,6 +884,7 @@ class DFlipFlop(ChipFunction):
         """
         # TODO: Implement the internal function of the D Flip Flop
 
+
 class JKFlipFlop(ChipFunction):
     """
     Represents a JK Flip Flop in a digital circuit.
@@ -716,7 +908,7 @@ class JKFlipFlop(ChipFunction):
         k_input_pin: Pin,
         inv_k_input_pin: Pin,
         output_pin: Pin,
-        inv_output_pin: Pin
+        inv_output_pin: Pin,
     ):
         """
         Initializes a JK Flip Flop with the specified input and output pins.
@@ -802,6 +994,7 @@ class JKFlipFlop(ChipFunction):
         This method should be implemented to define the behavior of the JK Flip Flop.
         """
         # TODO: Implement the internal function of the JK Flip Flop
+
 
 class BinaryCounter(ChipFunction):
     """
@@ -905,6 +1098,7 @@ class BinaryCounter(ChipFunction):
         """
         # TODO: Implement the internal function of the binary counter
 
+
 class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
@@ -956,94 +1150,26 @@ class Chip:
             in the provided package_dict.
         """
 
+        function_creators: Dict[str, Callable[[Dict[str, Any]], ChipFunction]] = {
+            "AND": create_and_gate,
+            "OR": create_or_gate,
+            "NOT": create_not_gate,
+            "XOR": create_xor_gate,
+            "NAND": create_nand_gate,
+            "NOR": create_nor_gate,
+            "XNOR": create_xnor_gate,
+            "MUX": create_mux,
+            "DEMUX": create_demux,
+            "D_FLIP_FLOP": create_d_flip_flop,
+            "JK_FLIP_FLOP": create_jk_flip_flop,
+            "BINARY_COUNTER": create_binary_counter,
+        }
+
         functions: list[ChipFunction] = []
         for func_data in json_data["functions"]:
             func_type = func_data["func_type"]
-            if func_type == "AND":
-                functions.append(AndGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "OR":
-                functions.append(OrGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "NOT":
-                functions.append(NotGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "XOR":
-                functions.append(XorGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "NAND":
-                functions.append(NandGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "NOR":
-                functions.append(NorGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "XNOR":
-                functions.append(XnorGate(func_data["input_pins"], func_data["output_pins"]))
-            elif func_type == "MUX":
-                functions.append(
-                    Mux(
-                        func_data["input_pins"],
-                        func_data["output_pins"],
-                        func_data["inv_output_pins"],
-                        func_data["select_pins"],
-                        func_data["enable_pins"],
-                        func_data["inv_enable_pins"],
-                    )
-                )
-            elif func_type == "DEMUX":
-                functions.append(
-                    Demux(
-                        func_data["address_pins"],
-                        func_data["output_pins"],
-                        func_data["enable_pins"],
-                        func_data["inv_enable_pins"],
-                    )
-                )
-            elif func_type == "D_FLIP_FLOP":
-                functions.append(
-                    DFlipFlop(
-                        func_data["clock_pin"],
-                        func_data["clock_type"],
-                        func_data["reset_pin"],
-                        func_data["inv_reset_pin"],
-                        func_data["set_pin"],
-                        func_data["inv_set_pin"],
-                        func_data["data_pin"],
-                        func_data["output_pin"],
-                        func_data["inv_output_pin"],
-                    )
-                )
-            elif func_type == "JK_FLIP_FLOP":
-                functions.append(
-                    JKFlipFlop(
-                        func_data["clock_pin"],
-                        func_data["clock_type"],
-                        func_data["reset_pin"],
-                        func_data["inv_reset_pin"],
-                        func_data["set_pin"],
-                        func_data["inv_set_pin"],
-                        func_data["j_input_pin"],
-                        func_data["inv_j_input_pin"],
-                        func_data["k_input_pin"],
-                        func_data["inv_k_input_pin"],
-                        func_data["output_pin"],
-                        func_data["inv_output_pin"],
-                    )
-                )
-            elif func_type == "BINARY_COUNTER":
-                functions.append(
-                    BinaryCounter(
-                        func_data["clock_pin"],
-                        func_data["clock_type"],
-                        func_data["synch_reset_pin"],
-                        func_data["inv_synch_reset_pin"],
-                        func_data["count_enable_parallel_pin"],
-                        func_data["inv_count_enable_parallel_pin"],
-                        func_data["count_enable_trickle_pin"],
-                        func_data["inv_count_enable_trickle_pin"],
-                        func_data["load_enable_pin"],
-                        func_data["inv_load_enable_pin"],
-                        func_data["up_down_input_pin"],
-                        func_data["terminal_count_pin"],
-                        func_data["ripple_clock_output_pin"],
-                        func_data["data_pins"],
-                        func_data["output_pins"],
-                    )
-                )
+            if func_type in function_creators:
+                functions.append(function_creators[func_type](func_data))
             else:
                 raise ValueError(f"Unknown function type: {func_type}")
 
@@ -1114,14 +1240,16 @@ class Circuit:
                                 calling internal_chip_function.
     """
 
+    # TODO make the class
     def __init__(self, breadboard: Breadboard):
         self.breadboard = breadboard
         self.chips: list[Chip] = []
         self.wires: list[Wire] = []
 
     def add_chip(self, new_chip: Chip, top_left_connection: ConnectionPointID):
-        # TODO
-        pass
+        """
+        Adds a chip to the circuit at the specified position.
+        """
 
     def add_wire(self, start_pin: Pin, end_pin: Pin):
         """
@@ -1137,7 +1265,6 @@ class Circuit:
         Validates the pins and connections in the circuit.
         Ensures that all pins are correctly connected and that there are no conflicts.
         """
-        # TODO: Implement pin validation logic
 
     def get_logic_functions(self):
         """
@@ -1146,7 +1273,6 @@ class Circuit:
             dict: A dictionary mapping output pins to their logic functions.
         """
         logic_functions = {}
-        # TODO: Implement logic to follow connections and call internal_chip_function
         return logic_functions
 
 
