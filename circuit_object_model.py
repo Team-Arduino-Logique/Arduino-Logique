@@ -695,7 +695,7 @@ class DFlipFlop(ChipFunction):
 
 class JKFlipFlop(ChipFunction):
     """
-    Represents an JK Flip Flop in a digital circuit.
+    Represents a JK Flip Flop in a digital circuit.
     Attributes:
 
     Methods:
@@ -802,6 +802,108 @@ class JKFlipFlop(ChipFunction):
         This method should be implemented to define the behavior of the JK Flip Flop.
         """
         # TODO: Implement the internal function of the JK Flip Flop
+
+class BinaryCounter(ChipFunction):
+    """
+    Represents a binary counter in a digital circuit.
+    Attributes:
+
+    Methods:
+        __str__(): Returns a string representation of the binary counter.
+        chip_internal_function(): Placeholder for the internal function of the binary counter.
+    """
+
+    def __init__(
+        self,
+        clock_pin: Pin,
+        clock_type: str,
+        synch_reset_pin: Pin,
+        inv_synch_reset_pin: Pin,
+        count_enable_parallel_pin: Pin,
+        inv_count_enable_parallel_pin: Pin,
+        count_enable_trickle_pin: Pin,
+        inv_count_enable_trickle_pin: Pin,
+        load_enable_pin: Pin,
+        inv_load_enable_pin: Pin,
+        up_down_input_pin: Pin,
+        terminal_count_pin: Pin,
+        ripple_clock_output_pin: Pin,
+        data_pins: list[Pin],
+        output_pins: list[Pin],
+    ):
+        """
+        Initializes a binary counter with the specified input and output pins.
+        Args:
+            clock_pin (Pin): The clock pin.
+            clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
+            synch_reset_pin (Pin): The synchronous reset pin.
+            inv_synch_reset_pin (Pin): The inverted synchronous reset pin (Active LOW).
+            count_enable_parallel_pin (Pin): The count enable pin.
+            inv_count_enable_parallel_pin (Pin): The inverted count enable pin (Active LOW).
+            count_enable_trickle_pin (Pin): The count enable trickle pin.
+            inv_count_enable_trickle_pin (Pin): The inverted count enable trickle pin (Active LOW).
+            load_enable_pin (Pin): The load enable pin.
+            inv_load_enable_pin (Pin): The inverted load enable pin (Active LOW).
+            up_down_input_pin (Pin): The up/down input pin.
+            terminal_count_pin (Pin): The terminal count pin.
+            ripple_clock_output_pin (Pin): The ripple clock output pin.
+            data_pins (list[Pin]): A tuple containing the data pins.
+            output_pins (list[Pin]): A tuple containing the output pins.
+        Raises:
+            ValueError: If the clock type is not RISING_EDGE or FALLING_EDGE.
+            ValueError: If the number of data pins is not equal to the number of output pins.
+        """
+        self.clock_pin = clock_pin
+        self.clock_type = clock_type
+        self.synch_reset_pin = synch_reset_pin
+        self.inv_synch_reset_pin = inv_synch_reset_pin
+        self.count_enable_parallel_pin = count_enable_parallel_pin
+        self.inv_count_enable_parallel_pin = inv_count_enable_parallel_pin
+        self.count_enable_trickle_pin = count_enable_trickle_pin
+        self.inv_count_enable_trickle_pin = inv_count_enable_trickle_pin
+        self.load_enable_pin = load_enable_pin
+        self.inv_load_enable_pin = inv_load_enable_pin
+        self.up_down_input_pin = up_down_input_pin
+        self.terminal_count_pin = terminal_count_pin
+        self.ripple_clock_output_pin = ripple_clock_output_pin
+        self.data_pins = data_pins
+        self.output_pins = output_pins
+
+        if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
+            raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
+        if len(self.data_pins) != len(self.output_pins):
+            raise ValueError("Number of data pins must be equal to number of output pins.")
+
+    def __str__(self):
+        """
+        Returns a string representation of the binary counter.
+        Returns:
+            str: A string describing the binary counter with its input and output pins.
+        """
+        return (
+            f"Binary Counter:\n\t\tClock Pin: {self.clock_pin},"
+            f"\n\t\tClock Type: {self.clock_type},"
+            f"\n\t\tSynchronous Reset Pin: {self.synch_reset_pin},"
+            f"\n\t\tInverted Synchronous Reset Pin: {self.inv_synch_reset_pin},"
+            f"\n\t\tCount Enable Parallel Pin: {self.count_enable_parallel_pin},"
+            f"\n\t\tInverted Count Enable Parallel Pin: {self.inv_count_enable_parallel_pin},"
+            f"\n\t\tCount Enable Trickle Pin: {self.count_enable_trickle_pin},"
+            f"\n\t\tInverted Count Enable Trickle Pin: {self.inv_count_enable_trickle_pin},"
+            f"\n\t\tLoad Enable Pin: {self.load_enable_pin},"
+            f"\n\t\tInverted Load Enable Pin: {self.inv_load_enable_pin},"
+            f"\n\t\tUp/Down Input Pin: {self.up_down_input_pin},"
+            f"\n\t\tTerminal Count Pin: {self.terminal_count_pin},"
+            f"\n\t\tRipple Clock Output Pin: {self.ripple_clock_output_pin},"
+            f"\n\t\tData Pins: {self.data_pins},"
+            f"\n\t\tOutput Pins: {self.output_pins}"
+        )
+
+    def chip_internal_function(self):
+        """
+        Placeholder for the internal function of the binary counter.
+        This method should be implemented to define the behavior of the binary counter.
+        """
+        # TODO: Implement the internal function of the binary counter
 
 class Chip:
     """
@@ -922,6 +1024,26 @@ class Chip:
                         func_data["inv_output_pin"],
                     )
                 )
+            elif func_type == "BINARY_COUNTER":
+                functions.append(
+                    BinaryCounter(
+                        func_data["clock_pin"],
+                        func_data["clock_type"],
+                        func_data["synch_reset_pin"],
+                        func_data["inv_synch_reset_pin"],
+                        func_data["count_enable_parallel_pin"],
+                        func_data["inv_count_enable_parallel_pin"],
+                        func_data["count_enable_trickle_pin"],
+                        func_data["inv_count_enable_trickle_pin"],
+                        func_data["load_enable_pin"],
+                        func_data["inv_load_enable_pin"],
+                        func_data["up_down_input_pin"],
+                        func_data["terminal_count_pin"],
+                        func_data["ripple_clock_output_pin"],
+                        func_data["data_pins"],
+                        func_data["output_pins"],
+                    )
+                )
             else:
                 raise ValueError(f"Unknown function type: {func_type}")
 
@@ -1029,14 +1151,18 @@ class Circuit:
 
 
 if __name__ == "__main__":
+    file_errors = []
     packages = {}
     PACKAGES_DIR = "./Components/Packages"
     for filename in os.listdir(PACKAGES_DIR):
         if filename.endswith(".json"):
             with open(os.path.join(PACKAGES_DIR, filename), "r", encoding="utf-8") as file:
                 pkg_data = json.load(file)
-                package = Package.from_json(pkg_data)
-                packages[package.type_name] = package
+                try:
+                    package = Package.from_json(pkg_data)
+                    packages[package.type_name] = package
+                except ValueError as e:
+                    file_errors.append(f"Error loading package from {filename}: {e}")
 
     chips = {}
     CHIPS_DIR = "./Components/Chips"
@@ -1049,7 +1175,7 @@ if __name__ == "__main__":
                         chip = Chip.from_json(chip_data, packages)
                         chips[chip.name] = chip
                     except ValueError as e:
-                        print(f"Error loading chip from {filename}: {e}")
+                        file_errors.append(f"Error loading chip from {filename}: {e}")
 
     print("-------------------LOADED PACKAGES-------------------")
     for package in packages.values():
@@ -1058,3 +1184,8 @@ if __name__ == "__main__":
     print("--------------------LOADED CHIPS:--------------------")
     for chip in chips.values():
         print(chip)
+
+    if file_errors:
+        print("--------------------ERRORS---------------------")
+        for error in file_errors:
+            print(error)
