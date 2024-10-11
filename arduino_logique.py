@@ -21,11 +21,12 @@ from topbar2 import TopBar2
 
 def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list) -> None:
     """
-    Adjusts the zoom level of the given canvas by scaling the board and redrawing it.
+    Adjusts the zoom level of the given canvas by scaling the board and updating the scale factor.
 
     Parameters:
     - p_canvas (tk.Canvas): The canvas on which the board is drawn.
     - p_scale (float): The scale factor to apply to the board.
+    - p_board (Breadboard): The existing Breadboard instance.
     - p_board_x (int): The x-coordinate of the board's position.
     - p_board_y (int): The y-coordinate of the board's position.
     - p_model (list): The model data for the circuit.
@@ -33,10 +34,19 @@ def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: in
     Returns:
     - None
     """
-    p_canvas.delete("all")
-    p_board = Breadboard(p_canvas)
-    p_board.fill_matrix_1260_pts()
-    p_board.circuit(p_board_x, p_board_y, scale=int(p_scale) / 10.0, model=p_model)
+    # Calculate the scaling factor
+    new_scale_factor = p_scale / 10.0
+    scale_ratio = new_scale_factor / p_board.sketcher.scale_factor
+
+    # Update the scale factor in the existing ComponentSketcher instance
+    p_board.sketcher.scale_factor = new_scale_factor
+
+    # Scale all items on the canvas
+    p_canvas.scale("all", 0, 0, scale_ratio, scale_ratio)
+
+    # Optionally, you may need to adjust the canvas scroll region or other properties
+    p_canvas.configure(scrollregion=p_canvas.bbox("all"))
+
 
 def main():
     # Creating main window
@@ -82,11 +92,22 @@ def main():
     board = Breadboard(canvas)
     board.fill_matrix_1260_pts()
 
-    component_data = ComponentData(ComponentSketcher(canvas))
-    model = component_data.circuitTest
-    zoom(canvas, 10.0, board, 50, 10, model)
+    # Create a single instance of ComponentSketcher
+    sketcher = ComponentSketcher(canvas)
+    board.sketcher = sketcher  # Use the same sketcher instance in the board
 
-    # Assignin the references to menus
+    # Initialize component data with the same sketcher
+    component_data = ComponentData(sketcher)
+    model = component_data.circuitTest
+
+    # Set initial scale factor
+    initial_scale = 10.0 / 10.0
+    sketcher.scale_factor = initial_scale
+
+    # Draw the circuit
+    board.circuit(50, 10, scale=initial_scale, model=model)
+
+    # Assigning the references to menus
     menus.canvas = canvas
     menus.board = board
     menus.component_data = component_data
@@ -108,7 +129,7 @@ def main():
         highlightbackground="#333333",
         sliderrelief="flat",
         bd=0,
-        highlightthickness=0
+        highlightthickness=0    
     )
     h_slider.set(10)  # Setting initial slider value
     h_slider.grid(row=3, column=0, columnspan=2, sticky="ew", padx=0, pady=0)

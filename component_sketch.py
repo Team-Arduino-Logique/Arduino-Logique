@@ -24,6 +24,7 @@ class ComponentSketcher:
     def __init__(self, canvas):
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
+        self.scale_factor = 1.0
 
         self.drag_data = {
             "chip_id": None,
@@ -32,100 +33,117 @@ class ComponentSketcher:
         }
 
     def on_chip_click(self, event, chip_id):
-        """
-        Event handler for chip clicks.
-        Prints the ID of the clicked chip and initiates drag.
-        """
         print(f"Chip clicked: {chip_id}")
-        # Initiate drag by setting drag_data
         self.drag_data["chip_id"] = chip_id
-        self.drag_data["x"] = event.x
-        self.drag_data["y"] = event.y
 
-        # Change outline to indicate selection
-        tagSouris = "activeArea_" + chip_id
+        # Convert event coordinates to canvas coordinates
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+        # Adjust for scaling
+        adjusted_x = canvas_x / self.scale_factor
+        adjusted_y = canvas_y / self.scale_factor
+
+        self.drag_data["x"] = adjusted_x
+        self.drag_data["y"] = adjusted_y
+
+        tagSouris = "activeArea" + chip_id
         self.canvas.itemconfig(tagSouris, outline="red")
         self.canvas.tag_raise(tagSouris)
         print(f"Chip {chip_id} outline changed to red")
 
     def on_drag(self, event):
-        """
-        Event handler for dragging the chip.
-        Moves the chip based on mouse movement.
-        """
         chip_id = self.drag_data["chip_id"]
         if chip_id:
-            # Calculate the distance moved by the mouse
-            dx = event.x - self.drag_data["x"]
-            dy = event.y - self.drag_data["y"]
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+
+            # Adjust for scaling
+            adjusted_x = canvas_x / self.scale_factor
+            adjusted_y = canvas_y / self.scale_factor
+
+            # Calculate movement delta
+            dx = adjusted_x - self.drag_data["x"]
+            dy = adjusted_y - self.drag_data["y"]
+
+            # Apply scaling factor to movement delta
+            scaled_dx = dx * self.scale_factor
+            scaled_dy = dy * self.scale_factor
 
             # Move all items associated with the chip
             for tag in current_dict_circuit[chip_id]["tags"]:
-                self.canvas.move(tag, dx, dy)
+                self.canvas.move(tag, scaled_dx, scaled_dy)
 
-            # Update the drag_data with the new mouse position
-            self.drag_data["x"] = event.x
-            self.drag_data["y"] = event.y
+            # Update drag_data
+            self.drag_data["x"] = adjusted_x
+            self.drag_data["y"] = adjusted_y
 
-            print(f"Dragging chip {chip_id}: moved by ({dx}, {dy})")
+            # Update chip's position
+            tags = current_dict_circuit[chip_id]["tags"]
+            bbox = self.canvas.bbox(*tags)
+            if bbox:
+                new_x = bbox[0] / self.scale_factor
+                new_y = bbox[1] / self.scale_factor
+                current_dict_circuit[chip_id]["XY"] = (new_x, new_y)
+            else:
+                print(f"No bounding box found for chip {chip_id}")
 
     def on_stop_drag(self, event):
-        """
-        Event handler for ending the drag.
-        Snaps the chip's top-left corner to the nearest grid point and updates position.
-        """
         chip_id = self.drag_data["chip_id"]
         if chip_id:
-            # Reset drag_data
             self.drag_data["chip_id"] = None
             self.drag_data["x"] = 0
             self.drag_data["y"] = 0
 
-            # Reset outline color to blue
-            tagSouris = "activeArea_" + chip_id
-            self.canvas.itemconfig(tagSouris, outline="blue")
+            tagSouris = "activeArea" + chip_id
+            self.canvas.itemconfig(tagSouris, outline="")
 
-            # Get current chip position (top-left corner)
-            base_tag = current_dict_circuit[chip_id]["tags"][0]
-            coords = self.canvas.coords(base_tag)
-            current_x, current_y = coords[0], coords[1]  # Top-left corner
+            # Get bounding box of the chip
+            tags = current_dict_circuit[chip_id]["tags"]
+            bbox = self.canvas.bbox(*tags)
+            if bbox:
+                current_x = bbox[0] / self.scale_factor
+                current_y = bbox[1] / self.scale_factor
+            else:
+                print(f"No bounding box found for chip {chip_id}")
+                return
 
-            # Find the nearest grid point based on top-left corner
+            # Find the nearest grid point
             nearest_x, nearest_y = self.find_nearest_grid(current_x, current_y)
 
             # Calculate the difference
             dx = nearest_x - current_x
             dy = nearest_y - current_y
 
-            for tag in current_dict_circuit[chip_id]["tags"]:
-                self.canvas.move(tag, dx, dy)
+            # Apply scaling factor to movement delta
+            scaled_dx = dx * self.scale_factor
+            scaled_dy = dy * self.scale_factor
 
+            # Move all items to snap to the grid
+            for tag in current_dict_circuit[chip_id]["tags"]:
+                self.canvas.move(tag, scaled_dx, scaled_dy)
+
+            # Update chip's position
             current_dict_circuit[chip_id]["XY"] = (nearest_x, nearest_y)
             print(f"Moved chip {chip_id} to new grid position: ({nearest_x}, {nearest_y})")
+            print("scaling factor: ", self.scale_factor)
 
     def find_nearest_grid(self, x, y, matrix=None):
-        """
-        Find the nearest grid point to the given x, y coordinates based on top-left snapping.
-
-        Parameters:
-            x (float): The current x-coordinate of the chip's top-left corner.
-            y (float): The current y-coordinate of the chip's top-left corner.
-            matrix (dict, optional): The grid matrix to use. Defaults to matrix830pts.
-
-        Returns:
-            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
-        """
         if matrix is None:
             matrix = matrix1260pts
 
         min_distance = float('inf')
         nearest_point = (0, 0)
-        for point in matrix.values():
-            grid_x, grid_y = point["xy"]
-            distance = math.hypot(x - grid_x, y - grid_y)
-            if distance < min_distance:
-                min_distance = distance
-                nearest_point = (grid_x, grid_y)
+        for id_in_matrix, point in matrix.items():
+            column_str, line_str = id_in_matrix.split(',')
+            line_num = int(line_str)
+            if line_num == 6 or line_num == 21:
+                grid_x, grid_y = point["xy"]
+                distance = math.hypot(x - grid_x, y - grid_y)
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_point = (grid_x, grid_y)
 
         return nearest_point
 
@@ -1287,6 +1305,16 @@ class ComponentSketcher:
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
         dimColumn = dim["chipWidth"] * inter_space
 
+        # Calculate the number of pins per side
+        nbBrocheParCote = dim["pinCount"] // 2
+
+        # Initialize tag names
+        tagBase = "base" + id if id else "base" + str(num_id)
+        tagMenu = "menu" + id if id else "menu" + str(num_id)
+        tagCapot = "chipCover" + id if id else "chipCover" + str(num_id)
+        tagSouris = "activeArea" + id if id else "activeArea" + str(num_id)
+
+        # Initialize params dictionary
         params = {}
         if id:
             if current_dict_circuit.get(id):
@@ -1298,89 +1326,119 @@ class ComponentSketcher:
             num_id += 1
 
         if not tags:
-            params["id"] = id
-            params["XY"] = (xD, yD)
-
-            dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
-            dimColumn = dim["chipWidth"] * inter_space
+            # Set the label and type for the chip
             label = dim["label"] + "-" + str(id_type[type])
-            params["label"] = label
+            params["id"] = id
             params["type"] = type
-            params["btnMenu"] = [1, 1, 0]
-            nbBrocheParCote = dim["pinCount"] // 2
-            tagBase = "base" + id
-            tagMenu = "menu" + id
-            tagCapot = "chipCover" + id
-            tagSouris = "activeArea" + id
+
+            # **Initialize btnMenu in params**
+            params["btnMenu"] = [1, 1, 0]  # Added this line
+
+            # Calculate the offset due to pin extension
+            # Since pins are drawn relative to xD and yD, and may extend above or below the chip body,
+            # we need to adjust yD to ensure the top-left corner corresponds to the chip body
+
+            # Determine the pin extension above the chip body
+            # In this drawing, pins extend upwards from the chip body, so we need to find the maximum negative offset
+            pin_extension = 0  # Initialize pin extension
+
+            # Calculate the maximum negative offset from the pins
+            min_pin_y = yD  # Initialize to yD
+            for i in range(dim["pinCount"]):
+                # Calculate the y-coordinate of each pin
+                pin_y = yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0))
+                if pin_y < min_pin_y:
+                    min_pin_y = pin_y
+
+            # The difference between min_pin_y and yD is the pin extension above the chip body
+            pin_extension = yD - min_pin_y
+
+            # Adjust yD to account for the pin extension
+            adjusted_yD = yD + pin_extension
+
+            # Store the adjusted position as the top-left corner of the chip body
+            params["XY"] = (xD, adjusted_yD)
+
+            # Initialize tags list
+            params["tags"] = [tagBase, tagSouris]
+
+            # Draw the pins using adjusted_yD
             for i in range(dim["pinCount"]):
                 self.canvas.create_rectangle(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
+                    adjusted_yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
                     xD + 11 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (3 * scale - (i // nbBrocheParCote) * (dimColumn + 6 * scale)),
+                    adjusted_yD - (3 * scale - (i // nbBrocheParCote) * (dimColumn + 6 * scale)),
                     fill="#909090",
                     outline="#000000",
                     tags=tagBase,
                 )
                 self.canvas.create_polygon(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
+                    adjusted_yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
                     xD + space // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
+                    adjusted_yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
                     xD + (2 * space) // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
+                    adjusted_yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
                     xD + (11 + (i % nbBrocheParCote) * 15) * scale,
-                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
+                    adjusted_yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
                     fill="#b0b0b0",
                     outline="#000000",
                     smooth=False,
                     tags=tagBase,
                 )
 
-            self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
-
-            params["tags"] = [tagBase, tagSouris] 
-            self.canvas.create_rectangle(
-            xD + 2 * scale,
-            yD + 2 * scale,
-            xD - 2 * scale + dimLine,
-            yD - 2 * scale + dimColumn,
-            fill="",
-            outline="",
-            tags=tagSouris,
-    )
-            if dim["internalFunc"] is not None:
-                dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
-
+            # Draw the chip body at (xD, adjusted_yD)
             self.rounded_rect(
-                xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
+                xD, adjusted_yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase
+            )
+
+            # Create the active area for interaction
+            self.canvas.create_rectangle(
+                xD + 2 * scale,
+                adjusted_yD + 2 * scale,
+                xD - 2 * scale + dimLine,
+                adjusted_yD - 2 * scale + dimColumn,
+                fill="",
+                outline="",
+                tags=tagSouris,
+            )
+            self.canvas.addtag_withtag("componentActiveArea", tagSouris)
+
+            # Draw internal function if provided
+            if dim["internalFunc"] is not None:
+                dim["internalFunc"](xD, adjusted_yD, scale=scale, tags=tagBase, **kwargs)
+
+            # Draw the chip cover (capot)
+            self.rounded_rect(
+                xD, adjusted_yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
             )
             self.canvas.create_line(
-                xD, yD + 1 * space // 3, xD + dimLine, yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
+                xD, adjusted_yD + 1 * space // 3, xD + dimLine, adjusted_yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
             )
             self.canvas.create_line(
                 xD,
-                yD + dimColumn - 1 * space // 3,
+                adjusted_yD + dimColumn - 1 * space // 3,
                 xD + dimLine,
-                yD + dimColumn - 1 * space // 3,
+                adjusted_yD + dimColumn - 1 * space // 3,
                 fill="#b0b0b0",
                 width=thickness,
                 tags=tagCapot,
             )
             self.canvas.create_oval(
                 xD + 4 * scale,
-                yD + dimColumn - 1 * space // 3 - 6 * scale,
+                adjusted_yD + dimColumn - 1 * space // 3 - 6 * scale,
                 xD + 8 * scale,
-                yD + dimColumn - 1 * space // 3 - 2 * scale,
+                adjusted_yD + dimColumn - 1 * space // 3 - 2 * scale,
                 fill="#ffffff",
                 outline="#ffffff",
                 tags=tagCapot,
             )
             self.canvas.create_arc(
                 xD - 5 * scale,
-                yD + dimColumn // 2 - 5 * scale,
+                adjusted_yD + dimColumn // 2 - 5 * scale,
                 xD + 5 * scale,
-                yD + dimColumn // 2 + 5 * scale,
+                adjusted_yD + dimColumn // 2 + 5 * scale,
                 start=270,
                 extent=180,
                 fill="#000000",
@@ -1388,54 +1446,57 @@ class ComponentSketcher:
                 style=tk.PIESLICE,
                 tags=tagCapot,
             )
+
+            # Draw the chip label at the center
             self.drawChar(
                 xD + dimLine // 2,
-                yD + dimColumn // 2,
+                adjusted_yD + dimColumn // 2,
                 scale=scale,
                 angle=0,
                 text=label,
                 color="#ffffff",
                 anchor="center",
                 tags=tagCapot,
-            )  # xD + 30*scale,yD - 10*scale
-            self.canvas.create_rectangle(
-                xD,
-                yD,
-                xD + dimLine,
-                yD + dimColumn,
-                fill="#909090",
-                outline="#000000",
-                tags=tagBase,
             )
+
+            # Add the chip cover tag if it's not open
+            if not open:
+                params["tags"].append(tagCapot)
+            else:
+                self.canvas.itemconfig(tagCapot, state="hidden")
+
+            # Raise the necessary tags
             self.canvas.tag_raise(tagCapot)
             self.canvas.tag_raise(tagSouris)
-            self.canvas.addtag_withtag("componentActiveArea", tagSouris)
-            if open:
-                self.canvas.itemconfig(tagCapot, state="hidden")
-            else:
-                params["tags"].append(tagCapot)
+
+            # Store the parameters in the circuit dictionary
             current_dict_circuit[id] = params
-            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
+
+            # **Call drawMenu after initializing btnMenu**
+            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, adjusted_yD - space, thickness, label, tagMenu, id)
             self.canvas.tag_bind(
                 tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
             )
 
-            # **Bind left-click to print chip ID and initiate drag**
-            self.canvas.tag_bind(
-                tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id)
-            )
+            # Bind left-click to initiate drag
+            self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
 
-            # **Bind drag and release events specifically to the activeArea tag**
+            # Bind drag and release events to the activeArea tag
             self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_drag)
             self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_drag)
+
         else:
+            # If the chip already exists, move it to the new position
             X, Y = params["XY"]
             dX = xD - X
             dY = yD - Y
             for tg in tags:
                 self.canvas.move(tg, dX, dY)
 
+        # Return the new xD, yD positions
         return xD + dimLine + 2.3 * scale, yD
+
+
 
 
     def getXY(self, column, line, scale=1, **kwargs):
