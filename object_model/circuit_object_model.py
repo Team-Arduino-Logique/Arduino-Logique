@@ -26,7 +26,9 @@ import json
 import os
 from typing import Callable, Dict, Any
 
-from object_model.chip_functions import (
+from breadboard import Breadboard
+
+from .chip_functions import (
     ChipFunction,
     create_and_gate,
     create_binary_counter,
@@ -41,7 +43,7 @@ from object_model.chip_functions import (
     create_xnor_gate,
     create_xor_gate,
 )
-from object_model.circuit_util_elements import ConnectionPointID, Pin
+from .circuit_util_elements import ConnectionPoint, ConnectionPointID, Pin
 
 
 class Package:
@@ -126,6 +128,7 @@ class Chip:
         # TODO get number of pins from package and assign to functions
         self.functions: list[ChipFunction] = functions
 
+
     @staticmethod
     def from_json(json_data: dict, package_dict: dict[str, Package] | None = None):
         """
@@ -204,24 +207,8 @@ class Wire:
         end_pin: The ending pin of the wire.
     """
 
-    start_pin: Pin
-    end_pin: Pin
-
-
-class Breadboard:
-    """
-    A class to represent a breadboard used in electronic circuits.
-
-    It stores the info on the size of the board, the pin groupings, the power rails
-    Attributes:
-    -----------
-        TODO
-    Methods:
-    --------
-        TODO
-    """
-
-    # TODO: implement breadboard class
+    start: ConnectionPointID
+    end: ConnectionPointID
 
 
 class Circuit:
@@ -250,14 +237,16 @@ class Circuit:
         Adds a chip to the circuit at the specified position.
         """
 
-    def add_wire(self, start_pin: Pin, end_pin: Pin):
+
+    def add_wire(self, start: ConnectionPointID, end: ConnectionPointID):
         """
         Adds a wire to the circuit connecting the specified pins.
         Args:
             start_pin (Pin): The starting pin of the wire.
             end_pin (Pin): The ending pin of the wire.
         """
-        self.wires.append(Wire(start_pin, end_pin))
+
+
 
     def validate_pins(self):
         """
@@ -314,3 +303,6 @@ if __name__ == "__main__":
         print("--------------------ERRORS---------------------")
         for error in file_errors:
             print(error)
+
+    # Example usage of the Circuit class
+

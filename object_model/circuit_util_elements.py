@@ -47,4 +47,4 @@ class Pin:
     """
 
     pin_num: int
-    connection_point: ConnectionPoint
+    connection_point: ConnectionPoint | None

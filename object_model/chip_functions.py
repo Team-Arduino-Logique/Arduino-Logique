@@ -40,7 +40,7 @@ Classes:
 
 from __future__ import annotations
 from math import log2
-from object_model.circuit_util_elements import Pin
+from .circuit_util_elements import Pin
 
 
 def create_and_gate(data: dict) -> AndGate:
