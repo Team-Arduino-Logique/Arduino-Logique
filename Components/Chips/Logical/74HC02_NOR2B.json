@@ -1,0 +1,27 @@
+{
+    "name": "74HC02",
+    "package": "DIP14",
+    "functions": [
+        {
+            "func_type": "NOR",
+            "input_pins": [2, 3],
+            "output_pins": [1]
+        },
+        {
+            "func_type": "NOR",
+            "input_pins": [5, 6],
+            "output_pins": [4]
+        },
+        {
+            "func_type": "NOR",
+            "input_pins": [8, 9],
+            "output_pins": [10]
+        },
+        {
+            "func_type": "NOR",
+            "input_pins": [11, 12],
+            "output_pins": [13]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15521/PHILIPS/74HC02.html"
+}

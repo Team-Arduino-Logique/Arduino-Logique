@@ -1,0 +1,16 @@
+{
+    "name": "74HC151",
+    "package": "DIP16",
+    "functions": [
+        {
+            "func_type": "MUX",
+            "input_pins": [4, 3, 2, 1, 15, 14, 13, 12],
+            "output_pins": [5],
+            "inv_output_pins": [6],
+            "select_pins": [11, 10, 9],
+            "enable_pins": [],
+            "inv_enable_pins": [7]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15539/PHILIPS/74HC151.html"
+}

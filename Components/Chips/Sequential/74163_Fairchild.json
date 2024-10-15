@@ -1,0 +1,25 @@
+{
+    "name": "74163",
+    "package": "DIP16",
+    "functions": [
+        {
+            "func_type": "BINARY_COUNTER",
+            "clock_pin": 2,
+            "clock_type": "RISING_EDGE",
+            "synch_reset_pin": null,
+            "inv_synch_reset_pin": 1,
+            "count_enable_parallel_pin": 7,
+            "inv_count_enable_parallel_pin": null,
+            "count_enable_trickle_pin": 10,
+            "inv_count_enable_trickle_pin": null,
+            "load_enable_pin": null,
+            "inv_load_enable_pin": 9,
+            "up_down_input_pin": null,
+            "terminal_count_pin": 15,
+            "ripple_clock_output_pin": null,
+            "data_pins": [3, 4, 5, 6],
+            "output_pins": [14, 13, 12, 11]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/pdf/27438/TI/74163.html"
+}

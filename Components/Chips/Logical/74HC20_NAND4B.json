@@ -1,0 +1,18 @@
+{
+    "name": "74HC20",
+    "package": "DIP14",
+    "functions": [
+        {
+            "func_type": "NAND",
+            "input_pins": [1, 2, 4, 5],
+            "output_pins": [6]
+        },
+        {
+            "func_type": "NAND",
+            "input_pins": [9, 10, 12, 13],
+            "output_pins": [8]
+        }
+
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15562/PHILIPS/74HC20.html"
+}
