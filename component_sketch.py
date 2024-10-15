@@ -112,7 +112,7 @@ class CirEl:
         for component in self.componentsList:
             component.draw()
 
-class BoardEl(cirEl):
+class BoardEl(CirEl):
     def __init__(self, canvas, xD=-1, yD=-1, scale=1, width=-1, direction = HORIZONTAL, componenstList=[], **kwargs):
         super().__init__(canvas, xD, yD, scale, width, direction, componenstList)
         if self.width != -1:
@@ -120,16 +120,16 @@ class BoardEl(cirEl):
         self.inter_space = 15 * self.scale
         self.thickness = 1 * self.scale
 
-        dim = BOARD_830_PTS_PARAMS
+        self.dim = BOARD_830_PTS_PARAMS
         self.color = "#F5F5DC"
-        self.sepAlim = dim["sepAlim"]
-        self.sepDist = dim["sepDistribution"]
+        self.sepAlim = self.dim["sepAlim"]
+        self.sepDist = self.dim["sepDistribution"]
         self.radius = 20
         for key, value in kwargs.items():
             if key == "dimLine":
-                dim["dimLine"] = value
+                self.dim["dimLine"] = value
             if key == "dimColumn":
-                dim["dimColumn"] = value
+                self.dim["dimColumn"] = value
             if key == "color":
                 self.color = value
             if key == "sepAlim":
@@ -140,13 +140,13 @@ class BoardEl(cirEl):
                 self.radius = value
 
         self.thickness = 1 * self.scale
-        self.dimLine = dim["dimLine"] * self.inter_space
-        self.dimColumn = dim["dimColumn"] * self.inter_space
+        self.dimLine = self.dim["dimLine"] * self.inter_space
+        self.dimColumn = self.dim["dimColumn"] * self.inter_space
         # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
 
     def draw(self, **kwargs):
-        drawBoard()
+        self.drawBoard()
         super().draw()
 
     def drawBoard(self,  **kwargs):
@@ -179,15 +179,15 @@ class BoardEl(cirEl):
         # dimColumn = dim["dimColumn"] * inter_space
         # # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
-        GraphicsPrimitives.draw_rounded_rect(self.canvas,self.xD, self.yD, dimLine, dimColumn, self.radius , outline=self.color , fill=self.color , thickness=thickness)
+        GraphicsPrimitives.draw_rounded_rect(self.canvas,self.xD, self.yD, self.dimLine, self.dimColumn, self.radius , outline=self.color , fill=self.color , thickness=self.thickness)
         for sepA in self.sepAlim :
             self.canvas.create_line(
-                self.xD + inter_space * sepA[0],
-                self.yD + inter_space * sepA[1],
-                self.xD - inter_space * sepA[0] + dimLine,
-                self.yD + inter_space * sepA[1],
+                self.xD + self.inter_space * sepA[0],
+                self.yD + self.inter_space * sepA[1],
+                self.xD - self.inter_space * sepA[0] + self.dimLine,
+                self.yD + self.inter_space * sepA[1],
                 fill="#707070",
-                self.width=thickness,
+                width=self.thickness,
             )
         darknessFactor = 0.9
         r = int(self.color [1:3], 16) * (darknessFactor + 0.06)
@@ -227,77 +227,77 @@ class BoardEl(cirEl):
         c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
         for sepD in self.sepDist :
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1],
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1],
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1],
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1],
                 fill=c[1],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.thickness,
                 fill=c[2],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + 2 * thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + 2 * thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + 2 * self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + 2 * self.thickness,
                 fill=c[3],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + 3 * thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + 3 * thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + 3 * self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + 3 * self.thickness,
                 fill=c[4],
-                self.width=thickness,
+                width=self.thickness,
             )
             for dy in range(4, 11):
                 self.canvas.create_line(
-                    self.xD + inter_space * sepD[0],
-                    self.yD + inter_space * sepD[1] + dy * thickness,
-                    self.xD + dimLine - inter_space * sepD[0],
-                    self.yD + inter_space * sepD[1] + dy * thickness,
+                    self.xD + self.inter_space * sepD[0],
+                    self.yD + self.inter_space * sepD[1] + dy * self.thickness,
+                    self.xD + self.dimLine - self.inter_space * sepD[0],
+                    self.yD + self.inter_space * sepD[1] + dy * self.thickness,
                     fill=c[0],
-                    self.width=thickness,
+                    width=self.thickness,
                 )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 4 * thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 4 * thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 4 * self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 4 * self.thickness,
                 fill=c[1],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 3 * thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 3 * thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 3 * self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 3 * self.thickness,
                 fill=c[2],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 2 * thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - 2 * thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 2 * self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - 2 * self.thickness,
                 fill=c[3],
-                self.width=thickness,
+                width=self.thickness,
             )
             self.canvas.create_line(
-                self.xD + inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - thickness,
-                self.xD + dimLine - inter_space * sepD[0],
-                self.yD + inter_space * sepD[1] + inter_space - thickness,
+                self.xD + self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - self.thickness,
+                self.xD + self.dimLine - self.inter_space * sepD[0],
+                self.yD + self.inter_space * sepD[1] + self.inter_space - self.thickness,
                 fill=c[4],
-                self.width=thickness,
+                width=self.thickness,
             )
         # self.canvas.create_line(self.xD , self.yD+inter_space*11+inter_space//3, self.xD + dimLine, self.yD + inter_space*11+inter_space//3, fill="#c0c0c0", self.width=(3*inter_space)//5)
         # if self.direction  == HORIZONTAL:
