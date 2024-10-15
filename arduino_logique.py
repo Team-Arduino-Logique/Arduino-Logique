@@ -47,7 +47,7 @@ if __name__ == "__main__":
     board = Breadboard(canvas)
     board.fill_matrix_1260_pts()
 
-    component_data = ComponentData(ComponentSketcher(canvas))
+    component_data = ComponentData(ComponentSketcher(canvas, board.current_dict_circuit))
     model = component_data.circuitTest
     zoom(canvas, 10.0, board, 50, 10, model)
 

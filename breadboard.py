@@ -91,7 +91,7 @@ class Breadboard:
         self.canvas.config(cursor="")
 
         canvas.bind("<Motion>", self.follow_mouse)
-        self.sketcher = ComponentSketcher(canvas)
+        self.sketcher = ComponentSketcher(canvas, self.current_dict_circuit)
 
     def follow_mouse(self, event):
         """

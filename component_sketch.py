@@ -10,7 +10,6 @@ from dataCDLT import (
     LEFT,
     NO,
     id_origins,
-    current_dict_circuit,
     id_type,
     num_id,
     matrix830pts,
@@ -20,9 +19,10 @@ from dataCDLT import (
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
 class ComponentSketcher:
-    def __init__(self, canvas):
+    def __init__(self, canvas, circuit_dict):
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
+        self.current_dict_circuit = circuit_dict
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -949,7 +949,7 @@ class ComponentSketcher:
 
 
     def onSwitch(self, event, tag, id, numBtn):
-        params = current_dict_circuit.get(id)
+        params = self.current_dict_circuit.get(id)
         if params:
             btn = params["btnMenu"][numBtn - 1]
             if btn > 0:
@@ -1027,7 +1027,7 @@ class ComponentSketcher:
         fillMenu = "#48484c"
         outMenu = "#909098"
         colorCross = "#e0e0e0"
-        params = current_dict_circuit.get(id)
+        params = self.current_dict_circuit.get(id)
         if params:
             [btn1, btn2, btn3] = params["btnMenu"]
             if btn1 == 0:
@@ -1184,8 +1184,8 @@ class ComponentSketcher:
 
         params = {}
         if id:
-            if current_dict_circuit.get(id):
-                params = current_dict_circuit[id]
+            if self.current_dict_circuit.get(id):
+                params = self.current_dict_circuit[id]
                 tags = params["tags"]
         else:
             id_type[type] += 1
@@ -1309,7 +1309,7 @@ class ComponentSketcher:
                 self.canvas.itemconfig(tagCapot, state="hidden")
             else:
                 params["tags"].append(tagCapot)
-            current_dict_circuit[id] = params
+            self.current_dict_circuit[id] = params
             self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
             self.canvas.tag_bind(
                 tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
@@ -1365,8 +1365,8 @@ class ComponentSketcher:
 
         params = {}
         if id:  # supprime l'ancien câble si existant id != None
-            if current_dict_circuit.get(id):
-                params = current_dict_circuit[id]
+            if self.current_dict_circuit.get(id):
+                params = self.current_dict_circuit[id]
                 tags = params["tags"]
                 for tg in tags:
                     self.canvas.delete(tg)
@@ -1429,6 +1429,6 @@ class ComponentSketcher:
         )
 
         params["tags"] = [id]
-        current_dict_circuit[id] = params
+        self.current_dict_circuit[id] = params
 
         return xD, yD

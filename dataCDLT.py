@@ -17,7 +17,6 @@ ICO_PDF = {"path": "Icones/pdf-icon-png-2079.png", "imageId": None}
 id_origins = {"xyOrigin": (0, 0)}
 
 id_type = {}
-current_dict_circuit = {}
 num_id = 1
 mouse_x, mouse_y = 0, 0
 drag_mouse_x, drag_mouse_y = 0, 0
