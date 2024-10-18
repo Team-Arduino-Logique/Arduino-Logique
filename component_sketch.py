@@ -105,8 +105,8 @@ class CirEl:
         return (xO, yO)
 
     def goXY(self, line, column):
-        xref, yref = (xO, yO) if xO != -1 else: (0,0)
-        return (xO + column * 15 * scale, yO + line * 15 * scale)
+        xref, yref = (self.xO, self.yO) if self.xO != -1 else (0,0)
+        return (self.xO + column * 15 * self.scale, self.yO + line * 15 * self.scale)
 
     def draw(self):
         for component in self.componentsList:
@@ -150,35 +150,6 @@ class BoardEl(CirEl):
         super().draw()
 
     def drawBoard(self,  **kwargs):
-        # if self.width != -1:
-        #     self.scale = self.width / 9.0
-        # inter_space = 15 * self.scale
-        # thickness = 1 * self.scale
-
-        # dim = BOARD_830_PTS_PARAMS
-        # self.color  = "#F5F5DC"
-        # sepAlim = dim["sepAlim"]
-        # sepDist = dim["sepDistribution"]
-        # radius = 20
-        # for key, value in kwargs.items():
-        #     if key == "dimLine":
-        #         dim["dimLine"] = value
-        #     if key == "dimColumn":
-        #         dim["dimColumn"] = value
-        #     if key == "color":
-        #         self.color  = value
-        #     if key == "sepAlim":
-        #         sepAlim = value
-        #     if key == "sepDistribution":
-        #         sepDist = value
-        #     if key == "radius":
-        #         radius = value
-
-        # thickness = 1 * self.scale
-        # dimLine = dim["dimLine"] * inter_space
-        # dimColumn = dim["dimColumn"] * inter_space
-        # # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
-        # # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
         GraphicsPrimitives.draw_rounded_rect(self.canvas,self.xD, self.yD, self.dimLine, self.dimColumn, self.radius , outline=self.color , fill=self.color , thickness=self.thickness)
         for sepA in self.sepAlim :
             self.canvas.create_line(
@@ -307,38 +278,47 @@ class BoardEl(CirEl):
         return (self.xD, self.yD)
 
 
-class ComponentSketcher(CirEl):
-    def __init__(self, canvas, xD=-1, yD=-1, scale=1, width=-1, direction = HORIZONTAL, componenstList=[], **kwargs):
-        super().__init__(self, canvas, xD, yD, scale, width, direction, componenstList)
+class ComponentSketcher:
+    def __init__(self, canvas, xD=-1, yD=-1, scale=1, width=-1, direction = HORIZONTAL, componentsList=[], **kwargs):
+        #super().__init__( canvas, xD, yD, scale, width, direction, componentsList)
+        self.canvas = canvas
+        self.xD = xD
+        self.yD = yD
+        self.scale = scale
+        self.width = width
+        self.direction = direction
+        self.xO = xD 
+        self.yO = yD 
+        self.componentsList = componentsList
         self.funcHole = {"function": self.drawSquareHole}
 
     def draw():
         pass
-    # def setXYOrigin(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-    #     xO, yO = xD, yD
-    #     id_origin = "xyOrigin"
-    #     for key, value in kwargs.items():
-    #         if key == "id_origin":
-    #             id_origin = value
-    #         # if key == "xyOrigin": xO, yO       = value
+    def setXYOrigin(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        xO, yO = xD, yD
+        id_origin = "xyOrigin"
+        for key, value in kwargs.items():
+            if key == "id_origin":
+                id_origin = value
+            # if key == "xyOrigin": xO, yO       = value
 
-    #     id_origins[id_origin] = (xD, yD)
-    #     return (xO, yO)
+        id_origins[id_origin] = (xD, yD)
+        return (xO, yO)
 
 
-    # def goXY(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-    #     id_origin = "xyOrigin"
-    #     for key, value in kwargs.items():
-    #         if key == "line":
-    #             line = value
-    #         if key == "column":
-    #             column = value
-    #         if key == "id_origin":
-    #             id_origin = value
+    def goXY(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        id_origin = "xyOrigin"
+        for key, value in kwargs.items():
+            if key == "line":
+                line = value
+            if key == "column":
+                column = value
+            if key == "id_origin":
+                id_origin = value
 
-    #     xO, yO = id_origins[id_origin]
+        xO, yO = id_origins[id_origin]
 
-    #     return (xO + column * 15 * scale, yO + line * 15 * scale)
+        return (xO + column * 15 * scale, yO + line * 15 * scale)
 
 
     def drawChar(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
@@ -591,162 +571,162 @@ class ComponentSketcher(CirEl):
         return (x, yD)
 
 
-    # def drawBoard(self, xD=0, yD=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
-    #     if width != -1:
-    #         scale = width / 9.0
-    #     inter_space = 15 * scale
-    #     thickness = 1 * scale
+    def drawBoard(self, xD=0, yD=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+        if width != -1:
+            scale = width / 9.0
+        inter_space = 15 * scale
+        thickness = 1 * scale
 
-    #     dim = BOARD_830_PTS_PARAMS
-    #     color = "#F5F5DC"
-    #     self.sepAlim  = dim["self.sepAlim "]
-    #     sepDist = dim["sepDistribution"]
-    #     self.radius  = 20
-    #     for key, value in kwargs.items():
-    #         if key == "dimLine":
-    #             dim["dimLine"] = value
-    #         if key == "dimColumn":
-    #             dim["dimColumn"] = value
-    #         if key == "color":
-    #             color = value
-    #         if key == "sepAlim":
-    #             self.sepAlim  = value
-    #         if key == "sepDistribution":
-    #             sepDist = value
-    #         if key == "self.radius ":
-    #             self.radius  = value
+        dim = BOARD_830_PTS_PARAMS
+        color = "#F5F5DC"
+        self.sepAlim  = dim["sepAlim"]
+        sepDist = dim["sepDistribution"]
+        self.radius  = 20
+        for key, value in kwargs.items():
+            if key == "dimLine":
+                dim["dimLine"] = value
+            if key == "dimColumn":
+                dim["dimColumn"] = value
+            if key == "color":
+                color = value
+            if key == "sepAlim":
+                self.sepAlim  = value
+            if key == "sepDistribution":
+                sepDist = value
+            if key == "self.radius ":
+                self.radius  = value
 
-    #     thickness = 1 * scale
-    #     dimLine = dim["dimLine"] * inter_space
-    #     dimColumn = dim["dimColumn"] * inter_space
-    #     # self.sepAlim  =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
-    #     # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
-    #     GraphicsPrimitives.draw_rounded_rect(self.canvas,xD, yD, dimLine, dimColumn, self.radius , outline=color, fill=color, thickness=thickness)
-    #     for sepA in self.sepAlim :
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepA[0],
-    #             yD + inter_space * sepA[1],
-    #             xD - inter_space * sepA[0] + dimLine,
-    #             yD + inter_space * sepA[1],
-    #             fill="#707070",
-    #             width=thickness,
-    #         )
-    #     darknessFactor = 0.9
-    #     r = int(color[1:3], 16) * (darknessFactor + 0.06)
-    #     r = int(max(0, min(255, r)))
-    #     g = int(color[3:5], 16) * (darknessFactor + 0.06)
-    #     g = int(max(0, min(255, g)))
-    #     b = int(color[5:7], 16) * (darknessFactor + 0.06)
-    #     b = int(max(0, min(255, b)))
-    #     c = ["#{:02x}{:02x}{:02x}".format(r, g, b)]
-    #     r = int(color[1:3], 16) * (darknessFactor)
-    #     r = int(max(0, min(255, r)))
-    #     g = int(color[3:5], 16) * (darknessFactor)
-    #     g = int(max(0, min(255, g)))
-    #     b = int(color[5:7], 16) * (darknessFactor)
-    #     b = int(max(0, min(255, b)))
-    #     c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-    #     r *= darknessFactor
-    #     g *= darknessFactor
-    #     b *= darknessFactor
-    #     r = int(max(0, min(255, r)))
-    #     g = int(max(0, min(255, g)))
-    #     b = int(max(0, min(255, b)))
-    #     c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-    #     r *= darknessFactor
-    #     g *= darknessFactor
-    #     b *= darknessFactor
-    #     r = int(max(0, min(255, r)))
-    #     g = int(max(0, min(255, g)))
-    #     b = int(max(0, min(255, b)))
-    #     c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-    #     r *= darknessFactor
-    #     g *= darknessFactor
-    #     b *= darknessFactor
-    #     r = int(max(0, min(255, r)))
-    #     g = int(max(0, min(255, g)))
-    #     b = int(max(0, min(255, b)))
-    #     c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-    #     for sepD in sepDist:
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1],
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1],
-    #             fill=c[1],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + thickness,
-    #             fill=c[2],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + 2 * thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + 2 * thickness,
-    #             fill=c[3],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + 3 * thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + 3 * thickness,
-    #             fill=c[4],
-    #             width=thickness,
-    #         )
-    #         for dy in range(4, 11):
-    #             self.canvas.create_line(
-    #                 xD + inter_space * sepD[0],
-    #                 yD + inter_space * sepD[1] + dy * thickness,
-    #                 xD + dimLine - inter_space * sepD[0],
-    #                 yD + inter_space * sepD[1] + dy * thickness,
-    #                 fill=c[0],
-    #                 width=thickness,
-    #             )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 4 * thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 4 * thickness,
-    #             fill=c[1],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 3 * thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 3 * thickness,
-    #             fill=c[2],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 2 * thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - 2 * thickness,
-    #             fill=c[3],
-    #             width=thickness,
-    #         )
-    #         self.canvas.create_line(
-    #             xD + inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - thickness,
-    #             xD + dimLine - inter_space * sepD[0],
-    #             yD + inter_space * sepD[1] + inter_space - thickness,
-    #             fill=c[4],
-    #             width=thickness,
-    #         )
-    #     # self.canvas.create_line(xD , yD+inter_space*11+inter_space//3, xD + dimLine, yD + inter_space*11+inter_space//3, fill="#c0c0c0", width=(3*inter_space)//5)
-    #     # if direction == HORIZONTAL:
-    #     #     xD += dimLine
-    #     # else: yD += dimColumn
+        thickness = 1 * scale
+        dimLine = dim["dimLine"] * inter_space
+        dimColumn = dim["dimColumn"] * inter_space
+        # self.sepAlim  =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
+        # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
+        GraphicsPrimitives.draw_rounded_rect(self.canvas,xD, yD, dimLine, dimColumn, self.radius , outline=color, fill=color, thickness=thickness)
+        for sepA in self.sepAlim :
+            self.canvas.create_line(
+                xD + inter_space * sepA[0],
+                yD + inter_space * sepA[1],
+                xD - inter_space * sepA[0] + dimLine,
+                yD + inter_space * sepA[1],
+                fill="#707070",
+                width=thickness,
+            )
+        darknessFactor = 0.9
+        r = int(color[1:3], 16) * (darknessFactor + 0.06)
+        r = int(max(0, min(255, r)))
+        g = int(color[3:5], 16) * (darknessFactor + 0.06)
+        g = int(max(0, min(255, g)))
+        b = int(color[5:7], 16) * (darknessFactor + 0.06)
+        b = int(max(0, min(255, b)))
+        c = ["#{:02x}{:02x}{:02x}".format(r, g, b)]
+        r = int(color[1:3], 16) * (darknessFactor)
+        r = int(max(0, min(255, r)))
+        g = int(color[3:5], 16) * (darknessFactor)
+        g = int(max(0, min(255, g)))
+        b = int(color[5:7], 16) * (darknessFactor)
+        b = int(max(0, min(255, b)))
+        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
+        r *= darknessFactor
+        g *= darknessFactor
+        b *= darknessFactor
+        r = int(max(0, min(255, r)))
+        g = int(max(0, min(255, g)))
+        b = int(max(0, min(255, b)))
+        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
+        r *= darknessFactor
+        g *= darknessFactor
+        b *= darknessFactor
+        r = int(max(0, min(255, r)))
+        g = int(max(0, min(255, g)))
+        b = int(max(0, min(255, b)))
+        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
+        r *= darknessFactor
+        g *= darknessFactor
+        b *= darknessFactor
+        r = int(max(0, min(255, r)))
+        g = int(max(0, min(255, g)))
+        b = int(max(0, min(255, b)))
+        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
+        for sepD in sepDist:
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1],
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1],
+                fill=c[1],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + thickness,
+                fill=c[2],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + 2 * thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + 2 * thickness,
+                fill=c[3],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + 3 * thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + 3 * thickness,
+                fill=c[4],
+                width=thickness,
+            )
+            for dy in range(4, 11):
+                self.canvas.create_line(
+                    xD + inter_space * sepD[0],
+                    yD + inter_space * sepD[1] + dy * thickness,
+                    xD + dimLine - inter_space * sepD[0],
+                    yD + inter_space * sepD[1] + dy * thickness,
+                    fill=c[0],
+                    width=thickness,
+                )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 4 * thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 4 * thickness,
+                fill=c[1],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 3 * thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 3 * thickness,
+                fill=c[2],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 2 * thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - 2 * thickness,
+                fill=c[3],
+                width=thickness,
+            )
+            self.canvas.create_line(
+                xD + inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - thickness,
+                xD + dimLine - inter_space * sepD[0],
+                yD + inter_space * sepD[1] + inter_space - thickness,
+                fill=c[4],
+                width=thickness,
+            )
+        # self.canvas.create_line(xD , yD+inter_space*11+inter_space//3, xD + dimLine, yD + inter_space*11+inter_space//3, fill="#c0c0c0", width=(3*inter_space)//5)
+        # if direction == HORIZONTAL:
+        #     xD += dimLine
+        # else: yD += dimColumn
 
-    #     return (xD, yD)
+        return (xD, yD)
 
 
     ################ BOITIERS DIP ####################################
