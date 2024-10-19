@@ -6,13 +6,7 @@ Classes:
 - Package: Represents an electronic component package with attributes like type name, chip width, and pin count.
 - Chip: Represents an integrated circuit chip with a specific package and a set of functions.
 - Wire: Represents a wire in a circuit, connecting two pins.
-- Breadboard: Represents a breadboard used in electronic circuits.
 - Circuit: Represents an electronic circuit, managing chips, wires, and their connections on a breadboard.
-Functions:
-- Package.from_json(json_data: dict) -> Package: Constructs a Package object from a JSON dictionary.
-- Chip.from_json(json_data: dict, 
-                package_dict: dict[str, Package] | None = None) -> Chip:
-                Creates a Chip object from JSON data.
 Usage:
 ------
 The module can be used to load component data from JSON files, create instances of packages and chips, and manage their
@@ -25,8 +19,6 @@ from dataclasses import dataclass
 import json
 import os
 from typing import Callable, Dict, Any
-
-from breadboard import Breadboard
 
 from .chip_functions import (
     ChipFunction,
@@ -43,7 +35,7 @@ from .chip_functions import (
     create_xnor_gate,
     create_xor_gate,
 )
-from .circuit_util_elements import ConnectionPoint, ConnectionPointID, Pin
+from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, TruthTable
 
 
 class Package:
@@ -104,9 +96,15 @@ class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
     Attributes:
-        name (str): The name of the chip.
-        package (Package): The package type of the chip.
-        functions (tuple[ChipFunction]): A tuple containing the functions of the chip.
+        chip_type (str): The type of the chip (e.g., "74HCXX").
+        label (str): The label of the chip.
+        package_name (str): The name of the package associated with the chip.
+        pin_count (int): The number of pins on the chip.
+        chip_width (float): The width of the chip.
+        functions (list[ChipFunction]): A list of functions performed by the chip.
+        position (ConnectionPointID, optional): The position of the chip on the breadboard.
+        instances (dict[str, int]): A class-level dictionary that keeps track of the number of instances
+                    created for each chip type.
     Methods:
         from_json(json_data: dict, package_dict: dict[str, Package] = None) -> Chip:
             Creates a Chip instance from a JSON dictionary.
@@ -114,20 +112,36 @@ class Chip:
             Returns a string representation of the Chip instance.
     """
 
-    def __init__(self, name: str, pkg: Package, functions: list[ChipFunction]):
+    instances: dict[str, int] = {}
+
+    def __init__(
+        self, chip_type: str, pkg: Package, functions: list[ChipFunction], position: ConnectionPointID | None = None
+    ):
         """
-        Initializes a CircuitObject instance.
+        Initializes a Chip instance.
         Args:
-            name (str): The name of the circuit object.
-            pkg (Package): The package associated with the circuit object.
+            chip_type (str): The chip_type of the chip (74HCXX).
+            pkg (Package): The package associated with the chip.
             functions (list[ChipFunction]): A list containing the functions of the chip.
+            position (ConnectionPointID, optional): The position of the chip on the breadboard (from the top left pin).
+                                                    Defaults to None.
         """
+        self.chip_type = chip_type
+        if chip_type in Chip.instances:
+            Chip.instances[chip_type] += 1
+        else:
+            Chip.instances[chip_type] = 1
+        self.label: str = chip_type + "-" + str(Chip.instances[chip_type])
 
-        self.name: str = name
-        self.package: Package = pkg
-        # TODO get number of pins from package and assign to functions
+        self.package_name: str = pkg.type_name
+        self.pin_count: int = pkg.pin_count
+        self.chip_width: float = pkg.chip_width
         self.functions: list[ChipFunction] = functions
-
+        if position is not None:
+            for fn in self.functions:
+                fn.calculate_pin_pos(position, 1, self.pin_count)
+        self.pin_positions: dict[int, ConnectionPointID] = {}
+        self.position: ConnectionPointID | None = position
 
     @staticmethod
     def from_json(json_data: dict, package_dict: dict[str, Package] | None = None):
@@ -191,8 +205,10 @@ class Chip:
 
         new_line = "\n\t"
         return (
-            f"Chip:\t{self.name}"
-            f"\n{self.package},"
+            f"Chip:\t{self.label}"
+            f"\nPackage: {self.package_name},"
+            f"\nChip width: {self.chip_width},"
+            f"\nPin count: {self.pin_count},"
             f"\nFunctions:"
             f"\n\t{new_line.join(str(func) for func in self.functions)}"
         )
@@ -213,55 +229,33 @@ class Wire:
 
 class Circuit:
     """
-    Represents an electronic circuit.
+    Represents an electronic circuit with chip, wire, io and power components.
     Attributes:
-        breadboard (Breadboard): The breadboard used in the circuit.
-        chips (list[Chip]): A list of chips placed on the breadboard.
-        wires (list[Wire]): A list of wires connecting the chips.
-    Methods:
-        add_chip(chip: Chip, position: tuple[int, int]): Adds a chip to the circuit at the specified position.
-        add_wire(start_pin: int, end_pin: int): Adds a wire to the circuit connecting the specified pins.
-        validate_pins(): Validates the pins and connections in the circuit.
-        get_logic_functions(): Returns the logic functions of the circuit by following connections and
-                                calling internal_chip_function.
+        chips (dict[str, Chip]): A dictionary of chips in the circuit, indexed by label.
+        wires (dict[str, Wire]): A dictionary of wires in the circuit, indexed by label.
+        io (dict[str, IO]): A dictionary of input/output components in the circuit, indexed by label.
+        power (dict[str, Power]): A dictionary of power components in the circuit, indexed by label.
     """
 
-    # TODO make the class
-    def __init__(self, breadboard: Breadboard):
-        self.breadboard = breadboard
-        self.chips: list[Chip] = []
-        self.wires: list[Wire] = []
+    def __init__(self) -> None:
+        self.chips: dict[str, Chip] = {}
+        self.wires: dict[str, Wire] = {}
+        # self.io: dict[str, IO] = {}
+        # self.power: dict[str, Power] = {}
 
-    def add_chip(self, new_chip: Chip, top_left_connection: ConnectionPointID):
+    def get_func_list(self) -> list[FunctionRepresentation]:
         """
-        Adds a chip to the circuit at the specified position.
+        Returns a list of function representations for all the chips in the circuit.
         """
+        ret_list: list[FunctionRepresentation] = []
+        # TODO
+        return ret_list
 
-
-    def add_wire(self, start: ConnectionPointID, end: ConnectionPointID):
+    def trace_functions(self):
         """
-        Adds a wire to the circuit connecting the specified pins.
-        Args:
-            start_pin (Pin): The starting pin of the wire.
-            end_pin (Pin): The ending pin of the wire.
+        Traces the functions of the chips in the circuit.
         """
-
-
-
-    def validate_pins(self):
-        """
-        Validates the pins and connections in the circuit.
-        Ensures that all pins are correctly connected and that there are no conflicts.
-        """
-
-    def get_logic_functions(self):
-        """
-        Returns the logic functions of the circuit by following connections and calling internal_chip_function.
-        Returns:
-            dict: A dictionary mapping output pins to their logic functions.
-        """
-        logic_functions = {}
-        return logic_functions
+        # TODO KHALID
 
 
 if __name__ == "__main__":
@@ -287,7 +281,7 @@ if __name__ == "__main__":
                     chip_data = json.load(file)
                     try:
                         chip = Chip.from_json(chip_data, packages)
-                        chips[chip.name] = chip
+                        chips[chip.chip_type] = chip
                     except ValueError as e:
                         file_errors.append(f"Error loading chip from {filename}: {e}")
 
@@ -305,4 +299,3 @@ if __name__ == "__main__":
             print(error)
 
     # Example usage of the Circuit class
-

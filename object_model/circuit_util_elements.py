@@ -2,9 +2,7 @@
 This module defines classes for representing connection points and pins in a circuit model.
 Classes:
     ConnectionPointID: Represents an identifier for a connection point in a circuit model.
-    ConnectionPoint: Represents a connection point in a circuit.
     Pin: Represents a pin on an electronic component.
-
 """
 
 from __future__ import annotations
@@ -14,27 +12,14 @@ from dataclasses import dataclass
 @dataclass
 class ConnectionPointID:
     """
-    ConnectionPointID class represents an identifier for a connection point in a circuit model.
+    Represents an identifier for a connection point in a circuit model.
     Attributes:
-        group (int): The group (top/bottom of divider) to which the connection point belongs.
-        column_num (int): The column number of the connection point within the group.
+        col (int): The column of the connection point.
+        line (int): The line of the connection point.
     """
 
-    group: int
-    column_num: int
-
-
-@dataclass
-class ConnectionPoint:
-    """
-    Represents a connection point in a circuit.
-    Attributes:
-        connection_id (ConnectionPointID): The unique identifier for the connection point.
-        connected_component (Pin | None): The component connected to this point, if any.
-    """
-
-    connection_id: ConnectionPointID
-    connected_component: Pin | None
+    col: int
+    line: int
 
 
 @dataclass
@@ -43,8 +28,26 @@ class Pin:
     Represents a pin on an electronic component.
     Attributes:
         pin_num (int): The pin number.
-        connection_point (ConnectionPoint): The connection point of the pin.
+        connection_point (ConnectionPointID): The connection point of the pin.
     """
 
     pin_num: int
-    connection_point: ConnectionPoint | None
+    connection_point: ConnectionPointID | None
+
+@dataclass
+class TruthTable:
+    #TODO
+    pass
+
+@dataclass
+class FunctionRepresentation:
+    """
+    Represents a function in a circuit model.
+    Attributes:
+        fn_inputs (tuple[ConnectionPointID]): The input connection points of the function.
+        fn_outputs (tuple[ConnectionPointID]): The output connection points of the function.
+        function (TruthTable | str): The function represented as a truth table or a string.
+    """
+    fn_inputs: tuple[ConnectionPointID]
+    fn_outputs: tuple[ConnectionPointID]
+    function: TruthTable | str

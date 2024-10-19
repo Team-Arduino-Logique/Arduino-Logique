@@ -40,7 +40,7 @@ Classes:
 
 from __future__ import annotations
 from math import log2
-from .circuit_util_elements import Pin
+from .circuit_util_elements import ConnectionPointID, Pin
 
 
 def create_and_gate(data: dict) -> AndGate:
@@ -264,6 +264,18 @@ class ChipFunction:
 
         Raises:
             NotImplementedError: If the method is not overridden.
+        """
+        raise NotImplementedError("Function not implemented.")
+
+    def calculate_pin_pos(self, top_left_pin_pos: ConnectionPointID, top_left_pin_num: int, num_pins: int) -> None:
+        """
+        Calculates the position of a pin based on the top-left pin position and the pin number.
+        Args:
+            top_left_pin_pos (ConnectionPointID): The position of the top-left pin.
+            top_left_pin_num (int): The pin number.
+            num_pins (int): The total number of pins.
+        Returns:
+            None
         """
         raise NotImplementedError("Function not implemented.")
 
