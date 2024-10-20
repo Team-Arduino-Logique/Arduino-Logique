@@ -1594,7 +1594,10 @@ class ComponentSketcher:
                         tags=tagBase,
                     )
 
-                self.rounded_rect(self.canvas,xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
+                # self.rounded_rect(
+                #  xD, adjusted_yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
+                # )
+                self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
                 params["tags"] = [tagBase]
                 self.canvas.create_rectangle(
@@ -1610,7 +1613,7 @@ class ComponentSketcher:
                     dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
                 self.rounded_rect(
-                    self.canvas, xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
+                     xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
                 )
                 self.canvas.create_line(
                     xD, yD + 1 * space // 3, xD + dimLine, yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
@@ -1686,6 +1689,7 @@ class ComponentSketcher:
                 X, Y = params["XY"]
                 dX = xD - X
                 dY = yD - Y
+                params["XY"] = (xD, yD)
                 for tg in tags:
                     self.canvas.move(tg, dX, dY)
 
