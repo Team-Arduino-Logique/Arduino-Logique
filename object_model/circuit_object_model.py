@@ -35,7 +35,7 @@ from .chip_functions import (
     create_xnor_gate,
     create_xor_gate,
 )
-from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, TruthTable
+from .circuit_util_elements import ConnectionPointID, FunctionRepresentation
 
 
 class Package:
@@ -142,6 +142,18 @@ class Chip:
                 fn.calculate_pin_pos(position, 1, self.pin_count)
         self.pin_positions: dict[int, ConnectionPointID] = {}
         self.position: ConnectionPointID | None = position
+        if position is not None:
+            self.set_position(position)
+
+    def set_position(self, position: ConnectionPointID):
+        """
+        Sets the position of the chip on the breadboard.
+        Args:
+            position (ConnectionPointID): The position of the chip on the breadboard.
+        """
+        self.position = position
+        for fn in self.functions:
+            fn.calculate_pin_pos(position, self.pin_count, self.pin_count)
 
     @staticmethod
     def from_json(json_data: dict, package_dict: dict[str, Package] | None = None):
@@ -243,12 +255,22 @@ class Circuit:
         # self.io: dict[str, IO] = {}
         # self.power: dict[str, Power] = {}
 
+    def add_chip(self, new_chip: Chip) -> None:
+        """
+        Adds a chip to the circuit.
+        Args:
+            new_chip (Chip): The chip to add to the circuit.
+        """
+        self.chips[new_chip.label] = new_chip
+
     def get_func_list(self) -> list[FunctionRepresentation]:
         """
         Returns a list of function representations for all the chips in the circuit.
         """
         ret_list: list[FunctionRepresentation] = []
-        # TODO
+        for circuit_chip in self.chips.values():
+            for func in circuit_chip.functions:
+                ret_list.append(func.chip_internal_function())
         return ret_list
 
     def trace_functions(self):
@@ -299,3 +321,7 @@ if __name__ == "__main__":
             print(error)
 
     # Example usage of the Circuit class
+    circuit = Circuit()
+    new_chip_to_add: Chip = chips["74HC08"]
+    new_chip_to_add.set_position(ConnectionPointID(10, 10))
+    circuit.add_chip(new_chip_to_add)
