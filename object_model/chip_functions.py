@@ -551,9 +551,6 @@ class Mux(ChipFunction):
         select_pins (list[int]): A tuple containing the select pins.
         enable_pins (list[int]): A tuple containing the active HIGH enable pins.
         inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
-    Methods:
-        __str__(): Returns a string representation of the MUX.
-        chip_internal_function(): Placeholder for the internal function of the MUX.
     """
 
     def __init__(
@@ -665,9 +662,6 @@ class Demux(ChipFunction):
         output_pins (list[int]): A tuple containing the output pins.
         enable_pins (list[int]): A tuple containing the active HIGH enable pins.
         inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
-    Methods:
-        __str__(): Returns a string representation of the DEMUX.
-        chip_internal_function(): Placeholder for the internal function of the DEMUX.
     """
 
     def __init__(
@@ -685,18 +679,32 @@ class Demux(ChipFunction):
             enable_pins (list[int]): A tuple containing the active HIGH enable pins.
             inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
         Raises:
-
+            ValueError: If the number of output pins is less than two.
+            ValueError: If the number of address pins is not exactly one.
+            ValueError: If the number of address pins is not equal to log2(num output pins).
         """
-        self.address_pins = address_pins
-        self.output_pins = output_pins
-        self.enable_pins = enable_pins
-        self.inv_enable_pins = inv_enable_pins
+        super().__init__()
+        self.address_pins: list[Pin] = [Pin(pin_num, None) for pin_num in address_pins]
+        self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
+        self.enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in enable_pins]
+        self.inv_enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in inv_enable_pins]
+
+        self.all_pins = self.address_pins + self.output_pins + self.enable_pins + self.inv_enable_pins
+
         if len(self.output_pins) < 2:
             raise ValueError("DEMUX must have at least two input pins.")
         if len(self.address_pins) < 1:
             raise ValueError("DEMUX must have at least one address pin.")
         if len(self.address_pins) != log2(len(self.output_pins)):
             raise ValueError("DEMUX must have log2(num output_pins) address pins.")
+
+        if (
+            len(self.enable_pins) != 1
+            or len(self.inv_enable_pins) != 2
+            or len(self.output_pins) != 8
+            or len(self.address_pins) != 3
+        ):
+            raise ValueError("Arbitrary DEMUX size not supported yet")
 
     def __str__(self):
         """
@@ -713,10 +721,33 @@ class Demux(ChipFunction):
 
     def chip_internal_function(self):
         """
-        Placeholder for the internal function of the DEMUX.
-        This method should be implemented to define the behavior of the DEMUX.
+        Returns a FunctionRepresentation object representing the internal function of the MUX with a truth table.
+        Only works for 2-active-low-enable, 1- active-high-enable, 3-address-pin, 8-output-pin DEMUX.
         """
-        # TODO: Implement the internal function of the DEMUX
+        input_pin_pos = [
+            pin.connection_point
+            for pin in self.inv_enable_pins + self.enable_pins + self.address_pins
+            if pin.connection_point is not None
+        ]
+        output_pin_pos = [pin.connection_point for pin in self.output_pins if pin.connection_point is not None]
+
+        truth_table = TruthTable(
+            [
+                TruthTableRow(["H", "X", "X", "X", "X", "X"], ["L", "L", "L", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["X", "H", "X", "X", "X", "X"], ["L", "L", "L", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["X", "X", "L", "X", "X", "X"], ["L", "L", "L", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "L", "L", "L"], ["H", "L", "L", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "H", "L", "L"], ["L", "H", "L", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "L", "H", "L"], ["L", "L", "H", "L", "L", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "H", "H", "L"], ["L", "L", "L", "H", "L", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "L", "L", "H"], ["L", "L", "L", "L", "H", "L", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "H", "L", "H"], ["L", "L", "L", "L", "L", "H", "L", "L"]),
+                TruthTableRow(["L", "L", "H", "L", "H", "H"], ["L", "L", "L", "L", "L", "L", "H", "L"]),
+                TruthTableRow(["L", "L", "H", "H", "H", "H"], ["L", "L", "L", "L", "L", "L", "L", "H"]),
+            ]
+        )
+
+        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
 
 
 class DFlipFlop(ChipFunction):
