@@ -11,6 +11,7 @@ their details.
 """
 
 from __future__ import annotations
+from copy import deepcopy
 from dataclasses import dataclass
 import json
 import os
@@ -207,12 +208,8 @@ class Chip:
             "BINARY_COUNTER": lambda data: BinaryCounter(
                 data["clock_pin"],
                 data["clock_type"],
-                data["synch_reset_pin"],
-                data["inv_synch_reset_pin"],
-                data["count_enable_parallel_pin"],
-                data["inv_count_enable_parallel_pin"],
-                data["count_enable_trickle_pin"],
-                data["inv_count_enable_trickle_pin"],
+                data["count_enable_pin"],
+                data["inv_count_enable_pin"],
                 data["load_enable_pin"],
                 data["inv_load_enable_pin"],
                 data["up_down_input_pin"],
@@ -307,7 +304,7 @@ class Circuit:
         """
         Traces the functions of the chips in the circuit.
         """
-        # TODO KHALID utilise get_func_list pour avoir la liste des fonctions
+        # TODO KHALID
 
 
 def get_all_available_chips() -> dict[str, Chip]:
@@ -356,10 +353,10 @@ if __name__ == "__main__":
 
     # Example usage of the Circuit class
     circuit = Circuit()
-    new_chip_to_add: Chip = available_chips["74HC08"]
+    new_chip_to_add: Chip = deepcopy(available_chips["74HC08"])
     new_chip_to_add.set_position(ConnectionPointID(10, 10))
     circuit.add_chip(new_chip_to_add)
-    new_chip_to_add = available_chips["74HC151"]
+    new_chip_to_add = deepcopy(available_chips["74HC151"])
     new_chip_to_add.set_position(ConnectionPointID(20, 20))
     circuit.add_chip(new_chip_to_add)
     print(circuit.get_func_list())

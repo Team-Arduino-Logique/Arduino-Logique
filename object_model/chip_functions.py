@@ -890,12 +890,8 @@ class BinaryCounter(ChipFunction):
         self,
         clock_pin: int,
         clock_type: str,
-        synch_reset_pin: int,
-        inv_synch_reset_pin: int,
-        count_enable_parallel_pin: int,
-        inv_count_enable_parallel_pin: int,
-        count_enable_trickle_pin: int,
-        inv_count_enable_trickle_pin: int,
+        count_enable_pin: int,
+        inv_count_enable_pin: int,
         load_enable_pin: int,
         inv_load_enable_pin: int,
         up_down_input_pin: int,
@@ -909,12 +905,8 @@ class BinaryCounter(ChipFunction):
         Args:
             clock_pin (int): The clock pin.
             clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
-            synch_reset_pin (int): The synchronous reset pin.
-            inv_synch_reset_pin (int): The inverted synchronous reset pin (Active LOW).
-            count_enable_parallel_pin (int): The count enable pin.
-            inv_count_enable_parallel_pin (int): The inverted count enable pin (Active LOW).
-            count_enable_trickle_pin (int): The count enable trickle pin.
-            inv_count_enable_trickle_pin (int): The inverted count enable trickle pin (Active LOW).
+            count_enable_pin (int): The count enable pin.
+            inv_count_enable_pin (int): The inverted count enable pin (Active LOW).
             load_enable_pin (int): The load enable pin.
             inv_load_enable_pin (int): The inverted load enable pin (Active LOW).
             up_down_input_pin (int): The up/down input pin.
@@ -929,12 +921,8 @@ class BinaryCounter(ChipFunction):
         super().__init__()
         self.clock_pin: Pin = Pin(clock_pin, None)
         self.clock_type: str = clock_type
-        self.synch_reset_pin: Pin = Pin(synch_reset_pin, None)
-        self.inv_synch_reset_pin: Pin = Pin(inv_synch_reset_pin, None)
-        self.count_enable_parallel_pin: Pin = Pin(count_enable_parallel_pin, None)
-        self.inv_count_enable_parallel_pin: Pin = Pin(inv_count_enable_parallel_pin, None)
-        self.count_enable_trickle_pin: Pin = Pin(count_enable_trickle_pin, None)
-        self.inv_count_enable_trickle_pin: Pin = Pin(inv_count_enable_trickle_pin, None)
+        self.count_enable_pin: Pin = Pin(count_enable_pin, None)
+        self.inv_count_enable_pin: Pin = Pin(inv_count_enable_pin, None)
         self.load_enable_pin: Pin = Pin(load_enable_pin, None)
         self.inv_load_enable_pin: Pin = Pin(inv_load_enable_pin, None)
         self.up_down_input_pin: Pin = Pin(up_down_input_pin, None)
@@ -948,6 +936,7 @@ class BinaryCounter(ChipFunction):
         if len(self.data_pins) != len(self.output_pins):
             raise ValueError("Number of data pins must be equal to number of output pins.")
 
+
     def __str__(self):
         """
         Returns a string representation of the binary counter.
@@ -957,12 +946,8 @@ class BinaryCounter(ChipFunction):
         return (
             f"Binary Counter:\n\t\tClock Pin: {self.clock_pin},"
             f"\n\t\tClock Type: {self.clock_type},"
-            f"\n\t\tSynchronous Reset Pin: {self.synch_reset_pin},"
-            f"\n\t\tInverted Synchronous Reset Pin: {self.inv_synch_reset_pin},"
-            f"\n\t\tCount Enable Parallel Pin: {self.count_enable_parallel_pin},"
-            f"\n\t\tInverted Count Enable Parallel Pin: {self.inv_count_enable_parallel_pin},"
-            f"\n\t\tCount Enable Trickle Pin: {self.count_enable_trickle_pin},"
-            f"\n\t\tInverted Count Enable Trickle Pin: {self.inv_count_enable_trickle_pin},"
+            f"\n\t\tCount Enable Pin: {self.count_enable_pin},"
+            f"\n\t\tInverted Count Enable Pin: {self.inv_count_enable_pin},"
             f"\n\t\tLoad Enable Pin: {self.load_enable_pin},"
             f"\n\t\tInverted Load Enable Pin: {self.inv_load_enable_pin},"
             f"\n\t\tUp/Down Input Pin: {self.up_down_input_pin},"
@@ -972,9 +957,10 @@ class BinaryCounter(ChipFunction):
             f"\n\t\tOutput Pins: {self.output_pins}"
         )
 
-    def chip_internal_function(self):
+    def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Placeholder for the internal function of the binary counter.
-        This method should be implemented to define the behavior of the binary counter.
+        Returns a FunctionRepresentation object representing the internal function of the Binary Counter.
+        Some of the outputs are also inputs for the counter.
         """
-        # TODO: Implement the internal function of the binary counter
+        # TODO
+        raise NotImplementedError("Binary Counter internal function not implemented yet.")

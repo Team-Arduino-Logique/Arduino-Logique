@@ -45,6 +45,10 @@ class TruthTableRow:
     - "F" for falling edge
     - "Q" for reference to the previous state of the output
     - "nQ" for reference to the previous state of the output, negated
+    - "lP" for LOW level pulse
+    - "hP" for HIGH level pulse
+    - "tL" for transition to LOW on clock pulse
+    - "tH" for transition to HIGH on clock pulse
 
     """
     input_signals: list[str]
