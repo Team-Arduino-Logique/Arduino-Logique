@@ -1,5 +1,3 @@
-# arduino_logique.py
-
 """
 ArduinoLogique.py
 Main module for the ArduinoLogique program. This module provides a graphical interface for 
@@ -12,8 +10,9 @@ from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from dataComponent import ComponentData
-from dataCDLT import current_dict_circuit
+from dataCDLT import current_dict_circuit, id_origins
 import json
+
 
 from menus import Menus
 from sidebar import Sidebar 
@@ -47,7 +46,6 @@ def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: in
     # Optionally, you may need to adjust the canvas scroll region or other properties
     p_canvas.configure(scrollregion=p_canvas.bbox("all"))
 
-
 def main():
     # Creating main window
     win = tk.Tk()
@@ -63,29 +61,13 @@ def main():
     win.grid_columnconfigure(0, weight=0)  # Sidebar
     win.grid_columnconfigure(1, weight=1)  # Canvas
 
-    # Creating the Menus instance
-    menus = Menus(
-        parent=win,
-        canvas=None,  # To be set later
-        board=None,
-        component_data=None,
-        model=None,
-        current_dict_circuit=None,
-        zoom_function=zoom
-    )
-    # Placing the menu_bar in row=0, spanning both columns
-    menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
-
     # Creating the TopBar2 instance
     topbar2 = TopBar2(parent=win)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
     topbar2.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
-    # Creating the Sidebar instance
-    sidebar = Sidebar(parent=win, chip_images_path="chips")
-
     # Creating the canvas in row=2, column=1
-    canvas = tk.Canvas(win, bg="#1e1e1e", highlightthickness=0, bd=0)
+    canvas = tk.Canvas(win, bg="#626262", highlightthickness=0, bd=0)
     canvas.grid(row=2, column=1, sticky="nsew")
 
     # Initializing the breadboard and components
@@ -101,11 +83,35 @@ def main():
     model = component_data.circuitTest
 
     # Set initial scale factor
-    initial_scale = 10.0 / 10.0
+    initial_scale = 1.0  # Equivalent to 10.0 / 10.0
     sketcher.scale_factor = initial_scale
 
     # Draw the circuit
-    board.circuit(50, 10, scale=initial_scale, model=model)
+    sketcher.circuit(50, 10, scale=initial_scale, model=model)
+    id_origins["xyOrigin"] = (50, 10)
+
+    # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
+    sidebar = Sidebar(
+        parent=win, 
+        chip_images_path="chips", 
+        canvas=canvas, 
+        board=board, 
+        sketcher=sketcher, 
+        component_data=component_data
+    )
+
+    # Creating the Menus instance with proper references
+    menus = Menus(
+        parent=win,
+        canvas=canvas,
+        board=board,
+        component_data=component_data,
+        model=model,
+        current_dict_circuit=current_dict_circuit,
+        zoom_function=zoom
+    )
+    # Placing the menu_bar in row=0, spanning both columns
+    menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
     # Assigning the references to menus
     menus.canvas = canvas
@@ -115,7 +121,7 @@ def main():
     menus.current_dict_circuit = current_dict_circuit
     menus.zoom_function = zoom
 
-    # Creating a slider and place it in row=3, spanning both columns
+    # Creating a slider and placing it in row=3, spanning both columns
     h_slider = tk.Scale(
         win,
         from_=10,
@@ -132,11 +138,14 @@ def main():
         highlightthickness=0    
     )
     h_slider.set(10)  # Setting initial slider value
+
     h_slider.grid(row=3, column=0, columnspan=2, sticky="ew", padx=0, pady=0)
 
     # Setting default font for all widgets
     default_font = font.Font(family="Arial", size=10)
     win.option_add("*Font", default_font)
+
+    #board.draw_matrix_points(scale=1) # for debugging purposes
 
     win.mainloop()
 

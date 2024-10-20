@@ -19,7 +19,7 @@ class TopBar2:
         Creates the secondary top bar with specified buttons.
         """
         # Create the top bar frame
-        self.topbar_frame = tk.Frame(self.parent, bg="#333333", height=40, bd=0, highlightthickness=0)
+        self.topbar_frame = tk.Frame(self.parent, bg="#505050", height=40, bd=0, highlightthickness=0)
         # Do not use pack; main application will manage placement with grid
 
         # Configure grid layout within the top bar
@@ -35,6 +35,7 @@ class TopBar2:
 
         # Create the Delete button on the right
         self.create_button("Delete", 5, anchor="e")
+
 
     def create_button(self, text, column, anchor="w"):
         """

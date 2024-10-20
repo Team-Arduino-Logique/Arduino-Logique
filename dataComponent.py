@@ -29,6 +29,8 @@ class ComponentData:
         dip60 = {"pinCount": 60, "chipWidth": 2.4, "label": "DIP 60", "type": "dip60"}
         dip120 = {"pinCount": 120, "chipWidth": 2.4, "label": "DIP 120", "type": "dip120"}
 
+        
+
 
         pins7400 = {
             "logicFunction": self.sketcher.symbNAND,
@@ -263,3 +265,12 @@ class ComponentData:
             (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
             (wireTest, 1),
         ]
+
+        self.chipDIP14 = chipDIP14
+        self.chip7400 = chip7400
+        self.chip7402 = chip7402
+        self.chip7404 = chip7404
+        self.chip7408 = chip7408
+        self.chip7432 = chip7432
+
+        

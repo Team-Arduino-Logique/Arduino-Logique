@@ -8,6 +8,7 @@ from dataCDLT import (
     VERTICAL,
     VERTICAL_END_HORIZONTAL,
     LEFT,
+    PERSO,
     NO,
     id_origins,
     current_dict_circuit,
@@ -26,15 +27,87 @@ class ComponentSketcher:
         self.funcHole = {"function": self.drawSquareHole}
         self.scale_factor = 1.0
 
-        self.drag_data = {
+        self.drag_chip_data = {
             "chip_id": None,
             "x": 0,
             "y": 0
         }
 
-    def on_chip_click(self, event, chip_id):
-        print(f"Chip clicked: {chip_id}")
-        self.drag_data["chip_id"] = chip_id
+        self.wire_drag_data = {
+            "wire_id": None,
+            "endpoint": None,
+            "x": 0,
+            "y": 0
+        }
+
+    def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+        """
+        Generates a circuit layout on the canvas based on the provided parameters and model.
+        Parameters:
+        - x_distance (int, optional): Initial x-coordinate distance. Defaults to 0.
+        - y_distance (int, optional): Initial y-coordinate distance. Defaults to 0.
+        - scale (float, optional): Scaling factor for the circuit elements. Defaults to 1.
+        - width (int, optional): Width of the circuit. If not -1, it overrides the scale. Defaults to -1.
+        - direction (str, optional): Direction of the circuit layout. Can be VERTICAL, HORIZONTAL, or PERSO.
+                                     Defaults to VERTICAL.
+        - **kwargs: Additional keyword arguments:
+            - model (list, optional): Custom model for the circuit layout. Defaults to line_distribution.
+            - dXY (tuple, optional): Custom x and y distances for PERSO direction.
+        Returns:
+        - tuple: Updated x_distance and y_distance after laying out the circuit.
+        Raises:
+        - ValueError: If the model argument is not a valid tuple or list structure.
+        """
+
+        if width != -1:
+            scale = width / 9.0
+        inter_space = 15 * scale
+
+        # component_data = ComponentData(self.sketcher)
+        Hole = [(self.drawHole, 1)] #model specified by default in case of no model
+
+        model = Hole
+        for key, value in kwargs.items():
+            if key == "model":
+                model = value
+            if key == "dXY":
+                _, delta_y = value
+
+        x, y = x_distance, y_distance
+        for element in model:
+            if callable(element[0]) and isinstance(element[1], int):
+                for _ in range(element[1]):
+                    if len(element) == 3:
+                        (x, y) = element[0](x, y, scale, width, **element[2])
+                    else:
+                        (x, y) = element[0](x, y, scale, width)
+            elif isinstance(element[0], list) and isinstance(element[1], int):
+                for _ in range(element[1]):
+                    if len(element) == 3:
+                        (x, y) = self.circuit(x, y, scale, width, model=element[0], **element[2])
+                    else:
+                        (x, y) = self.circuit(x, y, scale, width, model=element[0])
+            else:
+                raise ValueError(
+                    "The rail model argument must be a tuple (function(), int, [int]) or (list, int, [int])."
+                )
+
+        if direction == HORIZONTAL:
+            x_distance = x
+        elif direction == VERTICAL:
+            y_distance = y + inter_space
+        elif direction == PERSO:
+            y_distance = y - inter_space * delta_y
+
+        return (x_distance, y_distance)
+
+    def on_wire_endpoint_click(self, event, wire_id, endpoint):
+        """
+        Event handler for when a wire endpoint is clicked.
+        """
+        # Initiate drag for wire endpoint
+        self.wire_drag_data["wire_id"] = wire_id
+        self.wire_drag_data["endpoint"] = endpoint
 
         # Convert event coordinates to canvas coordinates
         canvas_x = self.canvas.canvasx(event.x)
@@ -44,17 +117,18 @@ class ComponentSketcher:
         adjusted_x = canvas_x / self.scale_factor
         adjusted_y = canvas_y / self.scale_factor
 
-        self.drag_data["x"] = adjusted_x
-        self.drag_data["y"] = adjusted_y
+        self.wire_drag_data["x"] = adjusted_x
+        self.wire_drag_data["y"] = adjusted_y
 
-        tagSouris = "activeArea" + chip_id
-        self.canvas.itemconfig(tagSouris, outline="red")
-        self.canvas.tag_raise(tagSouris)
-        print(f"Chip {chip_id} outline changed to red")
+        # Highlight the endpoint
+        endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        self.canvas.itemconfig(endpoint_tag, outline="red")
 
-    def on_drag(self, event):
-        chip_id = self.drag_data["chip_id"]
-        if chip_id:
+    def on_wire_endpoint_drag(self, event, wire_id, endpoint):
+        """
+        Event handler for dragging a wire endpoint.
+        """
+        if self.wire_drag_data["wire_id"] == wire_id and self.wire_drag_data["endpoint"] == endpoint:
             # Convert event coordinates to canvas coordinates
             canvas_x = self.canvas.canvasx(event.x)
             canvas_y = self.canvas.canvasy(event.y)
@@ -64,88 +138,326 @@ class ComponentSketcher:
             adjusted_y = canvas_y / self.scale_factor
 
             # Calculate movement delta
-            dx = adjusted_x - self.drag_data["x"]
-            dy = adjusted_y - self.drag_data["y"]
+            dx = adjusted_x - self.wire_drag_data["x"]
+            dy = adjusted_y - self.wire_drag_data["y"]
 
-            # Apply scaling factor to movement delta
-            scaled_dx = dx * self.scale_factor
-            scaled_dy = dy * self.scale_factor
+            # Move the endpoint
+            endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            self.canvas.move(endpoint_tag, dx * self.scale_factor, dy * self.scale_factor)
 
-            # Move all items associated with the chip
-            for tag in current_dict_circuit[chip_id]["tags"]:
-                self.canvas.move(tag, scaled_dx, scaled_dy)
+            # Update drag data
+            self.wire_drag_data["x"] = adjusted_x
+            self.wire_drag_data["y"] = adjusted_y
 
-            # Update drag_data
-            self.drag_data["x"] = adjusted_x
-            self.drag_data["y"] = adjusted_y
+            # Update endpoint position in params
+            current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (
+                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][0] + dx * self.scale_factor,
+                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][1] + dy * self.scale_factor,
+            )
 
-            # Update chip's position
-            tags = current_dict_circuit[chip_id]["tags"]
-            bbox = self.canvas.bbox(*tags)
-            if bbox:
-                new_x = bbox[0] / self.scale_factor
-                new_y = bbox[1] / self.scale_factor
-                current_dict_circuit[chip_id]["XY"] = (new_x, new_y)
-            else:
-                print(f"No bounding box found for chip {chip_id}")
+            # Update the wire body
+            self.update_wire_body(wire_id)
 
-    def on_stop_drag(self, event):
-        chip_id = self.drag_data["chip_id"]
-        if chip_id:
-            self.drag_data["chip_id"] = None
-            self.drag_data["x"] = 0
-            self.drag_data["y"] = 0
+    def on_wire_endpoint_release(self, event, wire_id, endpoint):
+        """
+        Event handler for when a wire endpoint is released.
+        """
+        if self.wire_drag_data["wire_id"] == wire_id and self.wire_drag_data["endpoint"] == endpoint:
+            # Reset drag data
+            self.wire_drag_data["wire_id"] = None
+            self.wire_drag_data["endpoint"] = None
 
-            tagSouris = "activeArea" + chip_id
-            self.canvas.itemconfig(tagSouris, outline="")
+            # Snap to nearest grid point
+            self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
 
-            # Get bounding box of the chip
-            tags = current_dict_circuit[chip_id]["tags"]
-            bbox = self.canvas.bbox(*tags)
-            if bbox:
-                current_x = bbox[0] / self.scale_factor
-                current_y = bbox[1] / self.scale_factor
-            else:
-                print(f"No bounding box found for chip {chip_id}")
-                return
+            # Remove highlight
+            endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            self.canvas.itemconfig(endpoint_tag, outline="#404040")
 
-            # Find the nearest grid point
-            nearest_x, nearest_y = self.find_nearest_grid(current_x, current_y)
+    def update_wire_body(self, wire_id):
+        """
+        Updates the wire body based on the positions of the endpoints.
+        """
+        params = current_dict_circuit[wire_id]
+        start_pos = self.canvas.coords(params["endpoints"]["start"]["tag"])
+        end_pos = self.canvas.coords(params["endpoints"]["end"]["tag"])
 
-            # Calculate the difference
-            dx = nearest_x - current_x
-            dy = nearest_y - current_y
+        # Calculate center positions of the endpoints
+        start_x = (start_pos[0] + start_pos[2]) / 2
+        start_y = (start_pos[1] + start_pos[3]) / 2
+        end_x = (end_pos[0] + end_pos[2]) / 2
+        end_y = (end_pos[1] + end_pos[3]) / 2
 
-            # Apply scaling factor to movement delta
-            scaled_dx = dx * self.scale_factor
-            scaled_dy = dy * self.scale_factor
+        # Update wire body coordinates
+        self.canvas.coords(
+            params["wire_body_tag"],
+            start_x, start_y,
+            end_x, end_y
+        )
+    def snap_wire_endpoint_to_grid(self, event, wire_id, endpoint):
+        """
+        Snaps the wire endpoint to the nearest grid point, excluding central points.
+        """
+        # Get current position of the endpoint
+        endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        pos = self.canvas.coords(endpoint_tag)
+        x = (pos[0] + pos[2]) / 2
+        y = (pos[1] + pos[3]) / 2
 
-            # Move all items to snap to the grid
-            for tag in current_dict_circuit[chip_id]["tags"]:
-                self.canvas.move(tag, scaled_dx, scaled_dy)
+        # Find nearest grid point
+        nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
 
-            # Update chip's position
-            current_dict_circuit[chip_id]["XY"] = (nearest_x, nearest_y)
-            print(f"Moved chip {chip_id} to new grid position: ({nearest_x}, {nearest_y})")
-            print("scaling factor: ", self.scale_factor)
+        # Calculate movement delta
+        dx = nearest_x - x
+        dy = nearest_y - y
 
-    def find_nearest_grid(self, x, y, matrix=None):
-        if matrix is None:
-            matrix = matrix1260pts
+        # Move endpoint to the nearest grid point
+        self.canvas.move(endpoint_tag, dx, dy)
 
+        # Update endpoint position in params
+        current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
+
+        # Update the wire body
+        self.update_wire_body(wire_id)
+
+    def find_nearest_grid_point(self, x, y):
+        """
+        Finds the nearest grid point to (x, y), excluding central points used for chips.
+        """
         min_distance = float('inf')
-        nearest_point = (0, 0)
-        for id_in_matrix, point in matrix.items():
-            column_str, line_str = id_in_matrix.split(',')
-            line_num = int(line_str)
-            if line_num == 6 or line_num == 21:
+        nearest_point = (x, y)
+        for id_in_matrix, point in matrix1260pts.items():
+            # Exclude central points (lines 8 and 22)
+            id_parts = id_in_matrix.split(',')
+            if len(id_parts) == 2:
+                column_str, line_str = id_parts
+            elif len(id_parts) == 3 and id_parts[0] != 'snap':
+                # Handle cases where id_in_matrix has three parts but is not a snap point
+                column_str, line_str = id_parts[1], id_parts[2]
+            else:
+                # Skip entries that don't match expected format
+                continue
+
+            try:
+                line_num = float(line_str)
+            except ValueError:
+                # Skip if line_str is not a number
+                continue
+
+            if line_num != 8 and line_num != 22:
                 grid_x, grid_y = point["xy"]
+                # Adjust for scaling
+                grid_x *= self.scale_factor
+                grid_y *= self.scale_factor
                 distance = math.hypot(x - grid_x, y - grid_y)
                 if distance < min_distance:
                     min_distance = distance
                     nearest_point = (grid_x, grid_y)
-
         return nearest_point
+
+    def on_chip_click(self, event, chip_id):
+        """
+        Event handler for chip clicks.
+        Initiates drag and stores the initial mouse position.
+        """
+        print(f"Chip clicked: {chip_id}")
+        # Initiate drag by setting drag_chip_data
+        self.drag_chip_data["chip_id"] = chip_id
+
+        #Convert event coordinates to canvas coordinates
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+
+        
+
+        # Adjust for scaling
+        adjusted_x = canvas_x #/ self.scale_factor
+        adjusted_y = canvas_y #/ self.scale_factor
+
+        self.drag_chip_data["x"] = adjusted_x
+        self.drag_chip_data["y"] = adjusted_y
+
+
+        # # Correct tag name
+        # tagSouris = "activeArea" + chip_id
+
+        # # Change outline to indicate selection
+        # self.canvas.itemconfig(tagSouris, outline="red")
+        # self.canvas.tag_raise(tagSouris)
+        # print(f"Chip {chip_id} outline changed to red")
+
+    def on_chip_drag(self, event):
+        """
+        Event handler for dragging the chip.
+        Moves the chip based on mouse movement.
+        """
+        chip_id = self.drag_chip_data["chip_id"]
+        if chip_id:
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+
+            # Adjust for scaling
+            adjusted_x = canvas_x #/ self.scale_factor
+            adjusted_y = canvas_y #/ self.scale_factor
+
+            # Calculate movement delta
+            dx = adjusted_x - self.drag_chip_data["x"]
+            dy = adjusted_y - self.drag_chip_data["y"]
+
+            # Move all items associated with the chip
+            chip_params = current_dict_circuit[chip_id]
+            # for tag in chip_params["tags"]:
+            #     self.canvas.move(tag, dx, dy)
+
+            # Update drag_chip_data
+            self.drag_chip_data["x"] = adjusted_x
+            self.drag_chip_data["y"] = adjusted_y
+
+            # Update chip's position
+            current_x, current_y = chip_params["XY"]
+            # chip_params["XY"] = (current_x + dx, current_y + dy)
+
+            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (current_x + dx, current_y + dy)})]
+            self.circuit(current_x + dx, current_y + dy,model=model_chip)
+
+            print(f"Chip {chip_id} moved to new position: ({current_x}, {current_y})")
+
+            # **Update chip's center position**
+            # center_x, center_y = chip_params["center"]
+            # chip_params["center"] = (center_x + dx, center_y + dy)
+
+            # Update pin positions
+            # for pin_info in chip_params["pins"]:
+            #     pin_x, pin_y = pin_info['position']
+            #     pin_info['position'] = (pin_x + dx, pin_y + dy)
+
+    def on_stop_chip_drag(self, event):
+        chip_id = self.drag_chip_data["chip_id"]
+        if chip_id:
+            (x, y) = current_dict_circuit[chip_id]["XY"]
+            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            print(f"Real x: {real_x}, Real y: {real_y}")
+            print(f"Col: {col}, Line: {line}")
+
+            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (real_x,real_y)})]
+            self.circuit(real_x, real_y,model=model_chip)
+            # Reset drag_chip_data
+            self.drag_chip_data["chip_id"] = None
+            self.drag_chip_data["x"] = 0
+            self.drag_chip_data["y"] = 0
+
+
+
+
+            # Correct tag name
+            # tagSouris = "activeArea" + chip_id
+
+            # Reset outline color
+            # self.canvas.itemconfig(tagSouris, outline="")
+
+            # Get the chip parameters
+            # chip_params = current_dict_circuit[chip_id]
+            # pins = chip_params.get('pins', [])
+
+            # if pins:
+            #     # Get the chip's center position
+            #     chip_center_x, chip_center_y = chip_params["center"]
+            #     print(f"Chip center before snapping: ({chip_center_x}, {chip_center_y})")
+
+            #     # Get the matrix with snap points
+            #     matrix = matrix1260pts  # Ensure this is the correct matrix
+            #     # matrix_values = list(matrix.values())
+            #     # debug_matrix = matrix_values[500:1000] 
+            #     # Find the nearest snap point to the chip's center
+            #     nearest_x, nearest_y = self.find_nearest_snap_point(chip_center_x, chip_center_y, matrix)
+            #     print(f"Nearest snap point: ({nearest_x}, {nearest_y})")
+
+            #     # **Adjust for scaling if necessary**
+            #     scale = self.scale_factor  # or the appropriate scaling factor
+            #     dx = (nearest_x - chip_center_x) * scale
+            #     dy = (nearest_y - chip_center_y) * scale
+            #     print(f"Calculated movement delta: dx = {dx}, dy = {dy}")
+
+            #     # Move all items associated with the chip
+            #     for tag in chip_params["tags"]:
+            #         self.canvas.move(tag, dx, dy)
+
+            #     # Update the chip's position
+            #     current_x, current_y = chip_params["XY"]
+            #     current_dict_circuit[chip_id]["XY"] = (current_x + dx / scale, current_y + dy / scale)
+            #     # Update the chip's center position
+            #     chip_params["center"] = (chip_center_x + dx / scale, chip_center_y + dy / scale)
+
+            #     # Update pin positions
+            #     for pin_info in pins:
+            #         pin_x, pin_y = pin_info['position']
+            #         pin_info['position'] = (pin_x + dx / scale, pin_y + dy / scale)
+
+            #     print(f"Chip {chip_id} moved to new center position: ({chip_params['center'][0]}, {chip_params['center'][1]})")
+            # else:
+            #     print(f"No pins found for chip {chip_id}")
+
+    # def find_nearest_snap_point(self, x, y, matrix):
+    #     """
+    #     Find the nearest snap point to the given x, y coordinates.
+
+    #     Parameters:
+    #         x (float): The x-coordinate.
+    #         y (float): The y-coordinate.
+    #         matrix (dict): The matrix containing snap points.
+
+    #     Returns:
+    #         tuple: (nearest_x, nearest_y) coordinates of the nearest snap point.
+    #     """
+    #     min_distance = float('inf')
+    #     nearest_point = (x, y)
+    #     for id_in_matrix, point in matrix.items():
+    #         if id_in_matrix.startswith("snap,"):
+    #             grid_x, grid_y = point["xy"]
+    #             distance = math.hypot(x - grid_x, y - grid_y)
+    #             print(f"Checking snap point {id_in_matrix} at ({grid_x}, {grid_y}), distance: {distance}")
+    #             if distance < min_distance:
+    #                 min_distance = distance
+    #                 nearest_point = (grid_x, grid_y)
+    #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
+    #     return nearest_point
+
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 6 and 21 ('f' lines)
+            # if line_num == 7 or line_num == 22:
+                grid_x, grid_y = point[1]["xy"]
+                distance = math.hypot(x - grid_x, y - grid_y)
+                if distance < min_distance:
+                    
+                    min_distance = distance
+                    nearest_point = (grid_x, grid_y)
+                    nearest_point_col_lin = point[1]["coord"]
+
+        return nearest_point, nearest_point_col_lin
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -216,6 +528,7 @@ class ComponentSketcher:
             # if key == "xyOrigin": xO, yO       = value
 
         id_origins[id_origin] = (xD, yD)
+        
         return (xO, yO)
 
 
@@ -1305,16 +1618,6 @@ class ComponentSketcher:
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
         dimColumn = dim["chipWidth"] * inter_space
 
-        # Calculate the number of pins per side
-        nbBrocheParCote = dim["pinCount"] // 2
-
-        # Initialize tag names
-        tagBase = "base" + id if id else "base" + str(num_id)
-        tagMenu = "menu" + id if id else "menu" + str(num_id)
-        tagCapot = "chipCover" + id if id else "chipCover" + str(num_id)
-        tagSouris = "activeArea" + id if id else "activeArea" + str(num_id)
-
-        # Initialize params dictionary
         params = {}
         if id:
             if current_dict_circuit.get(id):
@@ -1326,119 +1629,92 @@ class ComponentSketcher:
             num_id += 1
 
         if not tags:
-            # Set the label and type for the chip
-            label = dim["label"] + "-" + str(id_type[type])
             params["id"] = id
+            params["XY"] = (xD, yD)
+
+            dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
+            dimColumn = dim["chipWidth"] * inter_space
+            label = dim["label"] + "-" + str(id_type[type])
+            params["label"] = label
             params["type"] = type
+            params["btnMenu"] = [1, 1, 0]
+            nbBrocheParCote = dim["pinCount"] // 2
+            tagBase = "base" + id
+            tagMenu = "menu" + id
+            tagCapot = "chipCover" + id
+            tagSouris = "activeArea" + id
 
-            # **Initialize btnMenu in params**
-            params["btnMenu"] = [1, 1, 0]  # Added this line
-
-            # Calculate the offset due to pin extension
-            # Since pins are drawn relative to xD and yD, and may extend above or below the chip body,
-            # we need to adjust yD to ensure the top-left corner corresponds to the chip body
-
-            # Determine the pin extension above the chip body
-            # In this drawing, pins extend upwards from the chip body, so we need to find the maximum negative offset
-            pin_extension = 0  # Initialize pin extension
-
-            # Calculate the maximum negative offset from the pins
-            min_pin_y = yD  # Initialize to yD
-            for i in range(dim["pinCount"]):
-                # Calculate the y-coordinate of each pin
-                pin_y = yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0))
-                if pin_y < min_pin_y:
-                    min_pin_y = pin_y
-
-            # The difference between min_pin_y and yD is the pin extension above the chip body
-            pin_extension = yD - min_pin_y
-
-            # Adjust yD to account for the pin extension
-            adjusted_yD = yD + pin_extension
-
-            # Store the adjusted position as the top-left corner of the chip body
-            params["XY"] = (xD, adjusted_yD)
-
-            # Initialize tags list
             params["tags"] = [tagBase, tagSouris]
 
-            # Draw the pins using adjusted_yD
             for i in range(dim["pinCount"]):
                 self.canvas.create_rectangle(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    adjusted_yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
+                    yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
                     xD + 11 * scale + (i % nbBrocheParCote) * inter_space,
-                    adjusted_yD - (3 * scale - (i // nbBrocheParCote) * (dimColumn + 6 * scale)),
+                    yD - (3 * scale - (i // nbBrocheParCote) * (dimColumn + 6 * scale)),
                     fill="#909090",
                     outline="#000000",
                     tags=tagBase,
                 )
                 self.canvas.create_polygon(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    adjusted_yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
+                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
                     xD + space // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    adjusted_yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
+                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
                     xD + (2 * space) // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    adjusted_yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
+                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
                     xD + (11 + (i % nbBrocheParCote) * 15) * scale,
-                    adjusted_yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
+                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
                     fill="#b0b0b0",
                     outline="#000000",
                     smooth=False,
                     tags=tagBase,
                 )
 
-            # Draw the chip body at (xD, adjusted_yD)
-            self.rounded_rect(
-                xD, adjusted_yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase
-            )
+            self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
-            # Create the active area for interaction
+            
             self.canvas.create_rectangle(
                 xD + 2 * scale,
-                adjusted_yD + 2 * scale,
+                yD + 2 * scale,
                 xD - 2 * scale + dimLine,
-                adjusted_yD - 2 * scale + dimColumn,
-                fill="",
-                outline="",
-                tags=tagSouris,
+                yD - 2 * scale + dimColumn,
+                fill="#000000",
+                outline="#000000",
+                tags=tagBase,
             )
-            self.canvas.addtag_withtag("componentActiveArea", tagSouris)
-
-            # Draw internal function if provided
             if dim["internalFunc"] is not None:
-                dim["internalFunc"](xD, adjusted_yD, scale=scale, tags=tagBase, **kwargs)
+                dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
-            # Draw the chip cover (capot)
             self.rounded_rect(
-                xD, adjusted_yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
+                xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
             )
             self.canvas.create_line(
-                xD, adjusted_yD + 1 * space // 3, xD + dimLine, adjusted_yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
+                xD, yD + 1 * space // 3, xD + dimLine, yD + 1 * space // 3, fill="#b0b0b0", width=thickness, tags=tagCapot
             )
             self.canvas.create_line(
                 xD,
-                adjusted_yD + dimColumn - 1 * space // 3,
+                yD + dimColumn - 1 * space // 3,
                 xD + dimLine,
-                adjusted_yD + dimColumn - 1 * space // 3,
+                yD + dimColumn - 1 * space // 3,
                 fill="#b0b0b0",
                 width=thickness,
                 tags=tagCapot,
             )
             self.canvas.create_oval(
                 xD + 4 * scale,
-                adjusted_yD + dimColumn - 1 * space // 3 - 6 * scale,
+                yD + dimColumn - 1 * space // 3 - 6 * scale,
                 xD + 8 * scale,
-                adjusted_yD + dimColumn - 1 * space // 3 - 2 * scale,
+                yD + dimColumn - 1 * space // 3 - 2 * scale,
                 fill="#ffffff",
                 outline="#ffffff",
                 tags=tagCapot,
             )
             self.canvas.create_arc(
                 xD - 5 * scale,
-                adjusted_yD + dimColumn // 2 - 5 * scale,
+                yD + dimColumn // 2 - 5 * scale,
                 xD + 5 * scale,
-                adjusted_yD + dimColumn // 2 + 5 * scale,
+                yD + dimColumn // 2 + 5 * scale,
                 start=270,
                 extent=180,
                 fill="#000000",
@@ -1446,55 +1722,56 @@ class ComponentSketcher:
                 style=tk.PIESLICE,
                 tags=tagCapot,
             )
-
-            # Draw the chip label at the center
             self.drawChar(
                 xD + dimLine // 2,
-                adjusted_yD + dimColumn // 2,
+                yD + dimColumn // 2,
                 scale=scale,
                 angle=0,
                 text=label,
                 color="#ffffff",
                 anchor="center",
                 tags=tagCapot,
+            )  # xD + 30*scale,yD - 10*scale
+            self.canvas.create_rectangle(
+                xD + 2 * scale,
+                yD + 2 * scale,
+                xD - 2 * scale + dimLine,
+                yD - 2 * scale + dimColumn,
+                fill="",
+                outline="",
+                tags=tagSouris,
             )
-
-            # Add the chip cover tag if it's not open
-            if not open:
-                params["tags"].append(tagCapot)
-            else:
-                self.canvas.itemconfig(tagCapot, state="hidden")
-
-            # Raise the necessary tags
             self.canvas.tag_raise(tagCapot)
             self.canvas.tag_raise(tagSouris)
-
-            # Store the parameters in the circuit dictionary
+            self.canvas.addtag_withtag("componentActiveArea", tagSouris)
+            if open:
+                self.canvas.itemconfig(tagCapot, state="hidden")
+            else:
+                params["tags"].append(tagCapot)
             current_dict_circuit[id] = params
-
-            # **Call drawMenu after initializing btnMenu**
-            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, adjusted_yD - space, thickness, label, tagMenu, id)
+            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
             self.canvas.tag_bind(
                 tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
             )
-
-            # Bind left-click to initiate drag
+             # Bind left-click to initiate drag
             self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
 
             # Bind drag and release events to the activeArea tag
-            self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_drag)
-            self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_drag)
-
+            self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_chip_drag)
+            self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_chip_drag)
         else:
-            # If the chip already exists, move it to the new position
             X, Y = params["XY"]
             dX = xD - X
             dY = yD - Y
+            params["XY"] = (xD, yD)
             for tg in tags:
                 self.canvas.move(tg, dX, dY)
 
-        # Return the new xD, yD positions
+
         return xD + dimLine + 2.3 * scale, yD
+
+
+
 
 
 
@@ -1539,7 +1816,7 @@ class ComponentSketcher:
                 tags = value
 
         params = {}
-        if id:  # supprime l'ancien câble si existant id != None
+        if id:  # If the wire already exists, delete it and redraw
             if current_dict_circuit.get(id):
                 params = current_dict_circuit[id]
                 tags = params["tags"]
@@ -1551,7 +1828,6 @@ class ComponentSketcher:
 
         params["id"] = id
         params["mode"] = mode
-        # params["matrix"] = matrix
         params["coord"] = coords
         xO, yO, xF, yF = coords[0]
         xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
@@ -1560,50 +1836,67 @@ class ComponentSketcher:
         params["color"] = color
         encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
         contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-        self.canvas.create_oval(
-            xD + xO + 2 * space / 9,
-            yD + yO + 2 * space / 9,
-            xD + xO + 7 * space / 9,
-            yD + yO + 7 * space / 9,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=id,
-        )
-        self.canvas.create_oval(
-            xD + xF + 2 * space / 9,
-            yD + yF + 2 * space / 9,
-            xD + xF + 7 * space / 9,
-            yD + yF + 7 * space / 9,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=id,
-        )
 
-        divY = yF - yO if yF != yO else 0.000001
-        xDiff = (space / 2) * (1 - math.cos(math.atan((xF - xO) / divY)))
-        yDiff = (space / 2) * (1 - math.sin(math.atan((xF - xO) / divY)))
-        p1 = ((xO + xDiff), (yO + space - yDiff))
-        p2 = ((xF + xDiff), (yF + space - yDiff))
-        p3 = ((xF + space - xDiff), (yF + yDiff))
-        p4 = ((xO + space - xDiff), (yO + yDiff))
-        self.canvas.create_polygon(
-            xD + p1[0],
-            yD + p1[1],
-            xD + p2[0],
-            yD + p2[1],
-            xD + p3[0],
-            yD + p3[1],
-            xD + p4[0],
-            yD + p4[1],
+        # Define unique tags for the wire components
+        wire_body_tag = f"{id}_body"
+        start_endpoint_tag = f"{id}_start"
+        end_endpoint_tag = f"{id}_end"
+
+        # Create the wire body as a line
+        self.canvas.create_line(
+            xD + xO, yD + yO,
+            xD + xF, yD + yF,
             fill=encre,
-            outline=contour,
-            width=1 * thickness,
-            tags=id,
+            width=6 * thickness,
+            tags=(id, wire_body_tag),
         )
 
-        params["tags"] = [id]
+        # Create endpoints as separate items
+        endpoint_radius = 3 * scale  # Adjust size as needed
+
+        # Starting endpoint
+        self.canvas.create_oval(
+            xD + xO - endpoint_radius,
+            yD + yO - endpoint_radius,
+            xD + xO + endpoint_radius,
+            yD + yO + endpoint_radius,
+            fill="#dfdfdf",
+            outline="#404040",
+            width=1 * thickness,
+            tags=(id, start_endpoint_tag),
+        )
+
+        # Ending endpoint
+        self.canvas.create_oval(
+            xD + xF - endpoint_radius,
+            yD + yF - endpoint_radius,
+            xD + xF + endpoint_radius,
+            yD + yF + endpoint_radius,
+            fill="#dfdfdf",
+            outline="#404040",
+            width=1 * thickness,
+            tags=(id, end_endpoint_tag),
+        )
+
+        # Store tags and positions in params
+        params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
+        params["wire_body_tag"] = wire_body_tag
+        params["endpoints"] = {
+            "start": {"position": (xD + xO, yD + yO), "tag": start_endpoint_tag},
+            "end": {"position": (xD + xF, yD + yF), "tag": end_endpoint_tag},
+        }
+
+        # Bind events to the endpoints for drag-and-drop
+        self.canvas.tag_bind(start_endpoint_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'start'))
+        self.canvas.tag_bind(end_endpoint_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'end'))
+
+        self.canvas.tag_bind(start_endpoint_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'start'))
+        self.canvas.tag_bind(end_endpoint_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'end'))
+
+        self.canvas.tag_bind(start_endpoint_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
+        self.canvas.tag_bind(end_endpoint_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
+
         current_dict_circuit[id] = params
 
         return xD, yD
+

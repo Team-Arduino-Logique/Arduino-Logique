@@ -3,9 +3,10 @@
 import tkinter as tk
 from tkinter import messagebox
 import os
+from dataCDLT import matrix1260pts
 
-class Tooltip: # the tooltip is the popup that appears when we hover over a chip
-    """Simple tooltip implementation without external libraries."""
+class Tooltip:
+    """Simple tooltip implementation doesn't work now, I need to figure out why."""
     def __init__(self, widget, text):
         self.widget = widget
         self.text = text
@@ -40,18 +41,20 @@ class Tooltip: # the tooltip is the popup that appears when we hover over a chip
             tw.destroy()
 
 class Sidebar:
-    def __init__(self, parent, chip_images_path="chips"):
+    def __init__(self, parent, chip_images_path="chips", canvas=None, board=None, sketcher=None, component_data=None):
         """
         Initializes the sidebar.
-
-        Parameters:
-        - parent (tk.Frame): The parent frame to attach the sidebar to.
-        - chip_images_path (str): Path to the directory containing chip images.
         """
         self.parent = parent
         self.chip_images_path = chip_images_path
         self.chip_images = []
         self.load_chip_images()
+        self.canvas = canvas
+        self.board = board
+        self.sketcher = sketcher
+        self.component_data = component_data
+        self.selected_chip_name = None
+        self.chip_cursor_image = None
 
         # Creating the sidebar frame
         self.sidebar_frame = tk.Frame(self.parent, bg="#333333", width=250, bd=0, highlightthickness=0)
@@ -143,25 +146,25 @@ class Sidebar:
         chips_label.pack(anchor="w")
 
         # Creating a canvas for chips with a vertical scrollbar
-        self.canvas = tk.Canvas(self.sidebar_frame, bg="#333333", highlightthickness=0, bd=0)
-        self.canvas.grid(row=2, column=0, padx=10, pady=5, sticky="nsew")
+        self.canvas_chips = tk.Canvas(self.sidebar_frame, bg="#333333", highlightthickness=0, bd=0)
+        self.canvas_chips.grid(row=2, column=0, padx=10, pady=5, sticky="nsew")
 
         # Adding a scrollbar to the canvas
-        scrollbar = tk.Scrollbar(self.sidebar_frame, orient="vertical", command=self.canvas.yview)
-        scrollbar.grid(row=2, column=0, sticky='nse')  # Positioned on the right side
+        scrollbar = tk.Scrollbar(self.sidebar_frame, orient="vertical", command=self.canvas_chips.yview)
+        scrollbar.grid(row=2, column=0, sticky='nse')
 
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas_chips.configure(yscrollcommand=scrollbar.set)
 
         # Creating a frame inside the canvas to hold chip buttons
-        self.chips_inner_frame = tk.Frame(self.canvas, bg="#333333")
-        self.canvas.create_window((0, 0), window=self.chips_inner_frame, anchor="nw")
+        self.chips_inner_frame = tk.Frame(self.canvas_chips, bg="#333333")
+        self.canvas_chips.create_window((0, 0), window=self.chips_inner_frame, anchor="nw")
 
         # Binding the configure event to update the scrollregion
-        self.chips_inner_frame.bind("<Configure>", lambda event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.chips_inner_frame.bind("<Configure>", lambda event: self.canvas_chips.configure(scrollregion=self.canvas_chips.bbox("all")))
 
         # Defining grid properties
         self.columns = 2  # Number of columns in the grid
-        self.visible_rows = 4  # Number of rows visible without scrolling
+        self.visible_rows = 12  # Number of rows visible without scrolling
         self.grid_capacity = self.columns * self.visible_rows  # Total slots visible
 
         # Displaying chips
@@ -170,9 +173,6 @@ class Sidebar:
     def display_chips(self, chips):
         """
         Displays chip buttons in the chips_inner_frame.
-
-        Parameters:
-        - chips (list): List of tuples containing chip name and PhotoImage.
         """
         # Clearing existing chips
         for widget in self.chips_inner_frame.winfo_children():
@@ -195,8 +195,8 @@ class Sidebar:
                 activebackground="#479dff",
                 relief="flat",
                 command=lambda name=chip_name: self.select_chip(name),
-                width=30,   # Fixed width to match image size
-                height=30   # Fixed height to match image size
+                width=100,   # Fixed width to match image size
+                height=60   # Fixed height to match image size
             )
             btn.grid(row=row, column=col, padx=1, pady=1)
             Tooltip(btn, chip_name)  # Adding tooltip with chip name
@@ -212,9 +212,9 @@ class Sidebar:
             col = (len(display_chips) + i) % self.columns
             empty_frame = tk.Frame(
                 self.chips_inner_frame,
-                width=30,  # Fixed size to match chip buttons
-                height=30,
-                bg="#333333",
+                width=100,  # Fixed size to match chip buttons
+                height=60,
+                bg="#555555",
                 relief="flat"
             )
             empty_frame.grid_propagate(False)  # Preventing frame from resizing
@@ -224,7 +224,7 @@ class Sidebar:
         """
         Creates the 'Manage Components' button at the bottom of the sidebar without an icon.
         """
-        manage_button = tk.Button( # the button is invisible for now we can change this later
+        manage_button = tk.Button(
             self.sidebar_frame,
             text="Manage Components",
             bg="#333333",  # Matching the sidebar's background to simulate transparency
@@ -241,12 +241,167 @@ class Sidebar:
     def select_chip(self, chip_name):
         """
         Handler for selecting a chip.
-
-        Parameters:
-        - chip_name (str): The name of the selected chip.
         """
-        messagebox.showinfo("Chip Selected", f"Selected Chip: {chip_name}")
-        # I thought about making the chip selected appear in the mouse cursor, will be done later if agreed upon
+        # Cancel any ongoing chip placement
+        self.cancel_chip_placement()
+
+        # Set the new selected chip
+        self.selected_chip_name = chip_name
+        self.start_chip_placement(chip_name)
+
+    def start_chip_placement(self, chip_name):
+        """
+        Initiates the chip placement process by changing the cursor to the chip image.
+        """
+        # Get the chip image
+        for name, img in self.chip_images:
+            if name == chip_name:
+                self.chip_cursor_image = img
+                break
+        else:
+            self.chip_cursor_image = None
+            return
+
+        # Keep a reference to the image to prevent garbage collection
+        self.canvas.chip_cursor_image = self.chip_cursor_image
+
+        # Hide the default cursor
+        self.canvas.config(cursor="none")
+
+        # Bind events to the canvas
+        self.canvas.bind("<Motion>", self.canvas_on_mouse_move)
+        self.canvas.bind("<Button-1>", self.canvas_on_click)
+        self.canvas.bind("<Button-3>", self.cancel_chip_placement)  # Bind right-click to cancel
+
+        print(f"Started placement for chip: {chip_name}")
+
+    def cancel_chip_placement(self, event=None):
+        """
+        Cancels the current chip placement process.
+        """
+        if self.selected_chip_name:
+            # Remove the cursor-following image if it exists
+            if hasattr(self.canvas, 'chip_cursor_id'):
+                self.canvas.delete(self.canvas.chip_cursor_id)
+                del self.canvas.chip_cursor_id
+
+            # Reset the cursor to default
+            self.canvas.config(cursor="")
+
+            # Unbind the placement-related events
+            self.canvas.unbind("<Motion>")
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<Button-3>")  # Unbind right-click if bound
+
+            # Reset the selected chip
+            self.selected_chip_name = None
+            self.chip_cursor_image = None
+
+            print("Chip placement canceled.")
+
+    def canvas_on_mouse_move(self, event):
+        """
+        Handles the mouse movement over the canvas to make the chip follow the cursor.
+        """
+        # Get the cursor position
+        x, y = event.x, event.y
+
+        # Create the chip cursor image if it doesn't exist
+        if not hasattr(self.canvas, 'chip_cursor_id'):
+            self.canvas.chip_cursor_id = self.canvas.create_image(x, y, image=self.chip_cursor_image, anchor="center")
+        else:
+            # Move the existing chip cursor image
+            self.canvas.coords(self.canvas.chip_cursor_id, x, y)
+
+        # Bring the cursor image to the front
+        self.canvas.tag_raise(self.canvas.chip_cursor_id)
+
+    def canvas_on_click(self, event):
+        """
+        Handles the mouse click on the canvas to place the chip on the breadboard.
+        """
+        # Get the cursor position
+        x, y = event.x, event.y
+
+        # Place the chip on the breadboard at the cursor position
+        self.place_chip_at(x, y, self.selected_chip_name)
+
+        # Remove the cursor-following image
+        if hasattr(self.canvas, 'chip_cursor_id'):
+            self.canvas.delete(self.canvas.chip_cursor_id)
+            del self.canvas.chip_cursor_id
+
+        # Reset the cursor
+        self.canvas.config(cursor="")
+
+        # Unbind the placement-related events
+        self.canvas.unbind("<Motion>")
+        self.canvas.unbind("<Button-1>")
+        self.canvas.unbind("<Button-3>")  # Unbind right-click
+
+        # Reset the selected chip
+        print(f"Chip {self.selected_chip_name} placed.")
+        self.selected_chip_name = None
+        self.chip_cursor_image = None
+
+    def place_chip_at(self, x, y, chip_name):
+        """
+        Places the selected chip on the breadboard at the nearest snap point.
+        """
+        # Find the nearest snap point
+        column, line = self.sketcher.find_nearest_snap_point(x, y, matrix1260pts)
+        print(f"Nearest snap point: {column}, {line}")
+
+        if column is None or line is None:
+            messagebox.showerror("Placement Error", "No snap point found nearby.")
+            return
+
+        # Adjust for scaling and origin if necessary
+        scale = self.sketcher.scale_factor
+        xO, yO = 0, 0  # Origin coordinates
+
+        # Calculate exact position using goXY
+        exact_x, exact_y = self.sketcher.goXY(
+                xO, 
+                yO, 
+                scale=1, 
+                width=-2, 
+                column=column, 
+                line=line
+            )
+        # Retrieve chip parameters from component data
+        chip_model = None
+        if chip_name == '74HC00.png':
+            chip_model = self.component_data.chip7400
+        elif chip_name == '74HC02.png':
+            chip_model = self.component_data.chip7402
+        elif chip_name == '74HC04.png':
+            chip_model = self.component_data.chip7404
+        elif chip_name == '74HC08.png':
+            chip_model = self.component_data.chip7408
+        elif chip_name == '74HC32.png':
+            chip_model = self.component_data.chip7432
+        else:
+            # Default chip or show error
+            messagebox.showerror("Error", f"Unknown chip: {chip_name}")
+            return
+
+        if chip_model:
+            #Draw the chip at the calculated exact position
+            exact_x, exact_y = self.sketcher.goXY(
+                xO, 
+                yO, 
+                scale=1, 
+                width=-2, 
+                column=column, 
+                line=line
+            )
+            self.board.circuit(exact_x, exact_y, scale=scale, model=chip_model)
+            self.component_data.add_component(chip_model, exact_x, exact_y, scale)
+            
+
+
+
 
     def manage_components(self):
         """
@@ -257,9 +412,6 @@ class Sidebar:
     def on_search(self, event):
         """
         Filters the displayed chips based on the search query.
-
-        Parameters:
-        - event (tk.Event): The event object.
         """
         query = self.search_entry.get().lower()
         if not query:
