@@ -610,10 +610,10 @@ class DFlipFlop(ChipFunction):
         super().__init__()
         self.clock_pin: Pin = Pin(clock_pin, None)
         self.clock_type: str = clock_type
-        self.reset_pin: Pin = Pin(reset_pin, None)
-        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None)
-        self.set_pin: Pin = Pin(set_pin, None)
-        self.inv_set_pin: Pin = Pin(inv_set_pin, None)
+        self.reset_pin: Pin = Pin(reset_pin, None) if reset_pin is not None else None
+        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None) if inv_reset_pin is not None else None
+        self.set_pin: Pin = Pin(set_pin, None) if set_pin is not None else None
+        self.inv_set_pin: Pin = Pin(inv_set_pin, None) if inv_set_pin is not None else None
         self.data_pin: Pin = Pin(data_pin, None)
         self.output_pin: Pin = Pin(output_pin, None)
         self.inv_output_pin: Pin = Pin(inv_output_pin, None)
@@ -751,14 +751,14 @@ class JKFlipFlop(ChipFunction):
         super().__init__()
         self.clock_pin: Pin = Pin(clock_pin, None)
         self.clock_type: str = clock_type
-        self.reset_pin: Pin = Pin(reset_pin, None)
-        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None)
-        self.set_pin: Pin = Pin(set_pin, None)
-        self.inv_set_pin: Pin = Pin(inv_set_pin, None)
-        self.j_input_pin: Pin = Pin(j_input_pin, None)
-        self.inv_j_input_pin: Pin = Pin(inv_j_input_pin, None)
-        self.k_input_pin: Pin = Pin(k_input_pin, None)
-        self.inv_k_input_pin: Pin = Pin(inv_k_input_pin, None)
+        self.reset_pin: Pin = Pin(reset_pin, None) if reset_pin is not None else None
+        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None) if inv_reset_pin is not None else None
+        self.set_pin: Pin = Pin(set_pin, None) if set_pin is not None else None
+        self.inv_set_pin: Pin = Pin(inv_set_pin, None) if inv_set_pin is not None else None
+        self.j_input_pin: Pin = Pin(j_input_pin, None) if j_input_pin is not None else None
+        self.inv_j_input_pin: Pin = Pin(inv_j_input_pin, None) if inv_j_input_pin is not None else None
+        self.k_input_pin: Pin = Pin(k_input_pin, None) if k_input_pin is not None else None
+        self.inv_k_input_pin: Pin = Pin(inv_k_input_pin, None) if inv_k_input_pin is not None else None
         self.output_pin: Pin = Pin(output_pin, None)
         self.inv_output_pin: Pin = Pin(inv_output_pin, None)
 
