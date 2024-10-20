@@ -213,6 +213,7 @@ class Chip:
                 data["load_enable_pin"],
                 data["inv_load_enable_pin"],
                 data["up_down_input_pin"],
+                data["inv_up_down_input_pin"],
                 data["terminal_count_pin"],
                 data["ripple_clock_output_pin"],
                 data["data_pins"],
@@ -364,4 +365,9 @@ if __name__ == "__main__":
     new_chip_to_add = Chip(model=available_chips["74HC151"])
     new_chip_to_add.set_position(ConnectionPointID(20, 20))
     circuit.add_chip(new_chip_to_add)
+
+    new_chip_to_add = Chip(model=available_chips["74HC191"])
+    new_chip_to_add.set_position(ConnectionPointID(30, 30))
+    circuit.add_chip(new_chip_to_add)
+
     print(circuit.get_func_list())
