@@ -44,10 +44,10 @@ class FunctionRepresentation:
     """
     Represents a function in a circuit model.
     Attributes:
-        fn_inputs (tuple[ConnectionPointID]): The input connection points of the function.
-        fn_outputs (tuple[ConnectionPointID]): The output connection points of the function.
+        fn_inputs (list[ConnectionPointID]): The input connection points of the function.
+        fn_outputs (list[ConnectionPointID]): The output connection points of the function.
         function (TruthTable | str): The function represented as a truth table or a string.
     """
-    fn_inputs: tuple[ConnectionPointID]
-    fn_outputs: tuple[ConnectionPointID]
+    fn_inputs: list[ConnectionPointID]
+    fn_outputs: list[ConnectionPointID]
     function: TruthTable | str

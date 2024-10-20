@@ -39,8 +39,9 @@ Classes:
 """
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from math import log2
-from .circuit_util_elements import ConnectionPointID, Pin
+from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, Pin
 
 
 def create_and_gate(data: dict) -> AndGate:
@@ -231,7 +232,7 @@ def create_binary_counter(data: dict) -> BinaryCounter:
     )
 
 
-class ChipFunction:
+class ChipFunction(ABC):
     """
     A base class representing a generic chip function.
 
@@ -240,36 +241,35 @@ class ChipFunction:
     implement the specific internal function of the chip to link inputs and outputs.
     """
 
-    def __init__(self):
-        raise NotImplementedError("Do not instantiate base ChipFunction.")
+    def __init__(self) -> None:
+        """
+        Initializes a ChipFunction object.
+        """
+        self.all_pins: list[Pin] = []
 
+    @abstractmethod
     def __str__(self) -> str:
-        """
-        Returns a string representation of the ChipFunction object.
-
-        This method should be overridden by subclasses to provide
-        a specific string representation of the chip function.
-
-        Returns:
-            str: A string representation of the chip function.
-        """
         raise NotImplementedError("Function not implemented.")
 
-    def chip_internal_function(self):
+    @abstractmethod
+    def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Placeholder for the chip's internal function linking the inputs and outputs.
-
-        This method should be overridden by subclasses to provide
-        the specific implementation of the chip's internal function.
-
+        Represents an internal function of a chip.
+        This method is intended to be overridden by subclasses to provide
+        specific functionality for different types of chips. It should return
+        an instance of `FunctionRepresentation` that encapsulates the behavior
+        of the chip's internal function.
         Raises:
-            NotImplementedError: If the method is not overridden.
+            NotImplementedError: If the method is not overridden in a subclass.
+        Returns:
+            FunctionRepresentation: An object representing the chip's internal function.
         """
+
         raise NotImplementedError("Function not implemented.")
 
     def calculate_pin_pos(self, top_left_pin_pos: ConnectionPointID, top_left_pin_num: int, num_pins: int) -> None:
         """
-        Calculates the position of a pin based on the top-left pin position and the pin number.
+        Calculates the position of all pins based on the top-left pin position and the pin number.
         Args:
             top_left_pin_pos (ConnectionPointID): The position of the top-left pin.
             top_left_pin_num (int): The pin number.
@@ -277,21 +277,71 @@ class ChipFunction:
         Returns:
             None
         """
+        pins_per_side = num_pins // 2
+        if top_left_pin_num == num_pins:
+            top_right_pin_num = num_pins - pins_per_side + 1
+            for pin in self.all_pins:
+                if pin.pin_num <= top_left_pin_num and pin.pin_num >= top_right_pin_num:
+                    pin.connection_point = ConnectionPointID(
+                        top_left_pin_pos.col + (top_left_pin_num - pin.pin_num), top_left_pin_pos.line
+                    )
+                else:
+                    pin.connection_point = ConnectionPointID(
+                        top_left_pin_pos.col + pin.pin_num - 1, top_left_pin_pos.line + 1
+                    )
+
+        else:
+            raise NotImplementedError("Rotated chips not supported yet")
+
+
+class LogicalFunction(ChipFunction, ABC):
+    """
+    Represents a logical function within a chip, inheriting from ChipFunction.
+    Attributes:
+        input_pins (list[int]): List of input pin numbers.
+        output_pins (list[int]): List of output pin numbers.
+        operator (str): The logical operator to be applied (e.g., &, |, ^, !).
+        all_pins (list[Pin]): Combined list of input and output pins.
+    """
+
+    def __init__(self, input_pins: list[int], output_pins: list[int], operator: str):
+        """
+        Initializes the LogicalFunction with input pins, output pins, and a logical operator.
+        Args:
+            input_pins (list[int]): List of input pin numbers.
+            output_pins (list[int]): List of output pin numbers.
+            operator (str): The logical operator to be applied.
+        """
+        super().__init__()
+        self.input_pins: list[Pin] = [Pin(pin_num, None) for pin_num in input_pins]
+        self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
+        self.all_pins = self.input_pins + self.output_pins
+        self.operator = operator
+
+    def chip_internal_function(self) -> FunctionRepresentation:
+        """
+        Generates a FunctionRepresentation object based on the current state of the input and output pins.
+        Returns:
+            FunctionRepresentation: An object representing the function with the positions of input and output pins and the logical operator.
+        """
+        input_pin_pos = [pin.connection_point for pin in self.input_pins if pin.connection_point is not None]
+        output_pin_pos = [pin.connection_point for pin in self.output_pins if pin.connection_point is not None]
+        return FunctionRepresentation(input_pin_pos, output_pin_pos, self.operator)
+
+    @abstractmethod
+    def __str__(self):
         raise NotImplementedError("Function not implemented.")
 
 
-class AndGate(ChipFunction):
+class AndGate(LogicalFunction):
     """
     Represents an AND gate in a digital circuit.
     Attributes:
         input_pins (list[Pin]): A tuple containing the input pins.
         output_pins (list[Pin]): A tuple containing the output pins.
-    Methods:
-        __str__(): Returns a string representation of the AND gate.
-        chip_internal_function(): Placeholder for the internal function of the AND gate.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes an AND gate with the specified input and output pins.
         Args:
@@ -301,8 +351,7 @@ class AndGate(ChipFunction):
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "&")
         if len(self.input_pins) < 2:
             raise ValueError("AND gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -316,41 +365,27 @@ class AndGate(ChipFunction):
         """
         return f"AND Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal function of the AND gate.
-        This method should be implemented to define the behavior of the AND gate.
-        """
-        # TODO: Implement the internal function of the AND gate
 
-
-class OrGate(ChipFunction):
+class OrGate(LogicalFunction):
     """
     Represents an OR gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the indices of the input pins.
-        output_pins (list[Pin]): A tuple containing the index of the output pin.
-    Methods:
-        __str__(): Returns a string representation of the OR gate.
-        chip_internal_function(): Placeholder for the internal logic of the OR gate.
-    Raises:
-        ValueError: If the number of input pins is less than two.
-        ValueError: If the number of output pins is not exactly one.
+        input_pins (list[int]): A tuple containing the indices of the input pins.
+        output_pins (list[int]): A tuple containing the index of the output pin.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes an OR gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pin numbers.
-            output_pins (list[Pin]): A tuple containing the output pin number.
+            input_pins (list[int]): A tuple containing the input pin numbers.
+            output_pins (list[int]): A tuple containing the output pin number.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
 
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "|")
         if len(self.input_pins) < 2:
             raise ValueError("OR gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -366,40 +401,27 @@ class OrGate(ChipFunction):
 
         return f"OR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        A placeholder method for the internal functionality of a chip.
-        This method is intended to be overridden by subclasses to implement
-        specific internal behaviors of a chip. Currently, it does nothing.
-        Returns:
-            None
-        """
-        # TODO: Implement the internal function of the OR gate
 
-
-class NotGate(ChipFunction):
+class NotGate(LogicalFunction):
     """
     Represents a NOT gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pin number(s).
-        output_pins (list[Pin]): A tuple containing the output pin number(s).
-    Methods:
-        __str__(): Returns a string representation of the NOT gate.
-        chip_internal_function(): Placeholder for the internal logic of the NOT gate.
+        input_pins (list[int]): A tuple containing the input pin number(s).
+        output_pins (list[int]): A tuple containing the output pin number(s).
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes a NOT gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pin number(s).
-            output_pins (list[Pin]): A tuple containing the output pin number(s).
+            input_pins (list[int]): A tuple containing the input pin number(s).
+            output_pins (list[int]): A tuple containing the output pin number(s).
         Raises:
             ValueError: If the number of input pins is not exactly one.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "!")
+
         if len(self.input_pins) != 1:
             raise ValueError("NOT gate must have exactly one input pin.")
         if len(self.output_pins) != 1:
@@ -413,36 +435,27 @@ class NotGate(ChipFunction):
         """
         return f"NOT Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal logic of the NOT gate.
-        """
-        # TODO: Implement the internal function of the NOT gate
 
-
-class XorGate(ChipFunction):
+class XorGate(LogicalFunction):
     """
     Represents an XOR gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-    Methods:
-        __str__(): Returns a string representation of the XOR gate.
-        chip_internal_function(): Placeholder for the internal function of the XOR gate.
+        input_pins (list[int]): A tuple containing the input pins.
+        output_pins (list[int]): A tuple containing the output pins.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes an XOR gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pins.
-            output_pins (list[Pin]): A tuple containing the output pin.
+            input_pins (list[int]): A tuple containing the input pins.
+            output_pins (list[int]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "^")
+
         if len(self.input_pins) < 2:
             raise ValueError("XOR gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -456,37 +469,27 @@ class XorGate(ChipFunction):
         """
         return f"XOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal function of the XOR gate.
-        This method should be implemented to define the behavior of the XOR gate.
-        """
-        # TODO: Implement the internal function of the XOR gate
 
-
-class NandGate(ChipFunction):
+class NandGate(LogicalFunction):
     """
     Represents a NAND gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-    Methods:
-        __str__(): Returns a string representation of the NAND gate.
-        chip_internal_function(): Placeholder for the internal function of the NAND gate.
+        input_pins (list[int]): A tuple containing the input pins.
+        output_pins (list[int]): A tuple containing the output pins.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes a NAND gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pins.
-            output_pins (list[Pin]): A tuple containing the output pin.
+            input_pins (list[int]): A tuple containing the input pins.
+            output_pins (list[int]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "!&")
+
         if len(self.input_pins) < 2:
             raise ValueError("NAND gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -500,37 +503,27 @@ class NandGate(ChipFunction):
         """
         return f"NAND Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal function of the NAND gate.
-        This method should be implemented to define the behavior of the NAND gate.
-        """
-        # TODO: Implement the internal function of the NAND gate
 
-
-class NorGate(ChipFunction):
+class NorGate(LogicalFunction):
     """
     Represents a NOR gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-    Methods:
-        __str__(): Returns a string representation of the NOR gate.
-        chip_internal_function(): Placeholder for the internal function of the NOR gate.
+        input_pins (list[int]): A tuple containing the input pins.
+        output_pins (list[int]): A tuple containing the output pins.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes a NOR gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pins.
-            output_pins (list[Pin]): A tuple containing the output pin.
+            input_pins (list[int]): A tuple containing the input pins.
+            output_pins (list[int]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "!|")
+
         if len(self.input_pins) < 2:
             raise ValueError("NOR gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -544,37 +537,27 @@ class NorGate(ChipFunction):
         """
         return f"NOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal function of the NOR gate.
-        This method should be implemented to define the behavior of the NOR gate.
-        """
-        # TODO: Implement the internal function of the NOR gate
 
-
-class XnorGate(ChipFunction):
+class XnorGate(LogicalFunction):
     """
     Represents an XNOR gate in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-    Methods:
-        __str__(): Returns a string representation of the XNOR gate.
-        chip_internal_function(): Placeholder for the internal function of the XNOR gate.
+        input_pins (list[int]): A tuple containing the input pins.
+        output_pins (list[int]): A tuple containing the output pins.
     """
 
-    def __init__(self, input_pins: list[Pin], output_pins: list[Pin]):
+    def __init__(self, input_pins: list[int], output_pins: list[int]):
         """
         Initializes an XNOR gate with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pins.
-            output_pins (list[Pin]): A tuple containing the output pin.
+            input_pins (list[int]): A tuple containing the input pins.
+            output_pins (list[int]): A tuple containing the output pin.
         Raises:
             ValueError: If the number of input pins is less than two.
             ValueError: If the number of output pins is not exactly one.
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
+        super().__init__(input_pins, output_pins, "!^")
+
         if len(self.input_pins) < 2:
             raise ValueError("XNOR gate must have at least two input pins.")
         if len(self.output_pins) != 1:
@@ -588,24 +571,17 @@ class XnorGate(ChipFunction):
         """
         return f"XNOR Gate:\n\t\tInput Pins: {self.input_pins},\n\t\tOutput Pins: {self.output_pins}"
 
-    def chip_internal_function(self):
-        """
-        Placeholder for the internal function of the XNOR gate.
-        This method should be implemented to define the behavior of the XNOR gate.
-        """
-        # TODO: Implement the internal function of the XNOR gate
-
 
 class Mux(ChipFunction):
     """
     Represents a multiplexer in a digital circuit.
     Attributes:
-        input_pins (list[Pin]): A tuple containing the input pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-        inv_output_pins (list[Pin]): A tuple containing the inverted output pins.
-        select_pins (list[Pin]): A tuple containing the select pins.
-        enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
-        inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+        input_pins (list[int]): A tuple containing the input pins.
+        output_pins (list[int]): A tuple containing the output pins.
+        inv_output_pins (list[int]): A tuple containing the inverted output pins.
+        select_pins (list[int]): A tuple containing the select pins.
+        enable_pins (list[int]): A tuple containing the active HIGH enable pins.
+        inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
     Methods:
         __str__(): Returns a string representation of the MUX.
         chip_internal_function(): Placeholder for the internal function of the MUX.
@@ -613,22 +589,22 @@ class Mux(ChipFunction):
 
     def __init__(
         self,
-        input_pins: list[Pin],
-        output_pins: list[Pin],
-        inv_output_pins: list[Pin],
-        select_pins: list[Pin],
-        enable_pins: list[Pin],
-        inv_enable_pins: list[Pin],
+        input_pins: list[int],
+        output_pins: list[int],
+        inv_output_pins: list[int],
+        select_pins: list[int],
+        enable_pins: list[int],
+        inv_enable_pins: list[int],
     ):
         """
         Initializes a Mux with the specified input and output pins.
         Args:
-            input_pins (list[Pin]): A tuple containing the input pins.
-            output_pins (list[Pin]): A tuple containing the output pins.
-            inv_output_pins (list[Pin]): A tuple containing the inverted output pins.
-            select_pins (list[Pin]): A tuple containing the select pins.
-            enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
-            inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+            input_pins (list[int]): A tuple containing the input pins.
+            output_pins (list[int]): A tuple containing the output pins.
+            inv_output_pins (list[int]): A tuple containing the inverted output pins.
+            select_pins (list[int]): A tuple containing the select pins.
+            enable_pins (list[int]): A tuple containing the active HIGH enable pins.
+            inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
         Raises:
 
         """
@@ -672,10 +648,10 @@ class Demux(ChipFunction):
     """
     Represents an demultiplexer in a digital circuit.
     Attributes:
-        address_pins (list[Pin]): A tuple containing the address pins.
-        output_pins (list[Pin]): A tuple containing the output pins.
-        enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
-        inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+        address_pins (list[int]): A tuple containing the address pins.
+        output_pins (list[int]): A tuple containing the output pins.
+        enable_pins (list[int]): A tuple containing the active HIGH enable pins.
+        inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
     Methods:
         __str__(): Returns a string representation of the DEMUX.
         chip_internal_function(): Placeholder for the internal function of the DEMUX.
@@ -683,18 +659,18 @@ class Demux(ChipFunction):
 
     def __init__(
         self,
-        address_pins: list[Pin],
-        output_pins: list[Pin],
-        enable_pins: list[Pin],
-        inv_enable_pins: list[Pin],
+        address_pins: list[int],
+        output_pins: list[int],
+        enable_pins: list[int],
+        inv_enable_pins: list[int],
     ):
         """
         Initializes a DEMUX with the specified input and output pins.
         Args:
-            address_pins (list[Pin]): A tuple containing the address pins.
-            output_pins (list[Pin]): A tuple containing the output pins.
-            enable_pins (list[Pin]): A tuple containing the active HIGH enable pins.
-            inv_enable_pins (list[Pin]): A tuple containing the active LOW enable pins.
+            address_pins (list[int]): A tuple containing the address pins.
+            output_pins (list[int]): A tuple containing the output pins.
+            enable_pins (list[int]): A tuple containing the active HIGH enable pins.
+            inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
         Raises:
 
         """
@@ -742,20 +718,20 @@ class DFlipFlop(ChipFunction):
 
     def __init__(
         self,
-        clock_pin: Pin,
+        clock_pin: int,
         clock_type: str,
-        reset_pin: Pin,
-        inv_reset_pin: Pin,
-        set_pin: Pin,
-        inv_set_pin: Pin,
-        data_pin: Pin,
-        output_pin: Pin,
-        inv_output_pin: Pin,
+        reset_pin: int,
+        inv_reset_pin: int,
+        set_pin: int,
+        inv_set_pin: int,
+        data_pin: int,
+        output_pin: int,
+        inv_output_pin: int,
     ):
         """
         Initializes a D Flip Flop with the specified input and output pins.
         Args:
-            clock_pin (Pin): The clock pin.
+            clock_pin (int): The clock pin.
             clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
             reset_pin (Pin): The reset pin.
             inv_reset_pin (Pin): The inverted reset pin (Active LOW).
@@ -830,18 +806,18 @@ class JKFlipFlop(ChipFunction):
 
     def __init__(
         self,
-        clock_pin: Pin,
+        clock_pin: int,
         clock_type: str,
-        reset_pin: Pin,
-        inv_reset_pin: Pin,
-        set_pin: Pin,
-        inv_set_pin: Pin,
-        j_input_pin: Pin,
-        inv_j_input_pin: Pin,
-        k_input_pin: Pin,
-        inv_k_input_pin: Pin,
-        output_pin: Pin,
-        inv_output_pin: Pin,
+        reset_pin: int,
+        inv_reset_pin: int,
+        set_pin: int,
+        inv_set_pin: int,
+        j_input_pin: int,
+        inv_j_input_pin: int,
+        k_input_pin: int,
+        inv_k_input_pin: int,
+        output_pin: int,
+        inv_output_pin: int,
     ):
         """
         Initializes a JK Flip Flop with the specified input and output pins.
@@ -941,40 +917,40 @@ class BinaryCounter(ChipFunction):
 
     def __init__(
         self,
-        clock_pin: Pin,
+        clock_pin: int,
         clock_type: str,
-        synch_reset_pin: Pin,
-        inv_synch_reset_pin: Pin,
-        count_enable_parallel_pin: Pin,
-        inv_count_enable_parallel_pin: Pin,
-        count_enable_trickle_pin: Pin,
-        inv_count_enable_trickle_pin: Pin,
-        load_enable_pin: Pin,
-        inv_load_enable_pin: Pin,
-        up_down_input_pin: Pin,
-        terminal_count_pin: Pin,
-        ripple_clock_output_pin: Pin,
-        data_pins: list[Pin],
-        output_pins: list[Pin],
+        synch_reset_pin: int,
+        inv_synch_reset_pin: int,
+        count_enable_parallel_pin: int,
+        inv_count_enable_parallel_pin: int,
+        count_enable_trickle_pin: int,
+        inv_count_enable_trickle_pin: int,
+        load_enable_pin: int,
+        inv_load_enable_pin: int,
+        up_down_input_pin: int,
+        terminal_count_pin: int,
+        ripple_clock_output_pin: int,
+        data_pins: list[int],
+        output_pins: list[int],
     ):
         """
         Initializes a binary counter with the specified input and output pins.
         Args:
-            clock_pin (Pin): The clock pin.
+            clock_pin (int): The clock pin.
             clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
-            synch_reset_pin (Pin): The synchronous reset pin.
-            inv_synch_reset_pin (Pin): The inverted synchronous reset pin (Active LOW).
-            count_enable_parallel_pin (Pin): The count enable pin.
-            inv_count_enable_parallel_pin (Pin): The inverted count enable pin (Active LOW).
-            count_enable_trickle_pin (Pin): The count enable trickle pin.
-            inv_count_enable_trickle_pin (Pin): The inverted count enable trickle pin (Active LOW).
-            load_enable_pin (Pin): The load enable pin.
-            inv_load_enable_pin (Pin): The inverted load enable pin (Active LOW).
-            up_down_input_pin (Pin): The up/down input pin.
-            terminal_count_pin (Pin): The terminal count pin.
-            ripple_clock_output_pin (Pin): The ripple clock output pin.
-            data_pins (list[Pin]): A tuple containing the data pins.
-            output_pins (list[Pin]): A tuple containing the output pins.
+            synch_reset_pin (int): The synchronous reset pin.
+            inv_synch_reset_pin (int): The inverted synchronous reset pin (Active LOW).
+            count_enable_parallel_pin (int): The count enable pin.
+            inv_count_enable_parallel_pin (int): The inverted count enable pin (Active LOW).
+            count_enable_trickle_pin (int): The count enable trickle pin.
+            inv_count_enable_trickle_pin (int): The inverted count enable trickle pin (Active LOW).
+            load_enable_pin (int): The load enable pin.
+            inv_load_enable_pin (int): The inverted load enable pin (Active LOW).
+            up_down_input_pin (int): The up/down input pin.
+            terminal_count_pin (int): The terminal count pin.
+            ripple_clock_output_pin (int): The ripple clock output pin.
+            data_pins (list[int]): A tuple containing the data pins.
+            output_pins (list[int]): A tuple containing the output pins.
         Raises:
             ValueError: If the clock type is not RISING_EDGE or FALLING_EDGE.
             ValueError: If the number of data pins is not equal to the number of output pins.
