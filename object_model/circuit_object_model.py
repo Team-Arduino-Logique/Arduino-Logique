@@ -359,11 +359,7 @@ if __name__ == "__main__":
     new_chip_to_add: Chip = available_chips["74HC08"]
     new_chip_to_add.set_position(ConnectionPointID(10, 10))
     circuit.add_chip(new_chip_to_add)
-    circuit.chips[new_chip_to_add.label].set_position(ConnectionPointID(25, 12))
-    print(circuit.get_func_list())
-    circuit.chips.clear()
     new_chip_to_add = available_chips["74HC151"]
     new_chip_to_add.set_position(ConnectionPointID(20, 20))
     circuit.add_chip(new_chip_to_add)
     print(circuit.get_func_list())
-    print("all done")

@@ -664,7 +664,7 @@ class DFlipFlop(ChipFunction):
 
     def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Returns a FunctionRepresentation object representing the internal function of the D Flip Flop 
+        Returns a FunctionRepresentation object representing the internal function of the D Flip Flop
         with a truth table.
         Only works for D Flip Flop wit Active LOW set and reset pins.
         """
@@ -694,10 +694,18 @@ class JKFlipFlop(ChipFunction):
     """
     Represents a JK Flip Flop in a digital circuit.
     Attributes:
-
-    Methods:
-        __str__(): Returns a string representation of the JK Flip Flop.
-        chip_internal_function(): Placeholder for the internal function of the JK Flip Flop.
+        clock_pin (Pin): The clock pin.
+        clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
+        reset_pin (Pin): The reset pin.
+        inv_reset_pin (Pin): The inverted reset pin (Active LOW).
+        set_pin (Pin): The set pin.
+        inv_set_pin (Pin): The inverted set pin (Active LOW).
+        j_input_pin (Pin): The J input pin.
+        inv_j_input_pin (Pin): The inverted J input pin (Active LOW).
+        k_input_pin (Pin): The K input pin.
+        inv_k_input_pin (Pin): The inverted K input pin (Active LOW).
+        output_pin (Pin): The output pin.
+        inv_output_pin (Pin): The inverted output pin (Active LOW).
     """
 
     def __init__(
@@ -740,18 +748,33 @@ class JKFlipFlop(ChipFunction):
             ValueError: If the JK Flip Flop does not have either reset or inverted reset pin.
             ValueError: If the JK Flip Flop has both reset and inverted reset pins.
         """
-        self.clock_pin = clock_pin
-        self.clock_type = clock_type
-        self.reset_pin = reset_pin
-        self.inv_reset_pin = inv_reset_pin
-        self.set_pin = set_pin
-        self.inv_set_pin = inv_set_pin
-        self.j_input_pin = j_input_pin
-        self.inv_j_input_pin = inv_j_input_pin
-        self.k_input_pin = k_input_pin
-        self.inv_k_input_pin = inv_k_input_pin
-        self.output_pin = output_pin
-        self.inv_output_pin = inv_output_pin
+        super().__init__()
+        self.clock_pin: Pin = Pin(clock_pin, None)
+        self.clock_type: str = clock_type
+        self.reset_pin: Pin = Pin(reset_pin, None)
+        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None)
+        self.set_pin: Pin = Pin(set_pin, None)
+        self.inv_set_pin: Pin = Pin(inv_set_pin, None)
+        self.j_input_pin: Pin = Pin(j_input_pin, None)
+        self.inv_j_input_pin: Pin = Pin(inv_j_input_pin, None)
+        self.k_input_pin: Pin = Pin(k_input_pin, None)
+        self.inv_k_input_pin: Pin = Pin(inv_k_input_pin, None)
+        self.output_pin: Pin = Pin(output_pin, None)
+        self.inv_output_pin: Pin = Pin(inv_output_pin, None)
+
+        self.all_pins = [
+            self.clock_pin,
+            self.reset_pin,
+            self.inv_reset_pin,
+            self.set_pin,
+            self.inv_set_pin,
+            self.j_input_pin,
+            self.inv_j_input_pin,
+            self.k_input_pin,
+            self.inv_k_input_pin,
+            self.output_pin,
+            self.inv_output_pin,
+        ]
 
         if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
             raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
@@ -793,12 +816,52 @@ class JKFlipFlop(ChipFunction):
             f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
         )
 
-    def chip_internal_function(self):
+    def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Placeholder for the internal function of the JK Flip Flop.
-        This method should be implemented to define the behavior of the JK Flip Flop.
+        Returns a FunctionRepresentation object representing the internal function of the JK Flip Flop
         """
-        # TODO: Implement the internal function of the JK Flip Flop
+        input_pin_pos = [
+            pin.connection_point
+            for pin in [
+                self.inv_set_pin,
+                self.set_pin,
+                self.inv_reset_pin,
+                self.reset_pin,
+                self.clock_pin,
+                self.inv_j_input_pin,
+                self.j_input_pin,
+                self.inv_k_input_pin,
+                self.k_input_pin,
+            ]
+            if pin.connection_point is not None
+        ]
+        output_pin_pos = [
+            pin.connection_point for pin in [self.output_pin, self.inv_output_pin] if pin.connection_point is not None
+        ]
+
+        # Handle inverted inputs
+        hi_set = "H" if self.set_pin is not None else "L"
+        lo_set = "L" if self.set_pin is not None else "H"
+        hi_reset = "H" if self.reset_pin is not None else "L"
+        lo_reset = "L" if self.reset_pin is not None else "H"
+        clock_symb = "R" if self.clock_type == "RISING_EDGE" else "F"
+        hi_j = "H" if self.j_input_pin is not None else "L"
+        lo_j = "L" if self.j_input_pin is not None else "H"
+        hi_k = "H" if self.k_input_pin is not None else "L"
+        lo_k = "L" if self.k_input_pin is not None else "H"
+
+        truth_table = TruthTable([
+            TruthTableRow([hi_set, lo_reset, "X", "X", "X"], ["H", "L"]),
+            TruthTableRow([lo_set, hi_reset, "X", "X", "X"], ["L", "H"]),
+            TruthTableRow([hi_set, hi_reset, clock_symb, "X", "X"], ["H", "H"]),
+
+            TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, hi_k], ["nQ", "Q"]),
+            TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, hi_k], ["L", "H"]),
+            TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, lo_k], ["H", "L"]),
+            TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, lo_k], ["Q", "nQ"]),
+        ])
+
+        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
 
 
 class BinaryCounter(ChipFunction):
