@@ -754,10 +754,15 @@ class DFlipFlop(ChipFunction):
     """
     Represents an D flip flop in a digital circuit.
     Attributes:
-
-    Methods:
-        __str__(): Returns a string representation of the D flip flop.
-        chip_internal_function(): Placeholder for the internal function of the D flip flop.
+        clock_pin (Pin): The clock pin.
+        clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
+        reset_pin (Pin): The reset pin.
+        inv_reset_pin (Pin): The inverted reset pin (Active LOW).
+        set_pin (Pin): The set pin.
+        inv_set_pin (Pin): The inverted set pin (Active LOW).
+        data_pin (Pin): The data pin.
+        output_pin (Pin): The output pin.
+        inv_output_pin (Pin): The inverted output pin (Active LOW
     """
 
     def __init__(
@@ -790,15 +795,27 @@ class DFlipFlop(ChipFunction):
             ValueError: If the D Flip Flop does not have either reset or inverted reset pin.
             ValueError: If the D Flip Flop has both reset and inverted reset pins.
         """
-        self.clock_pin = clock_pin
-        self.clock_type = clock_type
-        self.reset_pin = reset_pin
-        self.inv_reset_pin = inv_reset_pin
-        self.set_pin = set_pin
-        self.inv_set_pin = inv_set_pin
-        self.data_pin = data_pin
-        self.output_pin = output_pin
-        self.inv_output_pin = inv_output_pin
+        super().__init__()
+        self.clock_pin: Pin = Pin(clock_pin, None)
+        self.clock_type: str = clock_type
+        self.reset_pin: Pin = Pin(reset_pin, None)
+        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None)
+        self.set_pin: Pin = Pin(set_pin, None)
+        self.inv_set_pin: Pin = Pin(inv_set_pin, None)
+        self.data_pin: Pin = Pin(data_pin, None)
+        self.output_pin: Pin = Pin(output_pin, None)
+        self.inv_output_pin: Pin = Pin(inv_output_pin, None)
+
+        self.all_pins = [
+            self.clock_pin,
+            self.reset_pin,
+            self.inv_reset_pin,
+            self.set_pin,
+            self.inv_set_pin,
+            self.data_pin,
+            self.output_pin,
+            self.inv_output_pin,
+        ]
 
         if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
             raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
@@ -811,6 +828,9 @@ class DFlipFlop(ChipFunction):
             raise ValueError("D Flip Flop must have either reset or inverted reset pin.")
         if self.inv_reset_pin is not None and self.reset_pin is not None:
             raise ValueError("D Flip Flop cannot have both reset and inverted reset pins.")
+
+        if self.set_pin is not None or self.reset_pin is not None:
+            raise ValueError("Arbitrary D Flip Flop not supported yet")
 
     def __str__(self):
         """
@@ -830,12 +850,32 @@ class DFlipFlop(ChipFunction):
             f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
         )
 
-    def chip_internal_function(self):
+    def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Placeholder for the internal function of the D Flip Flop.
-        This method should be implemented to define the behavior of the D Flip Flop.
+        Returns a FunctionRepresentation object representing the internal function of the D Flip Flop 
+        with a truth table.
+        Only works for D Flip Flop wit Active LOW set and reset pins.
         """
-        # TODO: Implement the internal function of the D Flip Flop
+        input_pin_pos = [
+            pin.connection_point
+            for pin in [self.inv_set_pin, self.inv_reset_pin, self.clock_pin, self.data_pin]
+            if pin.connection_point is not None
+        ]
+        output_pin_pos = [
+            pin.connection_point for pin in [self.output_pin, self.inv_output_pin] if pin.connection_point is not None
+        ]
+
+        truth_table = TruthTable(
+            [
+                TruthTableRow(["L", "H", "X", "X"], ["H", "L"]),
+                TruthTableRow(["H", "L", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "L", "X", "X"], ["H", "H"]),
+                TruthTableRow(["H", "H", "R", "L"], ["L", "H"]),
+                TruthTableRow(["H", "H", "R", "H"], ["H", "L"]),
+            ]
+        )
+
+        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
 
 
 class JKFlipFlop(ChipFunction):

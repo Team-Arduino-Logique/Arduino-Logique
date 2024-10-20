@@ -34,9 +34,28 @@ class Pin:
 
 @dataclass
 class TruthTableRow:
-    """A row for a truth table, with input and output signals."""
+    """
+    A row for a truth table, with input and output signals.
+
+    Allowed values are:
+    - "H" for high
+    - "L" for low
+    - "X" for undefined
+    - "R" for rising edge
+    - "F" for falling edge
+    - "Q" for reference to the previous state of the output
+    - "nQ" for reference to the previous state of the output, negated
+
+    """
     input_signals: list[str]
     output_signals: list[str]
+
+    ALLOWED_SIGNALS = ["H", "L", "X", "R", "F", "Q", "nQ"]
+
+    def __post_init__(self):
+        for signal in self.input_signals + self.output_signals:
+            if signal not in self.ALLOWED_SIGNALS:
+                raise ValueError(f"Invalid signal: {signal}. Allowed signals are {self.ALLOWED_SIGNALS}.")
 
 @dataclass
 class TruthTable:
