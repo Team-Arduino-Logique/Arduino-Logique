@@ -850,16 +850,17 @@ class JKFlipFlop(ChipFunction):
         hi_k = "H" if self.k_input_pin is not None else "L"
         lo_k = "L" if self.k_input_pin is not None else "H"
 
-        truth_table = TruthTable([
-            TruthTableRow([hi_set, lo_reset, "X", "X", "X"], ["H", "L"]),
-            TruthTableRow([lo_set, hi_reset, "X", "X", "X"], ["L", "H"]),
-            TruthTableRow([hi_set, hi_reset, clock_symb, "X", "X"], ["H", "H"]),
-
-            TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, hi_k], ["nQ", "Q"]),
-            TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, hi_k], ["L", "H"]),
-            TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, lo_k], ["H", "L"]),
-            TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, lo_k], ["Q", "nQ"]),
-        ])
+        truth_table = TruthTable(
+            [
+                TruthTableRow([hi_set, lo_reset, "X", "X", "X"], ["H", "L"]),
+                TruthTableRow([lo_set, hi_reset, "X", "X", "X"], ["L", "H"]),
+                TruthTableRow([hi_set, hi_reset, clock_symb, "X", "X"], ["H", "H"]),
+                TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, hi_k], ["nQ", "Q"]),
+                TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, hi_k], ["L", "H"]),
+                TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, lo_k], ["H", "L"]),
+                TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, lo_k], ["Q", "nQ"]),
+            ]
+        )
 
         return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
 
@@ -868,10 +869,21 @@ class BinaryCounter(ChipFunction):
     """
     Represents a binary counter in a digital circuit.
     Attributes:
-
-    Methods:
-        __str__(): Returns a string representation of the binary counter.
-        chip_internal_function(): Placeholder for the internal function of the binary counter.
+        clock_pin (int): The clock pin.
+        clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
+        synch_reset_pin (int): The synchronous reset pin.
+        inv_synch_reset_pin (int): The inverted synchronous reset pin (Active LOW).
+        count_enable_parallel_pin (int): The count enable pin.
+        inv_count_enable_parallel_pin (int): The inverted count enable pin (Active LOW).
+        count_enable_trickle_pin (int): The count enable trickle pin.
+        inv_count_enable_trickle_pin (int): The inverted count enable trickle pin (Active LOW).
+        load_enable_pin (int): The load enable pin.
+        inv_load_enable_pin (int): The inverted load enable pin (Active LOW).
+        up_down_input_pin (int): The up/down input pin.
+        terminal_count_pin (int): The terminal count pin.
+        ripple_clock_output_pin (int): The ripple clock output pin.
+        data_pins (list[int]): A tuple containing the data pins.
+        output_pins (list[int]): A tuple containing the output pins.
     """
 
     def __init__(
@@ -914,21 +926,22 @@ class BinaryCounter(ChipFunction):
             ValueError: If the clock type is not RISING_EDGE or FALLING_EDGE.
             ValueError: If the number of data pins is not equal to the number of output pins.
         """
-        self.clock_pin = clock_pin
-        self.clock_type = clock_type
-        self.synch_reset_pin = synch_reset_pin
-        self.inv_synch_reset_pin = inv_synch_reset_pin
-        self.count_enable_parallel_pin = count_enable_parallel_pin
-        self.inv_count_enable_parallel_pin = inv_count_enable_parallel_pin
-        self.count_enable_trickle_pin = count_enable_trickle_pin
-        self.inv_count_enable_trickle_pin = inv_count_enable_trickle_pin
-        self.load_enable_pin = load_enable_pin
-        self.inv_load_enable_pin = inv_load_enable_pin
-        self.up_down_input_pin = up_down_input_pin
-        self.terminal_count_pin = terminal_count_pin
-        self.ripple_clock_output_pin = ripple_clock_output_pin
-        self.data_pins = data_pins
-        self.output_pins = output_pins
+        super().__init__()
+        self.clock_pin: Pin = Pin(clock_pin, None)
+        self.clock_type: str = clock_type
+        self.synch_reset_pin: Pin = Pin(synch_reset_pin, None)
+        self.inv_synch_reset_pin: Pin = Pin(inv_synch_reset_pin, None)
+        self.count_enable_parallel_pin: Pin = Pin(count_enable_parallel_pin, None)
+        self.inv_count_enable_parallel_pin: Pin = Pin(inv_count_enable_parallel_pin, None)
+        self.count_enable_trickle_pin: Pin = Pin(count_enable_trickle_pin, None)
+        self.inv_count_enable_trickle_pin: Pin = Pin(inv_count_enable_trickle_pin, None)
+        self.load_enable_pin: Pin = Pin(load_enable_pin, None)
+        self.inv_load_enable_pin: Pin = Pin(inv_load_enable_pin, None)
+        self.up_down_input_pin: Pin = Pin(up_down_input_pin, None)
+        self.terminal_count_pin: Pin = Pin(terminal_count_pin, None)
+        self.ripple_clock_output_pin: Pin = Pin(ripple_clock_output_pin, None)
+        self.data_pins: list[Pin] = [Pin(pin_num, None) for pin_num in data_pins]
+        self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
 
         if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
             raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
