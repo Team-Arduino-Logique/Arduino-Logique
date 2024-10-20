@@ -2,11 +2,7 @@
 This module defines classes and functions for representing and manipulating electronic circuit components,
 such as packages, chips, wires, and breadboards. It includes functionality for loading component data from JSON files,
 creating instances of these components, and managing their interactions within a circuit.
-Classes:
-- Package: Represents an electronic component package with attributes like type name, chip width, and pin count.
-- Chip: Represents an integrated circuit chip with a specific package and a set of functions.
-- Wire: Represents a wire in a circuit, connecting two pins.
-- Circuit: Represents an electronic circuit, managing chips, wires, and their connections on a breadboard.
+
 Usage:
 ------
 The module can be used to load component data from JSON files, create instances of packages and chips, and manage their
@@ -49,14 +45,6 @@ class Package:
         The width of the chip.
     pin_count : int
         The number of pins in the package.
-    Methods
-    -------
-    __str__():
-        Returns a string representation of the Package object.
-    __eq__(other):
-        Checks if two Package objects are equal.
-    from_json(json_data: dict):
-        Constructs a Package object from a JSON dictionary.
     """
 
     def __init__(self, type_name: str, chip_width: float, pin_count: int):
@@ -105,11 +93,6 @@ class Chip:
         position (ConnectionPointID, optional): The position of the chip on the breadboard.
         instances (dict[str, int]): A class-level dictionary that keeps track of the number of instances
                     created for each chip type.
-    Methods:
-        from_json(json_data: dict, package_dict: dict[str, Package] = None) -> Chip:
-            Creates a Chip instance from a JSON dictionary.
-        __str__() -> str:
-            Returns a string representation of the Chip instance.
     """
 
     instances: dict[str, int] = {}
@@ -140,7 +123,6 @@ class Chip:
         if position is not None:
             for fn in self.functions:
                 fn.calculate_pin_pos(position, 1, self.pin_count)
-        self.pin_positions: dict[int, ConnectionPointID] = {}
         self.position: ConnectionPointID | None = position
         if position is not None:
             self.set_position(position)
@@ -277,51 +259,63 @@ class Circuit:
         """
         Traces the functions of the chips in the circuit.
         """
-        # TODO KHALID
+        # TODO KHALID utilise get_func_list pour avoir la liste des fonctions
 
 
-if __name__ == "__main__":
+def get_all_available_chips() -> dict[str, Chip]:
+    """
+    Returns a dictionary of all available chips.
+    """
     file_errors = []
-    packages = {}
-    PACKAGES_DIR = "./Components/Packages"
-    for filename in os.listdir(PACKAGES_DIR):
+    available_packages = {}
+    pkgs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Packages")
+    for filename in os.listdir(pkgs_dir):
         if filename.endswith(".json"):
-            with open(os.path.join(PACKAGES_DIR, filename), "r", encoding="utf-8") as file:
+            with open(os.path.join(pkgs_dir, filename), "r", encoding="utf-8") as file:
                 pkg_data = json.load(file)
                 try:
                     package = Package.from_json(pkg_data)
-                    packages[package.type_name] = package
+                    available_packages[package.type_name] = package
                 except ValueError as e:
                     file_errors.append(f"Error loading package from {filename}: {e}")
 
-    chips = {}
-    CHIPS_DIR = "./Components/Chips"
-    for root, _, files in os.walk(CHIPS_DIR):
+    all_chips = {}
+    chips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Chips")
+    for root, _, files in os.walk(chips_dir):
         for filename in files:
             if filename.endswith(".json"):
                 with open(os.path.join(root, filename), "r", encoding="utf-8") as file:
                     chip_data = json.load(file)
                     try:
-                        chip = Chip.from_json(chip_data, packages)
-                        chips[chip.chip_type] = chip
+                        new_chip = Chip.from_json(chip_data, available_packages)
+                        all_chips[new_chip.chip_type] = new_chip
                     except ValueError as e:
                         file_errors.append(f"Error loading chip from {filename}: {e}")
-
-    print("-------------------LOADED PACKAGES-------------------")
-    for package in packages.values():
-        print(package)
-
-    print("--------------------LOADED CHIPS:--------------------")
-    for chip in chips.values():
-        print(chip)
 
     if file_errors:
         print("--------------------ERRORS---------------------")
         for error in file_errors:
             print(error)
 
+    return all_chips
+
+
+if __name__ == "__main__":
+    available_chips = get_all_available_chips()
+    print("--------------------LOADED CHIPS:--------------------")
+    for chip in available_chips.values():
+        print(chip)
+
     # Example usage of the Circuit class
     circuit = Circuit()
-    new_chip_to_add: Chip = chips["74HC08"]
+    new_chip_to_add: Chip = available_chips["74HC08"]
     new_chip_to_add.set_position(ConnectionPointID(10, 10))
     circuit.add_chip(new_chip_to_add)
+    circuit.chips[new_chip_to_add.label].set_position(ConnectionPointID(25, 12))
+    print(circuit.get_func_list())
+    circuit.chips.clear()
+    new_chip_to_add = available_chips["74HC151"]
+    new_chip_to_add.set_position(ConnectionPointID(20, 20))
+    circuit.add_chip(new_chip_to_add)
+    print(circuit.get_func_list())
+    print("all done")

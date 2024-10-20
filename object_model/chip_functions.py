@@ -5,43 +5,12 @@ NOT, XOR, NAND, NOR, XNOR gates, multiplexers (MUX), demultiplexers (DEMUX), D f
 and JK flip-flops. Each class represents a specific type of digital logic component
 and includes methods for initialization, string representation, and a placeholder
 for the internal function of the chip.
-Functions:
-    create_and_gate(data: dict) -> AndGate:
-    create_or_gate(data: dict) -> OrGate:
-    create_not_gate(data: dict) -> NotGate:
-    create_xor_gate(data: dict) -> XorGate:
-    create_nand_gate(data: dict) -> NandGate:
-    create_nor_gate(data: dict) -> NorGate:
-    create_xnor_gate(data: dict) -> XnorGate:
-    create_mux(data: dict) -> Mux:
-    create_demux(data: dict) -> Demux:
-    create_d_flip_flop(data: dict) -> DFlipFlop:
-    create_jk_flip_flop(data: dict) -> JKFlipFlop:
-    create_binary_counter(data: dict) -> BinaryCounter:
-Classes:
-    ChipFunction:
-    AndGate(ChipFunction):
-    OrGate(ChipFunction):
-    NotGate(ChipFunction):
-    XorGate(ChipFunction):
-    NandGate(ChipFunction):
-    NorGate(ChipFunction):
-    XnorGate(ChipFunction):
-    Mux(ChipFunction):
-    Demux(ChipFunction):
-        Represents a demultiplexer in a digital circuit.
-    DFlipFlop(ChipFunction):
-        Represents a D flip-flop in a digital circuit.
-    JKFlipFlop(ChipFunction):
-        Represents a JK flip-flop in a digital circuit.
-    BinaryCounter(ChipFunction):
-
 """
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import log2
-from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, Pin
+from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, Pin, TruthTable, TruthTableRow
 
 
 def create_and_gate(data: dict) -> AndGate:
@@ -322,7 +291,7 @@ class LogicalFunction(ChipFunction, ABC):
         """
         Generates a FunctionRepresentation object based on the current state of the input and output pins.
         Returns:
-            FunctionRepresentation: An object representing the function with the positions of input and output pins and the logical operator.
+            FunctionRepresentation: An object representing the input and output pins and the logical operator.
         """
         input_pin_pos = [pin.connection_point for pin in self.input_pins if pin.connection_point is not None]
         output_pin_pos = [pin.connection_point for pin in self.output_pins if pin.connection_point is not None]
@@ -608,18 +577,30 @@ class Mux(ChipFunction):
         Raises:
 
         """
-        self.input_pins = input_pins
-        self.output_pins = output_pins
-        self.inv_output_pins = inv_output_pins
-        self.select_pins = select_pins
-        self.enable_pins = enable_pins
-        self.inv_enable_pins = inv_enable_pins
+        super().__init__()
+        self.input_pins: list[Pin] = [Pin(pin_num, None) for pin_num in input_pins]
+        self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
+        self.inv_output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in inv_output_pins]
+        self.select_pins: list[Pin] = [Pin(pin_num, None) for pin_num in select_pins]
+        self.enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in enable_pins]
+        self.inv_enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in inv_enable_pins]
+        self.all_pins = (
+            self.input_pins
+            + self.output_pins
+            + self.inv_output_pins
+            + self.select_pins
+            + self.enable_pins
+            + self.inv_enable_pins
+        )
         if len(self.input_pins) < 2:
             raise ValueError("MUX must have at least two input pins.")
         if len(self.output_pins) < 1 or len(self.inv_output_pins) < 1:
             raise ValueError("MUX must have at least one output pin or inverted output pin.")
         if len(self.select_pins) != log2(len(self.input_pins)):
             raise ValueError("MUX must have log2(num input pins) select pins.")
+
+        if len(self.enable_pins) > 0 or len(self.select_pins) != 3 or len(self.input_pins) != 8:
+            raise ValueError("Arbitrary MUX size not supported yet")
 
     def __str__(self):
         """
@@ -636,12 +617,44 @@ class Mux(ChipFunction):
             f"\n\t\tInverted Enable Pins: {self.inv_enable_pins}"
         )
 
-    def chip_internal_function(self):
+    def chip_internal_function(self) -> FunctionRepresentation:
         """
-        Placeholder for the internal function of the MUX.
-        This method should be implemented to define the behavior of the MUX.
+        Returns a FunctionRepresentation object representing the internal function of the MUX with a truth table.
+        Only works for 8-input, 1-output MUX, with 3 select pins, with an active LOW enable pin.
         """
-        # TODO: Implement the internal function of the MUX
+
+        input_pin_pos = [
+            pin.connection_point
+            for pin in self.enable_pins + self.inv_enable_pins + self.select_pins[::-1] + self.input_pins
+            if pin.connection_point is not None
+        ]
+        output_pin_pos = [
+            pin.connection_point for pin in self.inv_output_pins + self.output_pins if pin.connection_point is not None
+        ]
+
+        truth_table = TruthTable(
+            [
+                TruthTableRow(["H", "X", "X", "X", "X", "X", "X", "X", "X", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "L", "L", "L", "L", "X", "X", "X", "X", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "L", "L", "L", "H", "X", "X", "X", "X", "X", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "L", "L", "H", "X", "L", "X", "X", "X", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "L", "L", "H", "X", "H", "X", "X", "X", "X", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "L", "H", "L", "X", "X", "L", "X", "X", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "L", "H", "L", "X", "X", "H", "X", "X", "X", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "L", "H", "H", "X", "X", "X", "L", "X", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "L", "H", "H", "X", "X", "X", "H", "X", "X", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "H", "L", "L", "X", "X", "X", "X", "L", "X", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "H", "L", "L", "X", "X", "X", "X", "H", "X", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "H", "L", "H", "X", "X", "X", "X", "X", "L", "X", "X"], ["H", "L"]),
+                TruthTableRow(["L", "H", "L", "H", "X", "X", "X", "X", "X", "H", "X", "X"], ["L", "H"]),
+                TruthTableRow(["L", "H", "H", "L", "X", "X", "X", "X", "X", "X", "L", "X"], ["H", "L"]),
+                TruthTableRow(["L", "H", "H", "L", "X", "X", "X", "X", "X", "X", "H", "X"], ["L", "H"]),
+                TruthTableRow(["L", "H", "H", "H", "X", "X", "X", "X", "X", "X", "X", "L"], ["H", "L"]),
+                TruthTableRow(["L", "H", "H", "H", "X", "X", "X", "X", "X", "X", "X", "H"], ["L", "H"]),
+            ]
+        )
+
+        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
 
 
 class Demux(ChipFunction):

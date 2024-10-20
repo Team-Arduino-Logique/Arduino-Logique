@@ -1,8 +1,5 @@
 """
 This module defines classes for representing connection points and pins in a circuit model.
-Classes:
-    ConnectionPointID: Represents an identifier for a connection point in a circuit model.
-    Pin: Represents a pin on an electronic component.
 """
 
 from __future__ import annotations
@@ -34,10 +31,27 @@ class Pin:
     pin_num: int
     connection_point: ConnectionPointID | None
 
+
+@dataclass
+class TruthTableRow:
+    """A row for a truth table, with input and output signals."""
+    input_signals: list[str]
+    output_signals: list[str]
+
 @dataclass
 class TruthTable:
-    #TODO
-    pass
+    """
+    Represents a truth table. Made of lists of lists; every row is a state.
+
+    E.g. for a 2-input, 1-output truth table (xor):
+    [
+        [["L", "L"], ["L"]],
+        [["L", "H"], ["H"]],
+        [["H", "L"], ["H"]],
+        [["H", "H"], ["L"]],
+    ]
+    """
+    rows: list[TruthTableRow]
 
 @dataclass
 class FunctionRepresentation:
