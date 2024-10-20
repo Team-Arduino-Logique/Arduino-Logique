@@ -35,48 +35,28 @@ from .chip_functions import (
 from .circuit_util_elements import ConnectionPointID, FunctionRepresentation
 
 
+@dataclass
 class Package:
     """
     A class used to represent an electronic component package.
-    Attributes
-    ----------
-    type_name : str
-        The type name of the package (e.g., DIP, QFP).
-    chip_width : float
-        The width of the chip.
-    pin_count : int
-        The number of pins in the package.
+    Attributes:
+        type_name (str): The name of the package type.
+        chip_width (float): The width of the package.
+        pin_count (int): The number of pins on the package.
     """
 
-    def __init__(self, type_name: str, chip_width: float, pin_count: int):
-        self.type_name = type_name
-        self.chip_width = chip_width
-        self.pin_count = pin_count
-
-    def __str__(self):
-        return f"Package:\t\n\t{self.type_name},\t\n\tChip Width: {self.chip_width},\t\n\tPin Count: {self.pin_count}"
-
-    def __eq__(self, other):
-        if isinstance(other, Package):
-            return (
-                self.type_name == other.type_name
-                and self.chip_width == other.chip_width
-                and self.pin_count == other.pin_count
-            )
-        return False
+    type_name: str
+    chip_width: float
+    pin_count: int
 
     @staticmethod
     def from_json(json_data: dict):
         """
         Constructs a Package object from a JSON dictionary.
         Parameters:
-        -----------
-        json_data : dict
-            The JSON dictionary containing the package data.
+            json_data : dict - The JSON dictionary containing the package data.
         Returns:
-        --------
-        Package
-            The Package object constructed from the JSON data.
+            Package - The Package object constructed from the JSON data.
         """
         return Package(json_data["type_name"], json_data["chip_width"], json_data["pin_count"])
 
@@ -99,7 +79,12 @@ class Chip:
     instances: dict[str, int] = {}
 
     def __init__(
-        self, chip_type: str, pkg: Package, functions: list[ChipFunction], position: ConnectionPointID | None = None
+        self,
+        chip_type: str | None = None,
+        pkg: Package | None  = None,
+        functions: list[ChipFunction] | None = None,
+        position: ConnectionPointID | None = None,
+        model: Chip | None = None,
     ):
         """
         Initializes a Chip instance.
@@ -110,23 +95,38 @@ class Chip:
             position (ConnectionPointID, optional): The position of the chip on the breadboard (from the top left pin).
                                                     Defaults to None.
         """
-        self.chip_type = chip_type
-        if chip_type in Chip.instances:
-            Chip.instances[chip_type] += 1
-        else:
-            Chip.instances[chip_type] = 1
-        self.label: str = chip_type + "-" + str(Chip.instances[chip_type])
+        if chip_type is not None and pkg is not None and functions is not None and model is None:
+            self.chip_type = chip_type
+            if chip_type in Chip.instances:
+                Chip.instances[chip_type] += 1
+            else:
+                Chip.instances[chip_type] = 0
+            self.label: str = chip_type + "-" + str(Chip.instances[chip_type])
 
-        self.package_name: str = pkg.type_name
-        self.pin_count: int = pkg.pin_count
-        self.chip_width: float = pkg.chip_width
-        self.functions: list[ChipFunction] = functions
-        if position is not None:
-            for fn in self.functions:
-                fn.calculate_pin_pos(position, 1, self.pin_count)
-        self.position: ConnectionPointID | None = position
-        if position is not None:
-            self.set_position(position)
+            self.package_name: str = pkg.type_name
+            self.pin_count: int = pkg.pin_count
+            self.chip_width: float = pkg.chip_width
+            self.functions: list[ChipFunction] = functions
+            if position is not None:
+                for fn in self.functions:
+                    fn.calculate_pin_pos(position, 1, self.pin_count)
+            self.position: ConnectionPointID | None = position
+            if position is not None:
+                self.set_position(position)
+        elif model is not None:
+            self.chip_type = model.chip_type
+            if model.chip_type in Chip.instances:
+                Chip.instances[model.chip_type] += 1
+            else:
+                Chip.instances[model.chip_type] = 1
+            self.label = model.chip_type + "-" + str(Chip.instances[model.chip_type])
+
+            self.package_name = model.package_name
+            self.pin_count = model.pin_count
+            self.chip_width = model.chip_width
+            self.functions = model.functions
+        else:
+            raise ValueError("Invalid parameters provided.")
 
     def set_position(self, position: ConnectionPointID):
         """
@@ -353,10 +353,15 @@ if __name__ == "__main__":
 
     # Example usage of the Circuit class
     circuit = Circuit()
-    new_chip_to_add: Chip = deepcopy(available_chips["74HC08"])
+    new_chip_to_add: Chip = Chip(model=available_chips["74HC08"])
     new_chip_to_add.set_position(ConnectionPointID(10, 10))
     circuit.add_chip(new_chip_to_add)
-    new_chip_to_add = deepcopy(available_chips["74HC151"])
+
+    new_chip_to_add = Chip(model=available_chips["74HC08"])
+    new_chip_to_add.set_position(ConnectionPointID(100, 100))
+    circuit.add_chip(new_chip_to_add)
+
+    new_chip_to_add = Chip(model=available_chips["74HC151"])
     new_chip_to_add.set_position(ConnectionPointID(20, 20))
     circuit.add_chip(new_chip_to_add)
     print(circuit.get_func_list())
