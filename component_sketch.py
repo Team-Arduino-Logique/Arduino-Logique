@@ -272,8 +272,8 @@ class ComponentSketcher:
         
 
         # Adjust for scaling
-        adjusted_x = canvas_x #/ self.scale_factor
-        adjusted_y = canvas_y #/ self.scale_factor
+        adjusted_x = canvas_x - id_origins["xyOrigin"][0] #/ self.scale_factor
+        adjusted_y = canvas_y - id_origins["xyOrigin"][1] #/ self.scale_factor
 
         self.drag_chip_data["x"] = adjusted_x
         self.drag_chip_data["y"] = adjusted_y
@@ -299,8 +299,8 @@ class ComponentSketcher:
             canvas_y = self.canvas.canvasy(event.y)
 
             # Adjust for scaling
-            adjusted_x = canvas_x #/ self.scale_factor
-            adjusted_y = canvas_y #/ self.scale_factor
+            adjusted_x = canvas_x - id_origins["xyOrigin"][0] #/ self.scale_factor
+            adjusted_y = canvas_y - id_origins["xyOrigin"][1] #/ self.scale_factor
 
             # Calculate movement delta
             dx = adjusted_x - self.drag_chip_data["x"]
@@ -807,7 +807,7 @@ class ComponentSketcher:
         color = "#F5F5DC"
         sepAlim = dim["sepAlim"]
         sepDist = dim["sepDistribution"]
-        radius = 20
+        radius = 4
         for key, value in kwargs.items():
             if key == "dimLine":
                 dim["dimLine"] = value
@@ -1630,7 +1630,7 @@ class ComponentSketcher:
 
         if not tags:
             params["id"] = id
-            params["XY"] = (xD, yD)
+            params["XY"] = (xD - id_origins["xyOrigin"][0], yD - space // 3 - id_origins["xyOrigin"][1])
 
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
@@ -1670,6 +1670,7 @@ class ComponentSketcher:
                     smooth=False,
                     tags=tagBase,
                 )
+
 
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 

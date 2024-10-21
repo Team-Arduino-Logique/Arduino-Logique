@@ -254,15 +254,15 @@ class ComponentData:
         boardTestMinimal = [(self.sketcher.setXYOrigin, 1), (railAlimPlus, 4, {"direction": VERTICAL})]
         board1260pts = [(board830pts, 2, {"direction": PERSO, "dXY": (0, 1.3)})]
         self.circuitTest = [
-            (self.sketcher.setXYOrigin, 1, {"id_origin": "circTest"}),
+            (self.sketcher.setXYOrigin, 1, {"id_origin": "xyOrigin"}),
             (board1260pts, 1),
-            (self.sketcher.goXY, 1, {"line": 10.1, "column": 1.4, "id_origin": "circTest"}),
+            (self.sketcher.goXY, 1, {"line": 10.1, "column": 1.4, "id_origin": "xyOrigin"}),
             (chip7408, 1, {"direction": HORIZONTAL}),
             (chip7402, 1, {"direction": HORIZONTAL}),
             (chip7404, 1, {"direction": HORIZONTAL}),
             (chip7400, 1, {"direction": HORIZONTAL}),
             (chip7432, 1, {"direction": HORIZONTAL}),
-            (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
+            (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "xyOrigin"}),
             (wireTest, 1),
         ]
 
