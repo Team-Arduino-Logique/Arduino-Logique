@@ -336,12 +336,17 @@ class ComponentSketcher:
     def on_stop_chip_drag(self, event):
         chip_id = self.drag_chip_data["chip_id"]
         if chip_id:
-            (x, y) = current_dict_circuit[chip_id]["XY"]
+            # MODIF KH POUR DRAG-DROP 23/10/2024
+            # (x, y) = current_dict_circuit[chip_id]["XY"]
+            (x, y) = current_dict_circuit[chip_id]["pinUL_XY"]
+            # FIN MODIF KH
             (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
-
-            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (real_x,real_y)})]
+            # AJOUT KH DRAG-DROP 23/10/2024
+            pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
+            # FIN AJOUT KH
+            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (real_x,real_y), "pinUL_XY":(pin_x, pin_y)})]
             self.circuit(real_x, real_y,model=model_chip)
             # Reset drag_chip_data
             self.drag_chip_data["chip_id"] = None
@@ -423,6 +428,16 @@ class ComponentSketcher:
     #                 nearest_point = (grid_x, grid_y)
     #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
     #     return nearest_point
+    
+# AJOUT KH POUR DRAG_DROP 23/10/2024
+    def xy_hole2chip(self,xH, yH, scale=1):
+        space = 9*scale
+        return (xH - 2*scale, yH + space)
+    
+    def xy_chip2pin(self,xC, yC, scale=1):
+        space = 9*scale
+        return (xC +2*space, yC - space)
+# FIN AJOUT KH DRAG_DROP 23/10/2024        
 
     def find_nearest_grid(self, x, y, matrix=None):
         """
@@ -450,11 +465,17 @@ class ComponentSketcher:
             # Consider only lines 6 and 21 ('f' lines)
             # if line_num == 7 or line_num == 22:
                 grid_x, grid_y = point[1]["xy"]
-                distance = math.hypot(x - grid_x, y - grid_y)
+                # MODIF KH DRAG-DROP 23/10/2024
+                # distance = math.hypot(x - grid_x , y - grid_y)
+                distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+                # FIN MODIF KH
                 if distance < min_distance:
                     
                     min_distance = distance
-                    nearest_point = (grid_x, grid_y)
+                    # MODIF KH DRAG_DROP 23/10/2024
+                    # nearest_point = (grid_x, grid_y)
+                    nearest_point = self.xy_hole2chip(grid_x, grid_y)
+                    # FIN MODIF KH
                     nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
@@ -1670,7 +1691,18 @@ class ComponentSketcher:
                     smooth=False,
                     tags=tagBase,
                 )
-
+                # AJOUT KH PR DRAG-DROP 23/10/2024
+            params["pinUL_XY"] = (xD + 2*scale, yD - space)
+            self.canvas.create_rectangle(
+                xD + 2 * scale,
+                yD - space ,
+                xD + 3 * scale ,
+                yD - space  + 1,
+                fill="#0000ff",
+                outline="#0000ff",
+                tags=tagBase,
+            )            
+            # FIN AJOUT KH
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
             
@@ -1764,6 +1796,8 @@ class ComponentSketcher:
             dX = xD - X
             dY = yD - Y
             params["XY"] = (xD, yD)
+                # AJOUT KH PR DRAG-DROP 23/10/2024
+            params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)            
             for tg in tags:
                 self.canvas.move(tg, dX, dY)
 
