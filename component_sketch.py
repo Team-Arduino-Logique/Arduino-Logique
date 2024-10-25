@@ -1876,42 +1876,81 @@ class ComponentSketcher:
         start_endpoint_tag = f"{id}_start"
         end_endpoint_tag = f"{id}_end"
 
-        # Create the wire body as a line
-        self.canvas.create_line(
-            xD + xO, yD + yO,
-            xD + xF, yD + yF,
-            fill=encre,
-            width=6 * thickness,
-            tags=(id, wire_body_tag),
-        )
+        # # Create the wire body as a line
+        # self.canvas.create_line(
+        #     xD + xO, yD + yO,
+        #     xD + xF, yD + yF,
+        #     fill=encre,
+        #     width=6 * thickness,
+        #     tags=(id, wire_body_tag),
+        # )
 
         # Create endpoints as separate items
         endpoint_radius = 3 * scale  # Adjust size as needed
 
         # Starting endpoint
+        # MODIF KH DRAG 23/10/2024
+        # self.canvas.create_oval(
+        #     xD + xO - endpoint_radius,
+        #     yD + yO - endpoint_radius,
+        #     xD + xO + endpoint_radius,
+        #     yD + yO + endpoint_radius,
+        #     fill="#dfdfdf",
+        #     outline="#404040",
+        #     width=1 * thickness,
+        #     tags=(id, start_endpoint_tag),
+        # )
         self.canvas.create_oval(
-            xD + xO - endpoint_radius,
-            yD + yO - endpoint_radius,
-            xD + xO + endpoint_radius,
-            yD + yO + endpoint_radius,
+            xD + xO + 2*scale,
+            yD + yO + 2*scale,
+            xD + xO + 7*scale,
+            yD + yO + 7*scale,
             fill="#dfdfdf",
             outline="#404040",
             width=1 * thickness,
             tags=(id, start_endpoint_tag),
         )
-
+       
+        
         # Ending endpoint
+        # self.canvas.create_oval(
+        #     xD + xF - endpoint_radius,
+        #     yD + yF - endpoint_radius,
+        #     xD + xF + endpoint_radius,
+        #     yD + yF + endpoint_radius,
+        #     fill="#dfdfdf",
+        #     outline="#404040",
+        #     width=1 * thickness,
+        #     tags=(id, end_endpoint_tag),
+        # )
         self.canvas.create_oval(
-            xD + xF - endpoint_radius,
-            yD + yF - endpoint_radius,
-            xD + xF + endpoint_radius,
-            yD + yF + endpoint_radius,
+            xD + xF + 2*scale,
+            yD + yF + 2*scale,
+            xD + xF + 7*scale,
+            yD + yF + 7*scale,
             fill="#dfdfdf",
             outline="#404040",
             width=1 * thickness,
             tags=(id, end_endpoint_tag),
         )
-
+        
+         
+        # Create the wire body as a line
+        # self.canvas.create_line(
+        #     xD + xO, yD + yO,
+        #     xD + xF, yD + yF,
+        #     fill=encre,
+        #     width=6 * thickness,
+        #     tags=(id, wire_body_tag),
+        # )
+        self.canvas.create_line(
+            xD + xO*scale, yD + yO,
+            xD + xF, yD + yF,
+            fill=encre,
+            width=6 * thickness,
+            tags=(id, wire_body_tag),
+        )
+    # FIN MODIF KH
         # Store tags and positions in params
         params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
         params["wire_body_tag"] = wire_body_tag
