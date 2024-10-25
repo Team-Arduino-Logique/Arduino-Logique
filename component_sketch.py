@@ -436,7 +436,7 @@ class ComponentSketcher:
     
     def xy_chip2pin(self,xC, yC, scale=1):
         space = 9*scale
-        return (xC +2*space, yC - space)
+        return (xC + 2*scale, yC - space)
 # FIN AJOUT KH DRAG_DROP 23/10/2024        
 
     def find_nearest_grid(self, x, y, matrix=None):
@@ -474,7 +474,7 @@ class ComponentSketcher:
                     min_distance = distance
                     # MODIF KH DRAG_DROP 23/10/2024
                     # nearest_point = (grid_x, grid_y)
-                    nearest_point = self.xy_hole2chip(grid_x, grid_y)
+                    nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
                     # FIN MODIF KH
                     nearest_point_col_lin = point[1]["coord"]
 
