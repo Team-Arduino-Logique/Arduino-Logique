@@ -1908,7 +1908,7 @@ class ComponentSketcher:
             fill="#dfdfdf",
             outline="#404040",
             width=1 * thickness,
-            tags=(id, start_endpoint_tag),
+            tags=(id, start_endpoint_tag), 
         )
        
         
