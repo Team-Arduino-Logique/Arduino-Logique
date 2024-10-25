@@ -1943,13 +1943,16 @@ class ComponentSketcher:
         #     width=6 * thickness,
         #     tags=(id, wire_body_tag),
         # )
-        self.canvas.create_line(
-            xD + xO*scale, yD + yO,
-            xD + xF, yD + yF,
-            fill=encre,
-            width=6 * thickness,
-            tags=(id, wire_body_tag),
-        )
+        divY  = yF - yO if yF != yO else 0.000001
+        xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+        yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+        p1    = ( (xO + xDiff), (yO + space - yDiff))
+        p2    = ( (xF + xDiff), (yF + space - yDiff))
+        p3    = ( (xF + space - xDiff), (yF + yDiff))
+        p4    = ( (xO+ space - xDiff), (yO + yDiff))
+        self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
+                            xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
+                            fill=encre, outline=contour, width=1*thickness, tags=(id, wire_body_tag) )  
     # FIN MODIF KH
         # Store tags and positions in params
         params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
