@@ -105,6 +105,26 @@ class ComponentSketcher:
         """
         Event handler for when a wire endpoint is clicked.
         """
+        ############ MODIF KH DRAG CABLE  ########################
+        # # Initiate drag for wire endpoint
+        # self.wire_drag_data["wire_id"] = wire_id
+        # self.wire_drag_data["endpoint"] = endpoint
+
+        # # Convert event coordinates to canvas coordinates
+        # canvas_x = self.canvas.canvasx(event.x)
+        # canvas_y = self.canvas.canvasy(event.y)
+
+        # # Adjust for scaling
+        # adjusted_x = canvas_x / self.scale_factor
+        # adjusted_y = canvas_y / self.scale_factor
+
+        # self.wire_drag_data["x"] = adjusted_x
+        # self.wire_drag_data["y"] = adjusted_y
+
+        # # Highlight the endpoint
+        # endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        # self.canvas.itemconfig(endpoint_tag, outline="red")
+
         # Initiate drag for wire endpoint
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
@@ -114,8 +134,8 @@ class ComponentSketcher:
         canvas_y = self.canvas.canvasy(event.y)
 
         # Adjust for scaling
-        adjusted_x = canvas_x / self.scale_factor
-        adjusted_y = canvas_y / self.scale_factor
+        adjusted_x = canvas_x #/ self.scale_factor
+        adjusted_y = canvas_y #/ self.scale_factor
 
         self.wire_drag_data["x"] = adjusted_x
         self.wire_drag_data["y"] = adjusted_y
@@ -123,6 +143,7 @@ class ComponentSketcher:
         # Highlight the endpoint
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red")
+        
 
     def on_wire_endpoint_drag(self, event, wire_id, endpoint):
         """
@@ -134,8 +155,12 @@ class ComponentSketcher:
             canvas_y = self.canvas.canvasy(event.y)
 
             # Adjust for scaling
-            adjusted_x = canvas_x / self.scale_factor
-            adjusted_y = canvas_y / self.scale_factor
+    ###############   MODIF DRAG CABLE KH 25/10/2024   ############################
+            # adjusted_x = canvas_x / self.scale_factor
+            # adjusted_y = canvas_y / self.scale_factor
+            adjusted_x = canvas_x 
+            adjusted_y = canvas_y 
+###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
 
             # Calculate movement delta
             dx = adjusted_x - self.wire_drag_data["x"]
@@ -143,17 +168,32 @@ class ComponentSketcher:
 
             # Move the endpoint
             endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-            self.canvas.move(endpoint_tag, dx * self.scale_factor, dy * self.scale_factor)
-
+            
+###############   MODIF DRAG CABLE KH 25/10/2024   ############################
+            # self.canvas.move(endpoint_tag, dx * self.scale_factor, dy * self.scale_factor)
+            #self.canvas.move(endpoint_tag, dx, dy )
+            x, y = current_dict_circuit[wire_id]["XY"] 
+            x += dx
+            y += dy
+            #current_dict_circuit[wire_id]["XY"] = (x, y)
+            (x_start,y_start,x_end,y_end) = current_dict_circuit[wire_id]["XY"]
+            x_o , y_o = id_origins["xyOrigin"]
+            col, line = self.getColLine(x_o, y_o)
+            
+            model_wire = [(self.drawWire, 1, {"id": wire_id, "coord": (x,y)})]
+            self.circuit(x_o + x, y_o +y, )
+###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
             # Update drag data
             self.wire_drag_data["x"] = adjusted_x
             self.wire_drag_data["y"] = adjusted_y
 
             # Update endpoint position in params
+###############   MODIF DRAG CABLE KH 25/10/2024   ############################
             current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (
-                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][0] + dx * self.scale_factor,
-                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][1] + dy * self.scale_factor,
+                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][0] + dx ,
+                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][1] + dy,
             )
+###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
 
             # Update the wire body
             self.update_wire_body(wire_id)
@@ -194,6 +234,7 @@ class ComponentSketcher:
             start_x, start_y,
             end_x, end_y
         )
+        
     def snap_wire_endpoint_to_grid(self, event, wire_id, endpoint):
         """
         Snaps the wire endpoint to the nearest grid point, excluding central points.
@@ -1807,6 +1848,25 @@ class ComponentSketcher:
 
 
 
+################## AJOUT KH 25/10/2024 ######################################
+    def getColLine(self, x, y, scale=1, **kwargs):
+        inter_space = 15 * scale
+        space = 9 * scale
+        thickness = 1 * scale
+        matrix = matrix830pts
+        point_col_lin = (-1,-1)
+        for key, value in kwargs.items():
+            if key == "matrix":
+                matrix = value
+        
+        for point in matrix.items():
+            grid_x, grid_y = point[1]["xy"]
+                    
+            if (grid_x, grid_y) == (x,y) :
+                point_col_lin = point[1]["coord"]
+
+        return point_col_lin            
+################## FIN AJOUT KH 25/10/2024 ######################################
 
 
 
@@ -1937,8 +1997,8 @@ class ComponentSketcher:
          
         # Create the wire body as a line
         # self.canvas.create_line(
-        #     xD + xO, yD + yO,
-        #     xD + xF, yD + yF,
+        #     xD + xO + 5*scale, yD + yO + 5*scale,
+        #     xD + xF + 5*scale, yD + yF + 5*scale,
         #     fill=encre,
         #     width=6 * thickness,
         #     tags=(id, wire_body_tag),
@@ -1952,7 +2012,8 @@ class ComponentSketcher:
         p4    = ( (xO+ space - xDiff), (yO + yDiff))
         self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
                             xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
-                            fill=encre, outline=contour, width=1*thickness, tags=(id, wire_body_tag) )  
+                            fill=encre, outline=contour, width=1*thickness, 
+                            tags=(id, wire_body_tag, start_endpoint_tag, end_endpoint_tag) )  
     # FIN MODIF KH
         # Store tags and positions in params
         params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
