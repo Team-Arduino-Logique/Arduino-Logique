@@ -136,7 +136,7 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (1.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6,  line_distance),
                 "etat": FREE,
                 "lien": None,
                 
@@ -147,7 +147,7 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (2.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 2),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }
@@ -157,7 +157,7 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (19.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }
@@ -167,7 +167,7 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (20.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 14),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }

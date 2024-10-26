@@ -9,7 +9,9 @@ from dataCDLT import (
     VERTICAL_END_HORIZONTAL,
     LEFT,
     PERSO,
+    YES,
     NO,
+    AUTO,
     id_origins,
     current_dict_circuit,
     id_type,
@@ -142,7 +144,7 @@ class ComponentSketcher:
 
         # Highlight the endpoint
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-        self.canvas.itemconfig(endpoint_tag, outline="red")
+        self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
         
 
     def on_wire_endpoint_drag(self, event, wire_id, endpoint):
@@ -173,16 +175,25 @@ class ComponentSketcher:
 ###############   MODIF DRAG CABLE KH 25/10/2024   ############################
             # self.canvas.move(endpoint_tag, dx * self.scale_factor, dy * self.scale_factor)
             #self.canvas.move(endpoint_tag, dx, dy )
-            x, y = current_dict_circuit[wire_id]["XY"] 
-            x += dx
-            y += dy
+            x_start,y_start,x_end,y_end = current_dict_circuit[wire_id]["XY"] 
+            color = current_dict_circuit[wire_id]["color"] 
             #current_dict_circuit[wire_id]["XY"] = (x, y)
-            (x_start,y_start,x_end,y_end) = current_dict_circuit[wire_id]["XY"]
+            #(x_start,y_start,x_end,y_end) = current_dict_circuit[wire_id]["XY"]
+            coords = current_dict_circuit[wire_id]["coord"]
             x_o , y_o = id_origins["xyOrigin"]
-            col, line = self.getColLine(x_o, y_o)
-            
-            model_wire = [(self.drawWire, 1, {"id": wire_id, "coord": (x,y)})]
-            self.circuit(x_o + x, y_o +y, )
+            col, line = -1,-1
+            if endpoint == "start":
+                x = x_start + dx
+                y = y_start + dy
+                XY = [(x,y, x_end, y_end)]
+                coords = [(col, line, coords[0][2], coords[0][3])]
+            else:
+                x = x_end + dx
+                y = y_end + dy
+                XY = [(x_start, y_start, x, y)]
+                coords = [(coords[0][0], coords[0][1], col, line)]
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+            self.circuit(x_o , y_o , model = model_wire)
 ###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
             # Update drag data
             self.wire_drag_data["x"] = adjusted_x
@@ -197,7 +208,7 @@ class ComponentSketcher:
 ###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
 
             # Update the wire body
-            self.update_wire_body(wire_id)
+            #self.update_wire_body(wire_id)
 
     def on_wire_endpoint_release(self, event, wire_id, endpoint):
         """
@@ -209,11 +220,13 @@ class ComponentSketcher:
             self.wire_drag_data["endpoint"] = None
 
             # Snap to nearest grid point
+####################    MODIF KH 25/10/2024  ##################################
             self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
+####################    FIN MODIF KH 25/10/2024  ##################################
 
             # Remove highlight
             endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-            self.canvas.itemconfig(endpoint_tag, outline="#404040")
+            self.canvas.itemconfig(endpoint_tag, outline="#404040", fill="#dfdfdf")
 
     def update_wire_body(self, wire_id):
         """
@@ -241,26 +254,53 @@ class ComponentSketcher:
         Snaps the wire endpoint to the nearest grid point, excluding central points.
         """
         # Get current position of the endpoint
+        ############## MODIF KH 25/10/2024 #######################
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         pos = self.canvas.coords(endpoint_tag)
-        x = (pos[0] + pos[2]) / 2
-        y = (pos[1] + pos[3]) / 2
+        # x = (pos[0] + pos[2]) / 2
+        # y = (pos[1] + pos[3]) / 2
+            
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        adjusted_x = canvas_x - id_origins["xyOrigin"][0]
+        adjusted_y = canvas_y - id_origins["xyOrigin"][1]
+
+        dx = adjusted_x - self.wire_drag_data["x"]
+        dy = adjusted_y - self.wire_drag_data["y"]
+
 
         # Find nearest grid point
-        nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
-
+        x_o , y_o = id_origins["xyOrigin"]
+        #nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
+        
+        coords = current_dict_circuit[wire_id]["coord"]
+        XY = [current_dict_circuit[wire_id]["XY"] ]
+        color = current_dict_circuit[wire_id]["color"] 
+        if endpoint == "start":
+            x = pos[0] + dx
+            y = pos[1] + dy
+            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            coords = [(col, line, coords[0][2], coords[0][3])]
+        else:
+            x = pos[2] + dx
+            y = pos[3] + dy
+            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            coords = [(coords[0][0], coords[0][1], col, line)]
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+        self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
-        dx = nearest_x - x
-        dy = nearest_y - y
+        #dx = nearest_x - x
+        #dy = nearest_y - y
 
         # Move endpoint to the nearest grid point
-        self.canvas.move(endpoint_tag, dx, dy)
+        #self.canvas.move(endpoint_tag, dx, dy)
 
         # Update endpoint position in params
-        current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
+        #current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
 
         # Update the wire body
-        self.update_wire_body(wire_id)
+        #self.update_wire_body(wire_id)
+        ############## FIN MODIF KH 25/10/2024 #######################
 
     def find_nearest_grid_point(self, x, y):
         """
@@ -1895,6 +1935,7 @@ class ComponentSketcher:
         space = 9 * scale
         thickness = 1 * scale
         matrix = matrix830pts
+        mode= AUTO
         id = None
         for key, value in kwargs.items():
             if key == "color":
@@ -1909,130 +1950,191 @@ class ComponentSketcher:
                 id = value
             if key == "tags":
                 tags = value
+            if key == "XY":
+                [(xs,ys,xe,ye)] = value
 
         params = {}
         if id:  # If the wire already exists, delete it and redraw
             if current_dict_circuit.get(id):
                 params = current_dict_circuit[id]
                 tags = params["tags"]
-                for tg in tags:
-                    self.canvas.delete(tg)
+                params["mode"] = mode
+                params["coord"] = coords
+                xO, yO, xF, yF = coords[0]
+                if xO != -1:
+                    xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+                else: xO, yO = xs, ys
+                if xF != -1:     
+                    xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+                else: xF, yF = xe, ye
+                x1_old,y1_old,x2_old,y2_old = params["XY"]
+                dx1, dy1 = xO - x1_old, yO - y1_old
+                dx2, dy2 = xF - x2_old, yF - y2_old
+                params["XY"] = (xO, yO, xF, yF)
+                params["color"] = color
+                encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+                contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
+                wire_body_tag = f"{id}_body"
+                start_endpoint_tag = f"{id}_start"
+                end_endpoint_tag = f"{id}_end"
+                select_start_tag = f"{id}_select_start"
+                select_end_tag = f"{id}_select_end"
+                divY  = yF - yO if yF != yO else 0.000001
+                xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+                yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+                p1    = ( xD + (xO + xDiff), yD + (yO + space - yDiff))
+                p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
+                p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
+                p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
+                self.canvas.coords(wire_body_tag, [p1,p2,p3,p4])
+                self.canvas.move(start_endpoint_tag, dx1, dy1)
+                self.canvas.move(end_endpoint_tag, dx2, dy2)
+                self.canvas.move(select_start_tag, dx1, dy1)
+                self.canvas.move(select_end_tag, dx2, dy2)
         else:
             id = "_wire_" + str(num_id)
             num_id += 1
+            params["id"] = id
+            params["mode"] = mode
+            params["coord"] = coords
+            xO, yO, xF, yF = coords[0]
+    ############ MODIF KH 25/10/2024 ###############################
+            if xO != -1:
+                xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+            else: xO, yO = xs, ys
+            if xF != -1:     
+                xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+            else: xF, yF = xe, ye
+    ############ FIN MODIF KH 25/10/2024 ###############################
+            params["XY"] = (xO, yO, xF, yF)
+            params["color"] = color
+            encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+            contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
 
-        params["id"] = id
-        params["mode"] = mode
-        params["coord"] = coords
-        xO, yO, xF, yF = coords[0]
-        xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
-        xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
-        params["XY"] = (xO, yO, xF, yF)
-        params["color"] = color
-        encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
-        contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
+            # Define unique tags for the wire components
+            wire_body_tag = f"{id}_body"
+            start_endpoint_tag = f"{id}_start"
+            end_endpoint_tag = f"{id}_end"
+            select_start_tag = f"{id}_select_start"
+            select_end_tag = f"{id}_select_end"
+            
+            # # Create the wire body as a line
+            # self.canvas.create_line(
+            #     xD + xO, yD + yO,
+            #     xD + xF, yD + yF,
+            #     fill=encre,
+            #     width=6 * thickness,
+            #     tags=(id, wire_body_tag),
+            # )
 
-        # Define unique tags for the wire components
-        wire_body_tag = f"{id}_body"
-        start_endpoint_tag = f"{id}_start"
-        end_endpoint_tag = f"{id}_end"
+            # Create endpoints as separate items
+            endpoint_radius = 3 * scale  # Adjust size as needed
 
-        # # Create the wire body as a line
-        # self.canvas.create_line(
-        #     xD + xO, yD + yO,
-        #     xD + xF, yD + yF,
-        #     fill=encre,
-        #     width=6 * thickness,
-        #     tags=(id, wire_body_tag),
-        # )
-
-        # Create endpoints as separate items
-        endpoint_radius = 3 * scale  # Adjust size as needed
-
-        # Starting endpoint
-        # MODIF KH DRAG 23/10/2024
-        # self.canvas.create_oval(
-        #     xD + xO - endpoint_radius,
-        #     yD + yO - endpoint_radius,
-        #     xD + xO + endpoint_radius,
-        #     yD + yO + endpoint_radius,
-        #     fill="#dfdfdf",
-        #     outline="#404040",
-        #     width=1 * thickness,
-        #     tags=(id, start_endpoint_tag),
-        # )
-        self.canvas.create_oval(
-            xD + xO + 2*scale,
-            yD + yO + 2*scale,
-            xD + xO + 7*scale,
-            yD + yO + 7*scale,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=(id, start_endpoint_tag), 
-        )
-       
+            # Starting endpoint
+            # MODIF KH DRAG 23/10/2024
+            # self.canvas.create_oval(
+            #     xD + xO - endpoint_radius,
+            #     yD + yO - endpoint_radius,
+            #     xD + xO + endpoint_radius,
+            #     yD + yO + endpoint_radius,
+            #     fill="#dfdfdf",
+            #     outline="#404040",
+            #     width=1 * thickness,
+            #     tags=(id, start_endpoint_tag),
+            # )
+            self.canvas.create_oval(
+                xD + xO + 2*scale,
+                yD + yO + 2*scale,
+                xD + xO + 7*scale,
+                yD + yO + 7*scale,
+                fill="#dfdfdf",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id,start_endpoint_tag), 
+            )
+            self.canvas.create_oval(
+                xD + xO - 2*scale,
+                yD + yO - 2*scale,
+                xD + xO + 9*scale,
+                yD + yO + 9*scale,
+                fill="",
+                outline="",
+                width=1 * thickness,
+                tags=(id, select_start_tag), 
+            )
         
-        # Ending endpoint
-        # self.canvas.create_oval(
-        #     xD + xF - endpoint_radius,
-        #     yD + yF - endpoint_radius,
-        #     xD + xF + endpoint_radius,
-        #     yD + yF + endpoint_radius,
-        #     fill="#dfdfdf",
-        #     outline="#404040",
-        #     width=1 * thickness,
-        #     tags=(id, end_endpoint_tag),
-        # )
-        self.canvas.create_oval(
-            xD + xF + 2*scale,
-            yD + yF + 2*scale,
-            xD + xF + 7*scale,
-            yD + yF + 7*scale,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=(id, end_endpoint_tag),
-        )
-        
-         
-        # Create the wire body as a line
-        # self.canvas.create_line(
-        #     xD + xO + 5*scale, yD + yO + 5*scale,
-        #     xD + xF + 5*scale, yD + yF + 5*scale,
-        #     fill=encre,
-        #     width=6 * thickness,
-        #     tags=(id, wire_body_tag),
-        # )
-        divY  = yF - yO if yF != yO else 0.000001
-        xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-        yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-        p1    = ( (xO + xDiff), (yO + space - yDiff))
-        p2    = ( (xF + xDiff), (yF + space - yDiff))
-        p3    = ( (xF + space - xDiff), (yF + yDiff))
-        p4    = ( (xO+ space - xDiff), (yO + yDiff))
-        self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
-                            xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
-                            fill=encre, outline=contour, width=1*thickness, 
-                            tags=(id, wire_body_tag, start_endpoint_tag, end_endpoint_tag) )  
-    # FIN MODIF KH
-        # Store tags and positions in params
-        params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
-        params["wire_body_tag"] = wire_body_tag
-        params["endpoints"] = {
-            "start": {"position": (xD + xO, yD + yO), "tag": start_endpoint_tag},
-            "end": {"position": (xD + xF, yD + yF), "tag": end_endpoint_tag},
-        }
+            
+            # Ending endpoint
+            # self.canvas.create_oval(
+            #     xD + xF - endpoint_radius,
+            #     yD + yF - endpoint_radius,
+            #     xD + xF + endpoint_radius,
+            #     yD + yF + endpoint_radius,
+            #     fill="#dfdfdf",
+            #     outline="#404040",
+            #     width=1 * thickness,
+            #     tags=(id, end_endpoint_tag),
+            # )
+            self.canvas.create_oval(
+                xD + xF + 2*scale,
+                yD + yF + 2*scale,
+                xD + xF + 7*scale,
+                yD + yF + 7*scale,
+                fill="#dfdfdf",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id, end_endpoint_tag),
+            )
+            self.canvas.create_oval(
+                xD + xF - 2*scale,
+                yD + yF - 2*scale,
+                xD + xF + 9*scale,
+                yD + yF + 9*scale,
+                fill="",
+                outline="",
+                width=1 * thickness,
+                tags=(id, select_end_tag),
+            )
+            
+            
+            # Create the wire body as a line
+            # self.canvas.create_line(
+            #     xD + xO + 5*scale, yD + yO + 5*scale,
+            #     xD + xF + 5*scale, yD + yF + 5*scale,
+            #     fill=encre,
+            #     width=6 * thickness,
+            #     tags=(id, wire_body_tag),
+            # )
+            divY  = yF - yO if yF != yO else 0.000001
+            xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+            yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+            p1    = ( (xO + xDiff), (yO + space - yDiff))
+            p2    = ( (xF + xDiff), (yF + space - yDiff))
+            p3    = ( (xF + space - xDiff), (yF + yDiff))
+            p4    = ( (xO+ space - xDiff), (yO + yDiff))
+            self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
+                                xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
+                                fill=encre, outline=contour, width=1*thickness, 
+                                tags=(id, wire_body_tag) )  
+        # FIN MODIF KH
+            # Store tags and positions in params
+            params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
+            params["wire_body_tag"] = wire_body_tag
+            params["endpoints"] = {
+                "start": {"position": (xD + xO, yD + yO), "tag": start_endpoint_tag},
+                "end": {"position": (xD + xF, yD + yF), "tag": end_endpoint_tag},
+            }
+            self.canvas.tag_raise(select_start_tag)
+            self.canvas.tag_raise(select_end_tag)
+            # Bind events to the endpoints for drag-and-drop
+            self.canvas.tag_bind(select_start_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'end'))
 
-        # Bind events to the endpoints for drag-and-drop
-        self.canvas.tag_bind(start_endpoint_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'start'))
-        self.canvas.tag_bind(end_endpoint_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'end'))
+            self.canvas.tag_bind(select_start_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'end'))
 
-        self.canvas.tag_bind(start_endpoint_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'start'))
-        self.canvas.tag_bind(end_endpoint_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'end'))
-
-        self.canvas.tag_bind(start_endpoint_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
-        self.canvas.tag_bind(end_endpoint_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
+            self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
 
         current_dict_circuit[id] = params
 
