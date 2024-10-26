@@ -145,7 +145,7 @@ def main():
     default_font = font.Font(family="Arial", size=10)
     win.option_add("*Font", default_font)
 
-    board.draw_matrix_points(scale=1) # for debugging purposes
+    # board.draw_matrix_points(scale=1) # for debugging purposes
 
     win.mainloop()
 
