@@ -29,7 +29,7 @@ from tkinter import Canvas
 
 
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, FREE
+from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, FREE, id_origins
 from dataComponent import ComponentData
 
 
@@ -224,6 +224,10 @@ class Breadboard:
         """
         for id_in_matrix, point in matrix1260pts.items():
             x, y = point["xy"]
+            
+            # Adjust for the origin
+            x += id_origins["xyOrigin"][0]
+            y += id_origins["xyOrigin"][1]
             # Adjust for scaling
             x *= scale
             y *= scale

@@ -134,8 +134,8 @@ class ComponentSketcher:
         canvas_y = self.canvas.canvasy(event.y)
 
         # Adjust for scaling
-        adjusted_x = canvas_x #/ self.scale_factor
-        adjusted_y = canvas_y #/ self.scale_factor
+        adjusted_x = canvas_x - id_origins["xyOrigin"][0]
+        adjusted_y = canvas_y - id_origins["xyOrigin"][1]
 
         self.wire_drag_data["x"] = adjusted_x
         self.wire_drag_data["y"] = adjusted_y
@@ -158,9 +158,10 @@ class ComponentSketcher:
     ###############   MODIF DRAG CABLE KH 25/10/2024   ############################
             # adjusted_x = canvas_x / self.scale_factor
             # adjusted_y = canvas_y / self.scale_factor
-            adjusted_x = canvas_x 
-            adjusted_y = canvas_y 
+            adjusted_x = canvas_x - id_origins["xyOrigin"][0]
+            adjusted_y = canvas_y - id_origins["xyOrigin"][1]
 ###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
+
 
             # Calculate movement delta
             dx = adjusted_x - self.wire_drag_data["x"]

@@ -16,7 +16,7 @@ import json
 
 from menus import Menus
 from sidebar import Sidebar 
-from topbar2 import TopBar2
+from toolbar import Toolbar
 
 def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list) -> None:
     """
@@ -55,16 +55,16 @@ def main():
 
     # Configuring grid layout for the main window
     win.grid_rowconfigure(0, weight=0)  # Menu bar
-    win.grid_rowconfigure(1, weight=0)  # Secondary TopBar2
+    win.grid_rowconfigure(1, weight=0)  # Secondary toolbar
     win.grid_rowconfigure(2, weight=1)  # Canvas and sidebar
     win.grid_rowconfigure(3, weight=0)  # Slider
     win.grid_columnconfigure(0, weight=0)  # Sidebar
     win.grid_columnconfigure(1, weight=1)  # Canvas
 
-    # Creating the TopBar2 instance
-    topbar2 = TopBar2(parent=win)
+    # Creating the toolbar instance
+    toolbar = Toolbar(parent=win)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
-    topbar2.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
+    toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
     # Creating the canvas in row=2, column=1
     canvas = tk.Canvas(win, bg="#626262", highlightthickness=0, bd=0)
@@ -93,7 +93,7 @@ def main():
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
     sidebar = Sidebar(
         parent=win, 
-        chip_images_path="chips", 
+        chip_images_path="Assets/chips", 
         canvas=canvas, 
         board=board, 
         sketcher=sketcher, 
@@ -145,7 +145,7 @@ def main():
     default_font = font.Font(family="Arial", size=10)
     win.option_add("*Font", default_font)
 
-    #board.draw_matrix_points(scale=1) # for debugging purposes
+    board.draw_matrix_points(scale=1) # for debugging purposes
 
     win.mainloop()
 
