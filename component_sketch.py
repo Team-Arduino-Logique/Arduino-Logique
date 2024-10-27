@@ -107,42 +107,9 @@ class ComponentSketcher:
         """
         Event handler for when a wire endpoint is clicked.
         """
-        ############ MODIF KH DRAG CABLE  ########################
-        # # Initiate drag for wire endpoint
-        # self.wire_drag_data["wire_id"] = wire_id
-        # self.wire_drag_data["endpoint"] = endpoint
-
-        # # Convert event coordinates to canvas coordinates
-        # canvas_x = self.canvas.canvasx(event.x)
-        # canvas_y = self.canvas.canvasy(event.y)
-
-        # # Adjust for scaling
-        # adjusted_x = canvas_x / self.scale_factor
-        # adjusted_y = canvas_y / self.scale_factor
-
-        # self.wire_drag_data["x"] = adjusted_x
-        # self.wire_drag_data["y"] = adjusted_y
-
-        # # Highlight the endpoint
-        # endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-        # self.canvas.itemconfig(endpoint_tag, outline="red")
-
-        # Initiate drag for wire endpoint
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
 
-        # Convert event coordinates to canvas coordinates
-        canvas_x = self.canvas.canvasx(event.x)
-        canvas_y = self.canvas.canvasy(event.y)
-
-        # Adjust for scaling
-        adjusted_x = canvas_x - id_origins["xyOrigin"][0]
-        adjusted_y = canvas_y - id_origins["xyOrigin"][1]
-
-        self.wire_drag_data["x"] = adjusted_x
-        self.wire_drag_data["y"] = adjusted_y
-
-        # Highlight the endpoint
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
         
@@ -156,59 +123,18 @@ class ComponentSketcher:
             canvas_x = self.canvas.canvasx(event.x)
             canvas_y = self.canvas.canvasy(event.y)
 
-            # Adjust for scaling
-    ###############   MODIF DRAG CABLE KH 25/10/2024   ############################
-            # adjusted_x = canvas_x / self.scale_factor
-            # adjusted_y = canvas_y / self.scale_factor
-            adjusted_x = canvas_x - id_origins["xyOrigin"][0]
-            adjusted_y = canvas_y - id_origins["xyOrigin"][1]
-###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
-
-
-            # Calculate movement delta
-            dx = adjusted_x - self.wire_drag_data["x"]
-            dy = adjusted_y - self.wire_drag_data["y"]
-
-            # Move the endpoint
-            endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-            
-###############   MODIF DRAG CABLE KH 25/10/2024   ############################
-            # self.canvas.move(endpoint_tag, dx * self.scale_factor, dy * self.scale_factor)
-            #self.canvas.move(endpoint_tag, dx, dy )
-            x_start,y_start,x_end,y_end = current_dict_circuit[wire_id]["XY"] 
             color = current_dict_circuit[wire_id]["color"] 
-            #current_dict_circuit[wire_id]["XY"] = (x, y)
-            #(x_start,y_start,x_end,y_end) = current_dict_circuit[wire_id]["XY"]
             coords = current_dict_circuit[wire_id]["coord"]
             x_o , y_o = id_origins["xyOrigin"]
-            col, line = -1,-1
+            (xn,yn), (cn,ln) = self.find_nearest_grid(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
-                x = x_start + dx
-                y = y_start + dy
-                XY = [(x,y, x_end, y_end)]
-                coords = [(col, line, coords[0][2], coords[0][3])]
+                coords = [(cn, ln, coords[0][2], coords[0][3])]
             else:
-                x = x_end + dx
-                y = y_end + dy
-                XY = [(x_start, y_start, x, y)]
-                coords = [(coords[0][0], coords[0][1], col, line)]
-            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+                coords = [(coords[0][0], coords[0][1], cn, ln)]
+            
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
-###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
-            # Update drag data
-            self.wire_drag_data["x"] = adjusted_x
-            self.wire_drag_data["y"] = adjusted_y
 
-            # Update endpoint position in params
-###############   MODIF DRAG CABLE KH 25/10/2024   ############################
-            current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (
-                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][0] + dx ,
-                current_dict_circuit[wire_id]["endpoints"][endpoint]["position"][1] + dy,
-            )
-###############   FIN MODIF DRAG CABLE KH 25/10/2024   ############################
-
-            # Update the wire body
-            #self.update_wire_body(wire_id)
 
     def on_wire_endpoint_release(self, event, wire_id, endpoint):
         """
@@ -221,7 +147,7 @@ class ComponentSketcher:
 
             # Snap to nearest grid point
 ####################    MODIF KH 25/10/2024  ##################################
-            self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
+            #self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
 ####################    FIN MODIF KH 25/10/2024  ##################################
 
             # Remove highlight
@@ -265,8 +191,8 @@ class ComponentSketcher:
         adjusted_x = canvas_x - id_origins["xyOrigin"][0]
         adjusted_y = canvas_y - id_origins["xyOrigin"][1]
 
-        dx = adjusted_x - self.wire_drag_data["x"]
-        dy = adjusted_y - self.wire_drag_data["y"]
+        dx = adjusted_x -  self.wire_drag_data["x"]
+        dy = adjusted_y -  self.wire_drag_data["y"]
 
 
         # Find nearest grid point
@@ -277,15 +203,17 @@ class ComponentSketcher:
         XY = [current_dict_circuit[wire_id]["XY"] ]
         color = current_dict_circuit[wire_id]["color"] 
         if endpoint == "start":
-            x = pos[0] + dx
-            y = pos[1] + dy
+            x =  canvas_x # pos[0] # + dx
+            y =  canvas_y # pos[1] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
             coords = [(col, line, coords[0][2], coords[0][3])]
+            print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
-            x = pos[2] + dx
-            y = pos[3] + dy
+            x = canvas_x # pos[2] # + dx
+            y = canvas_y # pos[3] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
             coords = [(coords[0][0], coords[0][1], col, line)]
+            print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
         model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
@@ -1963,10 +1891,16 @@ class ComponentSketcher:
                 xO, yO, xF, yF = coords[0]
                 if xO != -1:
                     xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
-                else: xO, yO = xs, ys
+                else: 
+                    xO, yO = xs, ys
+                    (xn,yn), (cn,ln) = self.find_nearest_grid(xO+xD,yO+yD,matrix=matrix1260pts)
+                    print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
                 if xF != -1:     
                     xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
-                else: xF, yF = xe, ye
+                else: 
+                    xF, yF = xe, ye
+                    (xn,yn), (cn,ln) = self.find_nearest_grid(xF+xD,yF+yD,matrix=matrix1260pts)
+                    print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
                 x1_old,y1_old,x2_old,y2_old = params["XY"]
                 dx1, dy1 = xO - x1_old, yO - y1_old
                 dx2, dy2 = xF - x2_old, yF - y2_old
