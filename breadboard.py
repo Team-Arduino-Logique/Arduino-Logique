@@ -29,7 +29,7 @@ from tkinter import Canvas
 
 
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, PERSO, FREE
+from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, FREE, id_origins
 from dataComponent import ComponentData
 
 
@@ -76,7 +76,6 @@ class Breadboard:
 
     def __init__(self, canvas: Canvas):
         self.canvas = canvas
-        self.id_origin = {"xyOrigin": (0, 0)}
         self.current_cursor = None
         self.cursor_save = None
         self.id_type = {}
@@ -127,43 +126,48 @@ class Breadboard:
                 matrix = value
 
         for i in range(50):
-            idph = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(1 + line_distance)
-            idpb = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(13 + line_distance)
-            idmh = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(line_distance)
-            idmb = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(12 + line_distance)
-            matrix[idmh] = {
+            id_top_plus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(1 + line_distance)
+            id_bot_plus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(13 + line_distance)
+            id_top_minus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(line_distance)
+            id_bot_minus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(12 + line_distance)
+            matrix[id_top_minus] = {
                 "id": ["ph", "plus haut", "1"],
                 "xy": (
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (1.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6,  line_distance),
                 "etat": FREE,
                 "lien": None,
+                
             }
-            matrix[idph] = {
+            matrix[id_top_plus] = {
                 "id": ["mh", "moins haut", "2"],
                 "xy": (
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (2.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }
-            matrix[idmb] = {
+            matrix[id_bot_minus] = {
                 "id": ["pb", "plus bas", "13"],
                 "xy": (
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (19.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }
-            matrix[idpb] = {
+            matrix[id_bot_plus] = {
                 "id": ["mb", "moins bas", "14"],
                 "xy": (
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (20.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
                 "etat": FREE,
                 "lien": None,
             }
@@ -176,6 +180,7 @@ class Breadboard:
                         0.5 * inter_space + (c + col_distance) * inter_space,
                         (5.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
+                    "coord": (c + col_distance, l + 2 + line_distance),
                     "etat": FREE,
                     "lien": None,
                 }
@@ -186,6 +191,7 @@ class Breadboard:
                         0.5 * inter_space + (c + col_distance) * inter_space,
                         (12.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
+                    "coord": (c + col_distance, l + 7 + line_distance),
                     "etat": FREE,
                     "lien": None,
                 }
@@ -204,61 +210,34 @@ class Breadboard:
         self.fill_matrix_830_pts(matrix=matrix1260pts)
         self.fill_matrix_830_pts(line_distance=15, matrix=matrix1260pts)
 
-    def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+    def calculate_center_y(self, line_distance, inter_space):
+        # The center line between 'e' and 'f' is at line 7.5
+        
+        center_line = line_distance + 10.5
+        center_y = center_line * inter_space
+        return center_y
+
+    
+    def draw_matrix_points(self, scale=1): # used to debug the matrix
         """
-        Generates a circuit layout on the canvas based on the provided parameters and model.
-        Parameters:
-        - x_distance (int, optional): Initial x-coordinate distance. Defaults to 0.
-        - y_distance (int, optional): Initial y-coordinate distance. Defaults to 0.
-        - scale (float, optional): Scaling factor for the circuit elements. Defaults to 1.
-        - width (int, optional): Width of the circuit. If not -1, it overrides the scale. Defaults to -1.
-        - direction (str, optional): Direction of the circuit layout. Can be VERTICAL, HORIZONTAL, or PERSO.
-                                     Defaults to VERTICAL.
-        - **kwargs: Additional keyword arguments:
-            - model (list, optional): Custom model for the circuit layout. Defaults to line_distribution.
-            - dXY (tuple, optional): Custom x and y distances for PERSO direction.
-        Returns:
-        - tuple: Updated x_distance and y_distance after laying out the circuit.
-        Raises:
-        - ValueError: If the model argument is not a valid tuple or list structure.
+        Draw all points in the matrix on the canvas, center snap points in yellow, others in orange.
         """
-
-        if width != -1:
-            scale = width / 9.0
-        inter_space = 15 * scale
-
-        component_data = ComponentData(self.sketcher)
-        model = component_data.line_distribution
-        for key, value in kwargs.items():
-            if key == "model":
-                model = value
-            if key == "dXY":
-                _, delta_y = value
-
-        x, y = x_distance, y_distance
-        for element in model:
-            if callable(element[0]) and isinstance(element[1], int):
-                for _ in range(element[1]):
-                    if len(element) == 3:
-                        (x, y) = element[0](x, y, scale, width, **element[2])
-                    else:
-                        (x, y) = element[0](x, y, scale, width)
-            elif isinstance(element[0], list) and isinstance(element[1], int):
-                for _ in range(element[1]):
-                    if len(element) == 3:
-                        (x, y) = self.circuit(x, y, scale, width, model=element[0], **element[2])
-                    else:
-                        (x, y) = self.circuit(x, y, scale, width, model=element[0])
+        for id_in_matrix, point in matrix1260pts.items():
+            x, y = point["xy"]
+            
+            # Adjust for the origin
+            x += id_origins["xyOrigin"][0]
+            y += id_origins["xyOrigin"][1]
+            # Adjust for scaling
+            x *= scale
+            y *= scale
+            # Determine color
+            if id_in_matrix.startswith('snap,'):
+                color = 'yellow'
             else:
-                raise ValueError(
-                    "The rail model argument must be a tuple (function(), int, [int]) or (list, int, [int])."
-                )
-
-        if direction == HORIZONTAL:
-            x_distance = x
-        elif direction == VERTICAL:
-            y_distance = y + inter_space
-        elif direction == PERSO:
-            y_distance = y - inter_space * delta_y
-
-        return (x_distance, y_distance)
+                color = 'orange'
+            # Draw a small circle at (x, y) with the specified color
+            radius = 2 * scale  # Adjust size as needed
+            self.canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius,
+                fill=color, outline='')

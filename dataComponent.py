@@ -29,6 +29,8 @@ class ComponentData:
         dip60 = {"pinCount": 60, "chipWidth": 2.4, "label": "DIP 60", "type": "dip60"}
         dip120 = {"pinCount": 120, "chipWidth": 2.4, "label": "DIP 120", "type": "dip120"}
 
+        
+
 
         pins7400 = {
             "logicFunction": self.sketcher.symbNAND,
@@ -183,7 +185,7 @@ class ComponentData:
         chip7408 = [(self.sketcher.drawChip, 1, {**dip7408, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7408})]
         chip7432 = [(self.sketcher.drawChip, 1, {**dip7432, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7432})]
         wireTest = [
-            (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coords": [(1, 3, 3, 2)], "matrix": matrix1260pts}),
+            (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coords": [(1, 17, 32, 25)],"multipoints":[(200,415),(200,600),(400,500)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (10, 10, 10, 255), "mode": AUTO, "coords": [(35, 12, 35, 13)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 80, 0, 255), "mode": AUTO, "coords": [(5, 10, 15, 10)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 255, 0, 255), "mode": AUTO, "coords": [(2, 6, 40, 1)], "matrix": matrix1260pts}),
@@ -192,7 +194,7 @@ class ComponentData:
         ]
 
 
-        self.line_distribution = [(self.sketcher.drawHole, 63)]  # , {"colors":("#400010","#c00040","#200008")}
+        self.line_distribution = [(self.sketcher.drawHole, 63)]  # , {"colors":("#400010","#c00040","#200008")}  # "multipoints":[(),(),(),()],
         blocAlim = [(self.sketcher.drawHole, 5), (self.sketcher.drawBlank, 1)]  # , {"colors":("#400010","#c00040","#200008")}
         # railAlimMoins = [(self.sketcher.drawBlank,1),(self.sketcher.drawChar,1),(self.sketcher.drawRail,60)]
         railAlimMoins = [
@@ -263,3 +265,12 @@ class ComponentData:
             (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
             (wireTest, 1),
         ]
+
+        self.chipDIP14 = chipDIP14
+        self.chip7400 = chip7400
+        self.chip7402 = chip7402
+        self.chip7404 = chip7404
+        self.chip7408 = chip7408
+        self.chip7432 = chip7432
+
+        

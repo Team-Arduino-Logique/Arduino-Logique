@@ -11,7 +11,7 @@ YES = 1
 LEFT = 0
 RIGHT = 1
 NOTHING = (0, 0)
-ICO_PDF = {"path": "Icones/pdf-icon-png-2079.png", "imageId": None}
+ICO_PDF = {"path": "Icons/pdf-icon-png-2079.png", "imageId": None}
 
 
 id_origins = {"xyOrigin": (0, 0)}

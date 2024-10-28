@@ -2,20 +2,27 @@ import tkinter as tk
 from tkinter import font
 import math
 
+
 from dataCDLT import (
     HORIZONTAL,
     RIGHT,
     VERTICAL,
     VERTICAL_END_HORIZONTAL,
     LEFT,
+    PERSO,
+    YES,
     NO,
+    AUTO,
     id_origins,
     current_dict_circuit,
     id_type,
     num_id,
+    matrix1260pts,
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
+    FREE,
+    USED,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
@@ -23,6 +30,551 @@ class ComponentSketcher:
     def __init__(self, canvas):
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
+        self.scale_factor = 1.0
+
+        self.drag_chip_data = {
+            "chip_id": None,
+            "x": 0,
+            "y": 0
+        }
+
+        self.wire_drag_data = {
+            "wire_id": None,
+            "endpoint": None,
+            "x": 0,
+            "y": 0
+        }
+
+    def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+        """
+        Generates a circuit layout on the canvas based on the provided parameters and model.
+        Parameters:
+        - x_distance (int, optional): Initial x-coordinate distance. Defaults to 0.
+        - y_distance (int, optional): Initial y-coordinate distance. Defaults to 0.
+        - scale (float, optional): Scaling factor for the circuit elements. Defaults to 1.
+        - width (int, optional): Width of the circuit. If not -1, it overrides the scale. Defaults to -1.
+        - direction (str, optional): Direction of the circuit layout. Can be VERTICAL, HORIZONTAL, or PERSO.
+                                     Defaults to VERTICAL.
+        - **kwargs: Additional keyword arguments:
+            - model (list, optional): Custom model for the circuit layout. Defaults to line_distribution.
+            - dXY (tuple, optional): Custom x and y distances for PERSO direction.
+        Returns:
+        - tuple: Updated x_distance and y_distance after laying out the circuit.
+        Raises:
+        - ValueError: If the model argument is not a valid tuple or list structure.
+        """
+
+        if width != -1:
+            scale = width / 9.0
+        inter_space = 15 * scale
+
+        # component_data = ComponentData(self.sketcher)
+        Hole = [(self.drawHole, 1)] #model specified by default in case of no model
+
+        model = Hole
+        for key, value in kwargs.items():
+            if key == "model":
+                model = value
+            if key == "dXY":
+                _, delta_y = value
+
+        x, y = x_distance, y_distance
+        for element in model:
+            if callable(element[0]) and isinstance(element[1], int):
+                for _ in range(element[1]):
+                    if len(element) == 3:
+                        (x, y) = element[0](x, y, scale, width, **element[2])
+                    else:
+                        (x, y) = element[0](x, y, scale, width)
+            elif isinstance(element[0], list) and isinstance(element[1], int):
+                for _ in range(element[1]):
+                    if len(element) == 3:
+                        (x, y) = self.circuit(x, y, scale, width, model=element[0], **element[2])
+                    else:
+                        (x, y) = self.circuit(x, y, scale, width, model=element[0])
+            else:
+                raise ValueError(
+                    "The rail model argument must be a tuple (function(), int, [int]) or (list, int, [int])."
+                )
+
+        if direction == HORIZONTAL:
+            x_distance = x
+        elif direction == VERTICAL:
+            y_distance = y + inter_space
+        elif direction == PERSO:
+            y_distance = y - inter_space * delta_y
+
+        return (x_distance, y_distance)
+
+    def on_wire_endpoint_click(self, event, wire_id, endpoint):
+        """
+        Event handler for when a wire endpoint is clicked.
+        """
+        self.wire_drag_data["wire_id"] = wire_id
+        self.wire_drag_data["endpoint"] = endpoint
+
+        endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
+        
+
+    def on_wire_endpoint_drag(self, event, wire_id, endpoint):
+        """
+        Event handler for dragging a wire endpoint.
+        """
+        if self.wire_drag_data["wire_id"] == wire_id and self.wire_drag_data["endpoint"] == endpoint:
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+
+            color = current_dict_circuit[wire_id]["color"] 
+            coords = current_dict_circuit[wire_id]["coord"]
+            x_o , y_o = id_origins["xyOrigin"]
+            (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
+            if endpoint == "start":
+                coords = [(cn, ln, coords[0][2], coords[0][3])]
+            else:
+                coords = [(coords[0][0], coords[0][1], cn, ln)]
+            
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "matrix": matrix1260pts})]
+            self.circuit(x_o , y_o , model = model_wire)
+
+
+    def on_wire_endpoint_release(self, event, wire_id, endpoint):
+        """
+        Event handler for when a wire endpoint is released.
+        """
+        if self.wire_drag_data["wire_id"] == wire_id and self.wire_drag_data["endpoint"] == endpoint:
+            # Reset drag data
+            self.wire_drag_data["wire_id"] = None
+            self.wire_drag_data["endpoint"] = None
+
+            # Snap to nearest grid point
+####################    MODIF KH 25/10/2024  ##################################
+            #self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
+####################    FIN MODIF KH 25/10/2024  ##################################
+
+            # Remove highlight
+            endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            self.canvas.itemconfig(endpoint_tag, outline="#404040", fill="#dfdfdf")
+
+    def update_wire_body(self, wire_id):
+        """
+        Updates the wire body based on the positions of the endpoints.
+        """
+        params = current_dict_circuit[wire_id]
+        start_pos = self.canvas.coords(params["endpoints"]["start"]["tag"])
+        end_pos = self.canvas.coords(params["endpoints"]["end"]["tag"])
+
+        # Calculate center positions of the endpoints
+        start_x = (start_pos[0] + start_pos[2]) / 2
+        start_y = (start_pos[1] + start_pos[3]) / 2
+        end_x = (end_pos[0] + end_pos[2]) / 2
+        end_y = (end_pos[1] + end_pos[3]) / 2
+
+        # Update wire body coordinates
+        self.canvas.coords(
+            params["wire_body_tag"],
+            start_x, start_y,
+            end_x, end_y
+        )
+        
+    def snap_wire_endpoint_to_grid(self, event, wire_id, endpoint):
+        """
+        Snaps the wire endpoint to the nearest grid point, excluding central points.
+        """
+        # Get current position of the endpoint
+        ############## MODIF KH 25/10/2024 #######################
+        endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        pos = self.canvas.coords(endpoint_tag)
+        # x = (pos[0] + pos[2]) / 2
+        # y = (pos[1] + pos[3]) / 2
+            
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        adjusted_x = canvas_x - id_origins["xyOrigin"][0]
+        adjusted_y = canvas_y - id_origins["xyOrigin"][1]
+
+        dx = adjusted_x -  self.wire_drag_data["x"]
+        dy = adjusted_y -  self.wire_drag_data["y"]
+
+
+        # Find nearest grid point
+        x_o , y_o = id_origins["xyOrigin"]
+        #nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
+        
+        coords = current_dict_circuit[wire_id]["coord"]
+        XY = [current_dict_circuit[wire_id]["XY"] ]
+        color = current_dict_circuit[wire_id]["color"] 
+        if endpoint == "start":
+            x =  canvas_x # pos[0] # + dx
+            y =  canvas_y # pos[1] # + dy
+            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            coords = [(col, line, coords[0][2], coords[0][3])]
+            # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
+        else:
+            x = canvas_x # pos[2] # + dx
+            y = canvas_y # pos[3] # + dy
+            (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
+            coords = [(coords[0][0], coords[0][1], col, line)]
+            # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+        self.circuit(x_o , y_o , model = model_wire)
+        # Calculate movement delta
+        #dx = nearest_x - x
+        #dy = nearest_y - y
+
+        # Move endpoint to the nearest grid point
+        #self.canvas.move(endpoint_tag, dx, dy)
+
+        # Update endpoint position in params
+        #current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
+
+        # Update the wire body
+        #self.update_wire_body(wire_id)
+        ############## FIN MODIF KH 25/10/2024 #######################
+
+    def find_nearest_grid_point(self, x, y):
+        """
+        Finds the nearest grid point to (x, y), excluding central points used for chips.
+        """
+        min_distance = float('inf')
+        nearest_point = (x, y)
+        for id_in_matrix, point in matrix1260pts.items():
+            # Exclude central points (lines 8 and 22)
+            id_parts = id_in_matrix.split(',')
+            if len(id_parts) == 2:
+                column_str, line_str = id_parts
+            elif len(id_parts) == 3 and id_parts[0] != 'snap':
+                # Handle cases where id_in_matrix has three parts but is not a snap point
+                column_str, line_str = id_parts[1], id_parts[2]
+            else:
+                # Skip entries that don't match expected format
+                continue
+
+            try:
+                line_num = float(line_str)
+            except ValueError:
+                # Skip if line_str is not a number
+                continue
+
+            if line_num != 8 and line_num != 22:
+                grid_x, grid_y = point["xy"]
+                # Adjust for scaling
+                grid_x *= self.scale_factor
+                grid_y *= self.scale_factor
+                distance = math.hypot(x - grid_x, y - grid_y)
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_point = (grid_x, grid_y)
+        return nearest_point
+
+    def on_chip_click(self, event, chip_id):
+        """
+        Event handler for chip clicks.
+        Initiates drag and stores the initial mouse position.
+        """
+        print(f"Chip clicked: {chip_id}")
+        # Initiate drag by setting drag_chip_data
+        self.drag_chip_data["chip_id"] = chip_id
+
+        #Convert event coordinates to canvas coordinates
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+
+        
+
+        # Adjust for scaling
+        adjusted_x = canvas_x #/ self.scale_factor
+        adjusted_y = canvas_y #/ self.scale_factor
+
+        self.drag_chip_data["x"] = adjusted_x
+        self.drag_chip_data["y"] = adjusted_y
+
+
+        chip_params = current_dict_circuit[chip_id]
+        self.drag_chip_data["initial_XY"] = chip_params["pinUL_XY"]
+
+        print(f"Chip {chip_id} clicked at ({adjusted_x}, {adjusted_y})")
+
+        # # Correct tag name
+        # tagSouris = "activeArea" + chip_id
+
+        # # Change outline to indicate selection
+        # self.canvas.itemconfig(tagSouris, outline="red")
+        # self.canvas.tag_raise(tagSouris)
+        # print(f"Chip {chip_id} outline changed to red")
+
+    def on_chip_drag(self, event):
+        """
+        Event handler for dragging the chip.
+        Moves the chip based on mouse movement.
+        """
+        chip_id = self.drag_chip_data["chip_id"]
+        if chip_id:
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+
+            # Adjust for scaling
+            adjusted_x = canvas_x #/ self.scale_factor
+            adjusted_y = canvas_y #/ self.scale_factor
+
+            # Calculate movement delta
+            dx = adjusted_x - self.drag_chip_data["x"]
+            dy = adjusted_y - self.drag_chip_data["y"]
+
+            # Move all items associated with the chip
+            chip_params = current_dict_circuit[chip_id]
+            # for tag in chip_params["tags"]:
+            #     self.canvas.move(tag, dx, dy)
+
+            # Update drag_chip_data
+            self.drag_chip_data["x"] = adjusted_x
+            self.drag_chip_data["y"] = adjusted_y
+
+            # Update chip's position
+            current_x, current_y = chip_params["XY"]
+            # chip_params["XY"] = (current_x + dx, current_y + dy)
+
+            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (current_x + dx, current_y + dy)})]
+            self.circuit(current_x + dx, current_y + dy,model=model_chip)
+
+            print(f"Chip {chip_id} moved to new position: ({current_x}, {current_y})")
+
+            # **Update chip's center position**
+            # center_x, center_y = chip_params["center"]
+            # chip_params["center"] = (center_x + dx, center_y + dy)
+
+            # Update pin positions
+            # for pin_info in chip_params["pins"]:
+            #     pin_x, pin_y = pin_info['position']
+            #     pin_info['position'] = (pin_x + dx, pin_y + dy)
+
+    def on_stop_chip_drag(self, event):
+        chip_id = self.drag_chip_data["chip_id"]
+        if chip_id:
+            # MODIF KH POUR DRAG-DROP 23/10/2024
+            # (x, y) = current_dict_circuit[chip_id]["XY"]
+            (x, y) = current_dict_circuit[chip_id]["pinUL_XY"]
+            # FIN MODIF KH
+            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            print(f"Real x: {real_x}, Real y: {real_y}")
+            print(f"Col: {col}, Line: {line}")
+
+            # Get chip parameters
+            chip_params = current_dict_circuit[chip_id]
+            pin_count = chip_params["pinCount"]
+            half_pin_count = pin_count // 2
+
+            # Check if there's enough space to the right
+            max_column = col + half_pin_count - 1
+            if max_column > 63:
+                # Not enough space, prevent placement and look for the nearest snap point on the left
+                print("Not enough space to place the chip here.")
+                col = 63 - half_pin_count + 1
+                (x_o, y_o) = id_origins["xyOrigin"]
+                real_x, real_y = self.getXY(col, line, matrix=matrix1260pts)
+                real_x += x_o
+                real_y += y_o
+                (real_x,real_y),(col,line) = self.find_nearest_grid(real_x,real_y)
+
+            # Temporarily free the previous holes
+            previous_x, previous_y = self.drag_chip_data["initial_XY"]
+
+            # Free the holes at the previous position
+            prev_holes = self.get_chip_holes(chip_params["pinUL_XY"][0], chip_params["pinUL_XY"][1], pin_count)
+            self.mark_holes_as_free(prev_holes)
+
+            # Check if new holes are free
+            holes_available = True
+            occupied_holes = []
+            for i in range(half_pin_count):
+                # Top row (line 7 or 21)
+                hole_id_top = f"{col + i},{line}"
+                # Bottom row (line 6 or 20)
+                hole_id_bottom = f"{col + i},{line + 1}"
+
+                hole_top = matrix1260pts.get(hole_id_top)
+                hole_bottom = matrix1260pts.get(hole_id_bottom)
+
+                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                    holes_available = False
+                    break
+                else:
+                    occupied_holes.extend([hole_id_top, hole_id_bottom])
+
+            if not holes_available:
+                print("Holes are occupied. Cannot place the chip here.")
+                self.mark_holes_as_used(chip_params["occupied_holes"])
+                return
+
+            
+
+            # Mark new holes as used
+            for hole_id in occupied_holes:
+                matrix1260pts[hole_id]["etat"] = USED
+            chip_params["occupied_holes"] = occupied_holes
+
+            # AJOUT KH DRAG-DROP 23/10/2024
+            pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
+            # FIN AJOUT KH
+            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (real_x,real_y), "pinUL_XY":(pin_x, pin_y)})]
+            self.circuit(real_x, real_y,model=model_chip)
+            # Reset drag_chip_data
+            self.drag_chip_data["chip_id"] = None
+            self.drag_chip_data["x"] = 0
+            self.drag_chip_data["y"] = 0
+
+
+    def get_chip_holes(self, x, y, pin_count):
+        """
+        Given the chip's upper-left pin position (x, y) and pin count,
+        compute the list of hole IDs that the chip occupies.
+        """
+        half_pin_count = pin_count // 2
+        holes = []
+        # Adjust x and y for the origin
+        (x_o, y_o) = id_origins["xyOrigin"]
+        col, line = self.getColLine(x, y, matrix=matrix1260pts)
+        if line not in [7, 21]:
+            return holes  # Chip not on correct lines
+        for i in range(half_pin_count):
+            hole_id_top = f"{col + i},{line}"
+            hole_id_bottom = f"{col + i},{line + 1}"
+            holes.extend([hole_id_top, hole_id_bottom])
+        return holes
+
+    # def find_nearest_snap_point(self, x, y, matrix):
+    #     """
+    #     Find the nearest snap point to the given x, y coordinates.
+
+    #     Parameters:
+    #         x (float): The x-coordinate.
+    #         y (float): The y-coordinate.
+    #         matrix (dict): The matrix containing snap points.
+
+    #     Returns:
+    #         tuple: (nearest_x, nearest_y) coordinates of the nearest snap point.
+    #     """
+    #     min_distance = float('inf')
+    #     nearest_point = (x, y)
+    #     for id_in_matrix, point in matrix.items():
+    #         if id_in_matrix.startswith("snap,"):
+    #             grid_x, grid_y = point["xy"]
+    #             distance = math.hypot(x - grid_x, y - grid_y)
+    #             print(f"Checking snap point {id_in_matrix} at ({grid_x}, {grid_y}), distance: {distance}")
+    #             if distance < min_distance:
+    #                 min_distance = distance
+    #                 nearest_point = (grid_x, grid_y)
+    #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
+    #     return nearest_point
+
+    def mark_holes_as_free(self, hole_ids):
+        for hole_id in hole_ids:
+            if hole_id in matrix1260pts:
+                matrix1260pts[hole_id]["etat"] = FREE
+
+    def mark_holes_as_used(self, hole_ids):
+        for hole_id in hole_ids:
+            if hole_id in matrix1260pts:
+                matrix1260pts[hole_id]["etat"] = USED
+    
+# AJOUT KH POUR DRAG_DROP 23/10/2024
+    def xy_hole2chip(self,xH, yH, scale=1):
+        space = 9*scale
+        return (xH - 2*scale, yH + space)
+    
+    def xy_chip2pin(self,xC, yC, scale=1):
+        space = 9*scale
+        return (xC + 2*scale, yC - space)
+# FIN AJOUT KH DRAG_DROP 23/10/2024        
+
+    def find_nearest_grid_wire(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 6 and 21 ('f' lines)
+            # if line_num == 7 or line_num == 22:
+                grid_x, grid_y = point[1]["xy"]
+                # MODIF KH DRAG-DROP 23/10/2024
+                # distance = math.hypot(x - grid_x , y - grid_y)
+                distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+                # FIN MODIF KH
+                if distance < min_distance:
+                    
+                    min_distance = distance
+                    # MODIF KH DRAG_DROP 23/10/2024
+                    # nearest_point = (grid_x, grid_y)
+                    nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                    # FIN MODIF KH
+                    nearest_point_col_lin = point[1]["coord"]
+
+        return nearest_point, nearest_point_col_lin
+
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 7 and 21 ('f' lines)
+            col, line = point[1]["coord"]
+            if line != 7 and line != 21:
+                continue
+                
+            grid_x, grid_y = point[1]["xy"]
+                
+            # MODIF KH DRAG-DROP 23/10/2024
+            # distance = math.hypot(x - grid_x , y - grid_y)
+            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+            # FIN MODIF KH
+            if distance < min_distance:
+                    
+                min_distance = distance
+                # MODIF KH DRAG_DROP 23/10/2024
+                # nearest_point = (grid_x, grid_y)
+                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # FIN MODIF KH
+                nearest_point_col_lin = point[1]["coord"]
+
+        return nearest_point, nearest_point_col_lin
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -93,6 +645,7 @@ class ComponentSketcher:
             # if key == "xyOrigin": xO, yO       = value
 
         id_origins[id_origin] = (xD, yD)
+        
         return (xO, yO)
 
 
@@ -1195,7 +1748,7 @@ class ComponentSketcher:
         if not tags:
             params["id"] = id
             params["XY"] = (xD, yD)
-
+            params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
             label = dim["label"] + "-" + str(id_type[type])
@@ -1207,6 +1760,9 @@ class ComponentSketcher:
             tagMenu = "menu" + id
             tagCapot = "chipCover" + id
             tagSouris = "activeArea" + id
+
+            params["tags"] = [tagBase, tagSouris]
+
             for i in range(dim["pinCount"]):
                 self.canvas.create_rectangle(
                     xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
@@ -1231,10 +1787,21 @@ class ComponentSketcher:
                     smooth=False,
                     tags=tagBase,
                 )
-
+                # AJOUT KH PR DRAG-DROP 23/10/2024
+            params["pinUL_XY"] = (xD + 2*scale, yD - space)
+            self.canvas.create_rectangle(
+                xD + 2 * scale,
+                yD - space ,
+                xD + 3 * scale ,
+                yD - space  + 1,
+                fill="#0000ff",
+                outline="#0000ff",
+                tags=tagBase,
+            )            
+            # FIN AJOUT KH
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
 
-            params["tags"] = [tagBase]
+            
             self.canvas.create_rectangle(
                 xD + 2 * scale,
                 yD + 2 * scale,
@@ -1314,14 +1881,48 @@ class ComponentSketcher:
             self.canvas.tag_bind(
                 tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
             )
+             # Bind left-click to initiate drag
+            self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
+
+            # Bind drag and release events to the activeArea tag
+            self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_chip_drag)
+            self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_chip_drag)
         else:
             X, Y = params["XY"]
             dX = xD - X
             dY = yD - Y
+            params["XY"] = (xD, yD)
+                # AJOUT KH PR DRAG-DROP 23/10/2024
+            params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)            
             for tg in tags:
                 self.canvas.move(tg, dX, dY)
 
+
         return xD + dimLine + 2.3 * scale, yD
+
+
+
+
+################## AJOUT KH 25/10/2024 ######################################
+    def getColLine(self, x, y, scale=1, **kwargs):
+        inter_space = 15 * scale
+        space = 9 * scale
+        thickness = 1 * scale
+        matrix = matrix830pts
+        point_col_lin = (-1,-1)
+        for key, value in kwargs.items():
+            if key == "matrix":
+                matrix = value
+        
+        for point in matrix.items():
+            grid_x, grid_y = point[1]["xy"]
+                    
+            if (grid_x, grid_y) == (x,y) :
+                point_col_lin = point[1]["coord"]
+
+        return point_col_lin            
+################## FIN AJOUT KH 25/10/2024 ######################################
+
 
 
     def getXY(self, column, line, scale=1, **kwargs):
@@ -1348,7 +1949,9 @@ class ComponentSketcher:
         space = 9 * scale
         thickness = 1 * scale
         matrix = matrix830pts
+        mode= AUTO
         id = None
+        multipoints = []
         for key, value in kwargs.items():
             if key == "color":
                 color = value
@@ -1362,73 +1965,203 @@ class ComponentSketcher:
                 id = value
             if key == "tags":
                 tags = value
+            if key == "XY":
+                [(xs,ys,xe,ye)] = value
+            if key == "multipoints":
+                multipoints = value
 
         params = {}
-        if id:  # supprime l'ancien câble si existant id != None
+        if id:  # If the wire already exists, delete it and redraw
             if current_dict_circuit.get(id):
                 params = current_dict_circuit[id]
                 tags = params["tags"]
-                for tg in tags:
-                    self.canvas.delete(tg)
+                params["mode"] = mode
+                params["coord"] = coords
+                xO, yO, xF, yF = coords[0]
+                if xO != -1:
+                    xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+                else: 
+                    xO, yO = xs, ys
+                    print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
+                if xF != -1:     
+                    xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+                else: 
+                    xF, yF = xe, ye
+                    print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
+                x1_old,y1_old,x2_old,y2_old = params["XY"]
+                dx1, dy1 = xO - x1_old, yO - y1_old
+                dx2, dy2 = xF - x2_old, yF - y2_old
+                params["XY"] = (xO, yO, xF, yF)
+                params["color"] = color
+                encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+                contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
+                wire_body_tag = f"{id}_body"
+                start_endpoint_tag = f"{id}_start"
+                end_endpoint_tag = f"{id}_end"
+                select_start_tag = f"{id}_select_start"
+                select_end_tag = f"{id}_select_end"
+                divY  = yF - yO if yF != yO else 0.000001
+                xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+                yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+                p1    = ( xD + (xO + xDiff), yD + (yO + space - yDiff))
+                p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
+                p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
+                p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
+                flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
+                self.canvas.coords(wire_body_tag, flat_coords)
+                self.canvas.move(start_endpoint_tag, dx1, dy1)
+                self.canvas.move(end_endpoint_tag, dx2, dy2)
+                self.canvas.move(select_start_tag, dx1, dy1)
+                self.canvas.move(select_end_tag, dx2, dy2)
         else:
             id = "_wire_" + str(num_id)
             num_id += 1
+            params["id"] = id
+            params["mode"] = mode
+            params["coord"] = coords
+            xO, yO, xF, yF = coords[0]
+    ############ MODIF KH 25/10/2024 ###############################
+            if xO != -1:
+                xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+            else: xO, yO = xs, ys
+            if xF != -1:     
+                xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+            else: xF, yF = xe, ye
+    ############ FIN MODIF KH 25/10/2024 ###############################
+            params["XY"] = (xO, yO, xF, yF)
+            params["color"] = color
+            encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+            contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
 
-        params["id"] = id
-        params["mode"] = mode
-        # params["matrix"] = matrix
-        params["coord"] = coords
-        xO, yO, xF, yF = coords[0]
-        xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
-        xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
-        params["XY"] = (xO, yO, xF, yF)
-        params["color"] = color
-        encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
-        contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-        self.canvas.create_oval(
-            xD + xO + 2 * space / 9,
-            yD + yO + 2 * space / 9,
-            xD + xO + 7 * space / 9,
-            yD + yO + 7 * space / 9,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=id,
-        )
-        self.canvas.create_oval(
-            xD + xF + 2 * space / 9,
-            yD + yF + 2 * space / 9,
-            xD + xF + 7 * space / 9,
-            yD + yF + 7 * space / 9,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1 * thickness,
-            tags=id,
-        )
+            # Define unique tags for the wire components
+            wire_body_tag = f"{id}_body"
+            start_endpoint_tag = f"{id}_start"
+            end_endpoint_tag = f"{id}_end"
+            select_start_tag = f"{id}_select_start"
+            select_end_tag = f"{id}_select_end"
+            
+            # # Create the wire body as a line
+            # self.canvas.create_line(
+            #     xD + xO, yD + yO,
+            #     xD + xF, yD + yF,
+            #     fill=encre,
+            #     width=6 * thickness,
+            #     tags=(id, wire_body_tag),
+            # )
 
-        divY = yF - yO if yF != yO else 0.000001
-        xDiff = (space / 2) * (1 - math.cos(math.atan((xF - xO) / divY)))
-        yDiff = (space / 2) * (1 - math.sin(math.atan((xF - xO) / divY)))
-        p1 = ((xO + xDiff), (yO + space - yDiff))
-        p2 = ((xF + xDiff), (yF + space - yDiff))
-        p3 = ((xF + space - xDiff), (yF + yDiff))
-        p4 = ((xO + space - xDiff), (yO + yDiff))
-        self.canvas.create_polygon(
-            xD + p1[0],
-            yD + p1[1],
-            xD + p2[0],
-            yD + p2[1],
-            xD + p3[0],
-            yD + p3[1],
-            xD + p4[0],
-            yD + p4[1],
-            fill=encre,
-            outline=contour,
-            width=1 * thickness,
-            tags=id,
-        )
+            # Create endpoints as separate items
+            endpoint_radius = 3 * scale  # Adjust size as needed
 
-        params["tags"] = [id]
+            # Starting endpoint
+            # MODIF KH DRAG 23/10/2024
+            # self.canvas.create_oval(
+            #     xD + xO - endpoint_radius,
+            #     yD + yO - endpoint_radius,
+            #     xD + xO + endpoint_radius,
+            #     yD + yO + endpoint_radius,
+            #     fill="#dfdfdf",
+            #     outline="#404040",
+            #     width=1 * thickness,
+            #     tags=(id, start_endpoint_tag),
+            # )
+            self.canvas.create_oval(
+                xD + xO + 2*scale,
+                yD + yO + 2*scale,
+                xD + xO + 7*scale,
+                yD + yO + 7*scale,
+                fill="#dfdfdf",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id,start_endpoint_tag), 
+            )
+            self.canvas.create_oval(
+                xD + xO - 2*scale,
+                yD + yO - 2*scale,
+                xD + xO + 9*scale,
+                yD + yO + 9*scale,
+                fill="",
+                outline="",
+                width=1 * thickness,
+                tags=(id, select_start_tag), 
+            )
+        
+            
+            # Ending endpoint
+            # self.canvas.create_oval(
+            #     xD + xF - endpoint_radius,
+            #     yD + yF - endpoint_radius,
+            #     xD + xF + endpoint_radius,
+            #     yD + yF + endpoint_radius,
+            #     fill="#dfdfdf",
+            #     outline="#404040",
+            #     width=1 * thickness,
+            #     tags=(id, end_endpoint_tag),
+            # )
+            self.canvas.create_oval(
+                xD + xF + 2*scale,
+                yD + yF + 2*scale,
+                xD + xF + 7*scale,
+                yD + yF + 7*scale,
+                fill="#dfdfdf",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id, end_endpoint_tag),
+            )
+            self.canvas.create_oval(
+                xD + xF - 2*scale,
+                yD + yF - 2*scale,
+                xD + xF + 9*scale,
+                yD + yF + 9*scale,
+                fill="",
+                outline="",
+                width=1 * thickness,
+                tags=(id, select_end_tag),
+            )
+            
+            
+            # Create the wire body as a line
+            # self.canvas.create_line(
+            #     xD + xO + 5*scale, yD + yO + 5*scale,
+            #     xD + xF + 5*scale, yD + yF + 5*scale,
+            #     fill=encre,
+            #     width=6 * thickness,
+            #     tags=(id, wire_body_tag),
+            # )
+##############   MODIF KH MULTIPOINTS 27/10/2024  #########################
+            divY  = yF - yO if yF != yO else 0.000001
+            xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+            yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+            p1    = ( (xO + xDiff), (yO + space - yDiff))
+            p2    = ( (xF + xDiff), (yF + space - yDiff))
+            p3    = ( (xF + space - xDiff), (yF + yDiff))
+            p4    = ( (xO+ space - xDiff), (yO + yDiff))
+            self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
+                                xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
+                                fill=encre, outline=contour, width=1*thickness, 
+                                tags=(id, wire_body_tag) )  
+            
+            
+##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
+            # Store tags and positions in params
+            params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
+            params["wire_body_tag"] = wire_body_tag
+            params["endpoints"] = {
+                "start": {"position": (xD + xO, yD + yO), "tag": start_endpoint_tag},
+                "end": {"position": (xD + xF, yD + yF), "tag": end_endpoint_tag},
+            }
+            self.canvas.tag_raise(select_start_tag)
+            self.canvas.tag_raise(select_end_tag)
+            # Bind events to the endpoints for drag-and-drop
+            self.canvas.tag_bind(select_start_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'end'))
+
+            self.canvas.tag_bind(select_start_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, 'end'))
+
+            self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
+            self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
+
         current_dict_circuit[id] = params
 
         return xD, yD
+
