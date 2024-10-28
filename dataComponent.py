@@ -194,7 +194,7 @@ class ComponentData:
         ]
 
 
-        self.line_distribution = [(self.sketcher.drawHole, 63)]  # , {"colors":("#400010","#c00040","#200008")}
+        self.line_distribution = [(self.sketcher.drawHole, 63)]  # , {"colors":("#400010","#c00040","#200008")}  # "multipoints":[(),(),(),()],
         blocAlim = [(self.sketcher.drawHole, 5), (self.sketcher.drawBlank, 1)]  # , {"colors":("#400010","#c00040","#200008")}
         # railAlimMoins = [(self.sketcher.drawBlank,1),(self.sketcher.drawChar,1),(self.sketcher.drawRail,60)]
         railAlimMoins = [
