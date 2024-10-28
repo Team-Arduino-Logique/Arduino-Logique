@@ -2055,7 +2055,7 @@ class ComponentSketcher:
                                 fill=encre, outline=contour, width=1*thickness, 
                                 tags=(id, wire_body_tag) )  
             
-
+            
 ##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
             # Store tags and positions in params
             params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
