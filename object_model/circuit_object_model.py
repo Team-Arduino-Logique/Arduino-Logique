@@ -229,7 +229,7 @@ class Chip:
 
         if package_dict is not None and isinstance(json_data["package"], str):
             return Chip(
-                json_data["name"], package_dict[json_data["package"]], functions
+                json_data["name"], json_data["name"], package_dict[json_data["package"]], functions
             )
 
         raise ValueError(
