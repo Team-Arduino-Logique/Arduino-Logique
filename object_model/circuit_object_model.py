@@ -11,7 +11,6 @@ their details.
 """
 
 from __future__ import annotations
-from copy import deepcopy
 from dataclasses import dataclass
 import json
 import os
@@ -58,30 +57,29 @@ class Package:
         Returns:
             Package - The Package object constructed from the JSON data.
         """
-        return Package(json_data["type_name"], json_data["chip_width"], json_data["pin_count"])
+        return Package(
+            json_data["type_name"], json_data["chip_width"], json_data["pin_count"]
+        )
 
 
 class Chip:
     """
     Represents an integrated circuit chip with a specific package and a set of functions.
     Attributes:
+        element_id (str): The unique identifier of the chip.
         chip_type (str): The type of the chip (e.g., "74HCXX").
-        label (str): The label of the chip.
         package_name (str): The name of the package associated with the chip.
         pin_count (int): The number of pins on the chip.
         chip_width (float): The width of the chip.
         functions (list[ChipFunction]): A list of functions performed by the chip.
         position (ConnectionPointID, optional): The position of the chip on the breadboard.
-        instances (dict[str, int]): A class-level dictionary that keeps track of the number of instances
-                    created for each chip type.
     """
-
-    instances: dict[str, int] = {}
 
     def __init__(
         self,
+        element_id: str,
         chip_type: str | None = None,
-        pkg: Package | None  = None,
+        pkg: Package | None = None,
         functions: list[ChipFunction] | None = None,
         position: ConnectionPointID | None = None,
         model: Chip | None = None,
@@ -89,19 +87,21 @@ class Chip:
         """
         Initializes a Chip instance.
         Args:
+            element_id (str): The unique identifier of the chip.
             chip_type (str): The chip_type of the chip (74HCXX).
             pkg (Package): The package associated with the chip.
             functions (list[ChipFunction]): A list containing the functions of the chip.
             position (ConnectionPointID, optional): The position of the chip on the breadboard (from the top left pin).
                                                     Defaults to None.
         """
-        if chip_type is not None and pkg is not None and functions is not None and model is None:
+        self.element_id = element_id
+        if (
+            chip_type is not None
+            and pkg is not None
+            and functions is not None
+            and model is None
+        ):
             self.chip_type = chip_type
-            if chip_type in Chip.instances:
-                Chip.instances[chip_type] += 1
-            else:
-                Chip.instances[chip_type] = 0
-            self.label: str = chip_type + "-" + str(Chip.instances[chip_type])
 
             self.package_name: str = pkg.type_name
             self.pin_count: int = pkg.pin_count
@@ -115,11 +115,6 @@ class Chip:
                 self.set_position(position)
         elif model is not None:
             self.chip_type = model.chip_type
-            if model.chip_type in Chip.instances:
-                Chip.instances[model.chip_type] += 1
-            else:
-                Chip.instances[model.chip_type] = 1
-            self.label = model.chip_type + "-" + str(Chip.instances[model.chip_type])
 
             self.package_name = model.package_name
             self.pin_count = model.pin_count
@@ -178,7 +173,10 @@ class Chip:
                 data["inv_enable_pins"],
             ),
             "DEMUX": lambda data: Demux(
-                data["address_pins"], data["output_pins"], data["enable_pins"], data["inv_enable_pins"]
+                data["address_pins"],
+                data["output_pins"],
+                data["enable_pins"],
+                data["inv_enable_pins"],
             ),
             "D_FLIP_FLOP": lambda data: DFlipFlop(
                 data["clock_pin"],
@@ -230,9 +228,13 @@ class Chip:
                 raise ValueError(f"Unknown function type: {func_type}")
 
         if package_dict is not None and isinstance(json_data["package"], str):
-            return Chip(json_data["name"], package_dict[json_data["package"]], functions)
+            return Chip(
+                json_data["name"], package_dict[json_data["package"]], functions
+            )
 
-        raise ValueError("The package does not exist in the Components/Packages directory.")
+        raise ValueError(
+            "The package does not exist in the Components/Packages directory."
+        )
 
     def __str__(self):
         """
@@ -245,7 +247,7 @@ class Chip:
 
         new_line = "\n\t"
         return (
-            f"Chip:\t{self.label}"
+            f"Chip:\t{self.element_id}"
             f"\nPackage: {self.package_name},"
             f"\nChip width: {self.chip_width},"
             f"\nPin count: {self.pin_count},"
@@ -259,12 +261,27 @@ class Wire:
     """
     Represents a wire in a circuit.
     Attributes:
+        element_id: The unique identifier of the wire.
         start_pin: The starting pin of the wire.
         end_pin: The ending pin of the wire.
     """
 
+    element_id: str
     start: ConnectionPointID
     end: ConnectionPointID
+
+
+@dataclass
+class IO:
+    """
+    Represents an input/output component in a circuit.
+    Attributes:
+        element_id: The unique identifier of the IO component.
+        position: The position of the IO component on the breadboard.
+    """
+
+    element_id: str
+    position: ConnectionPointID
 
 
 class Circuit:
@@ -280,7 +297,7 @@ class Circuit:
     def __init__(self) -> None:
         self.chips: dict[str, Chip] = {}
         self.wires: dict[str, Wire] = {}
-        # self.io: dict[str, IO] = {}
+        self.io: dict[str, IO] = {}
         # self.power: dict[str, Power] = {}
 
     def add_chip(self, new_chip: Chip) -> None:
@@ -289,7 +306,56 @@ class Circuit:
         Args:
             new_chip (Chip): The chip to add to the circuit.
         """
-        self.chips[new_chip.label] = new_chip
+        self.chips[new_chip.element_id] = new_chip
+
+    def remove_chip(self, element_id) -> bool:
+        """
+        Removes a chip from the circuit.
+        Args:
+            element_id (str): The unique identifier of the chip to remove.
+        Returns:
+            bool: True if the chip was removed successfully, False otherwise.
+        """
+        ret = self.chips.pop(element_id, None)
+        return ret is not None
+
+    def add_wire(self, wire: Wire) -> None:
+        """
+        Adds a wire to the circuit.
+        Args:
+            wire (Wire): The wire to add to the circuit.
+        """
+        self.wires[wire.element_id] = wire
+
+    def remove_wire(self, element_id) -> bool:
+        """
+        Removes a wire from the circuit.
+        Args:
+            element_id (str): The unique identifier of the wire to remove.
+        Returns:
+            bool: True if the wire was removed successfully, False otherwise.
+        """
+        ret = self.wires.pop(element_id, None)
+        return ret is not None
+    
+    def add_io(self, io: IO) -> None:
+        """
+        Adds an input/output component to the circuit.
+        Args:
+            io (IO): The input/output component to add to the circuit.
+        """
+        self.io[io.element_id] = io
+
+    def remove_io(self, element_id) -> bool:
+        """
+        Removes an input/output component from the circuit.
+        Args:
+            element_id (str): The unique identifier of the input/output component to remove.
+        Returns:
+            bool: True if the input/output component was removed successfully, False otherwise.
+        """
+        ret = self.io.pop(element_id, None)
+        return ret is not None
 
     def get_func_list(self) -> list[FunctionRepresentation]:
         """
@@ -305,6 +371,7 @@ class Circuit:
         """
         Traces the functions of the chips in the circuit.
         """
+        funcs = self.get_func_list()
         # TODO KHALID
 
 
@@ -314,7 +381,9 @@ def get_all_available_chips() -> dict[str, Chip]:
     """
     file_errors = []
     available_packages = {}
-    pkgs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Packages")
+    pkgs_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "Components", "Packages"
+    )
     for filename in os.listdir(pkgs_dir):
         if filename.endswith(".json"):
             with open(os.path.join(pkgs_dir, filename), "r", encoding="utf-8") as file:
@@ -326,7 +395,9 @@ def get_all_available_chips() -> dict[str, Chip]:
                     file_errors.append(f"Error loading package from {filename}: {e}")
 
     all_chips = {}
-    chips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Chips")
+    chips_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "Components", "Chips"
+    )
     for root, _, files in os.walk(chips_dir):
         for filename in files:
             if filename.endswith(".json"):
@@ -354,19 +425,19 @@ if __name__ == "__main__":
 
     # Example usage of the Circuit class
     circuit = Circuit()
-    new_chip_to_add: Chip = Chip(model=available_chips["74HC08"])
+    new_chip_to_add: Chip = Chip("74HC08-1", model=available_chips["74HC08"])
     new_chip_to_add.set_position(ConnectionPointID(10, 10))
     circuit.add_chip(new_chip_to_add)
 
-    new_chip_to_add = Chip(model=available_chips["74HC08"])
+    new_chip_to_add = Chip("74HC08-2", model=available_chips["74HC08"])
     new_chip_to_add.set_position(ConnectionPointID(100, 100))
     circuit.add_chip(new_chip_to_add)
 
-    new_chip_to_add = Chip(model=available_chips["74HC151"])
+    new_chip_to_add = Chip("74HC151-1", model=available_chips["74HC151"])
     new_chip_to_add.set_position(ConnectionPointID(20, 20))
     circuit.add_chip(new_chip_to_add)
 
-    new_chip_to_add = Chip(model=available_chips["74HC191"])
+    new_chip_to_add = Chip("74HC191", model=available_chips["74HC191"])
     new_chip_to_add.set_position(ConnectionPointID(30, 30))
     circuit.add_chip(new_chip_to_add)
 
