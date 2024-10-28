@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import font
 import math
 
+
 from dataCDLT import (
     HORIZONTAL,
     RIGHT,
@@ -20,6 +21,8 @@ from dataCDLT import (
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
+    FREE,
+    USED,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
@@ -126,7 +129,7 @@ class ComponentSketcher:
             color = current_dict_circuit[wire_id]["color"] 
             coords = current_dict_circuit[wire_id]["coord"]
             x_o , y_o = id_origins["xyOrigin"]
-            (xn,yn), (cn,ln) = self.find_nearest_grid(canvas_x, canvas_y, matrix=matrix1260pts)
+            (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
                 coords = [(cn, ln, coords[0][2], coords[0][3])]
             else:
@@ -207,13 +210,13 @@ class ComponentSketcher:
             y =  canvas_y # pos[1] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
             coords = [(col, line, coords[0][2], coords[0][3])]
-            print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
+            # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
             x = canvas_x # pos[2] # + dx
             y = canvas_y # pos[3] # + dy
-            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
             coords = [(coords[0][0], coords[0][1], col, line)]
-            print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
+            # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
         model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
@@ -289,6 +292,11 @@ class ComponentSketcher:
         self.drag_chip_data["y"] = adjusted_y
 
 
+        chip_params = current_dict_circuit[chip_id]
+        self.drag_chip_data["initial_XY"] = chip_params["pinUL_XY"]
+
+        print(f"Chip {chip_id} clicked at ({adjusted_x}, {adjusted_y})")
+
         # # Correct tag name
         # tagSouris = "activeArea" + chip_id
 
@@ -353,6 +361,61 @@ class ComponentSketcher:
             (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
+
+            # Get chip parameters
+            chip_params = current_dict_circuit[chip_id]
+            pin_count = chip_params["pinCount"]
+            half_pin_count = pin_count // 2
+
+            # Check if there's enough space to the right
+            max_column = col + half_pin_count - 1
+            if max_column > 63:
+                # Not enough space, prevent placement and look for the nearest snap point on the left
+                print("Not enough space to place the chip here.")
+                col = 63 - half_pin_count + 1
+                (x_o, y_o) = id_origins["xyOrigin"]
+                real_x, real_y = self.getXY(col, line, matrix=matrix1260pts)
+                real_x += x_o
+                real_y += y_o
+                (real_x,real_y),(col,line) = self.find_nearest_grid(real_x,real_y)
+
+            # Temporarily free the previous holes
+            previous_x, previous_y = self.drag_chip_data["initial_XY"]
+
+            # Free the holes at the previous position
+            prev_holes = self.get_chip_holes(chip_params["pinUL_XY"][0], chip_params["pinUL_XY"][1], pin_count)
+            self.mark_holes_as_free(prev_holes)
+
+            # Check if new holes are free
+            holes_available = True
+            occupied_holes = []
+            for i in range(half_pin_count):
+                # Top row (line 7 or 21)
+                hole_id_top = f"{col + i},{line}"
+                # Bottom row (line 6 or 20)
+                hole_id_bottom = f"{col + i},{line + 1}"
+
+                hole_top = matrix1260pts.get(hole_id_top)
+                hole_bottom = matrix1260pts.get(hole_id_bottom)
+
+                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                    holes_available = False
+                    break
+                else:
+                    occupied_holes.extend([hole_id_top, hole_id_bottom])
+
+            if not holes_available:
+                print("Holes are occupied. Cannot place the chip here.")
+                self.mark_holes_as_used(chip_params["occupied_holes"])
+                return
+
+            
+
+            # Mark new holes as used
+            for hole_id in occupied_holes:
+                matrix1260pts[hole_id]["etat"] = USED
+            chip_params["occupied_holes"] = occupied_holes
+
             # AJOUT KH DRAG-DROP 23/10/2024
             pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
             # FIN AJOUT KH
@@ -364,55 +427,23 @@ class ComponentSketcher:
             self.drag_chip_data["y"] = 0
 
 
-
-
-            # Correct tag name
-            # tagSouris = "activeArea" + chip_id
-
-            # Reset outline color
-            # self.canvas.itemconfig(tagSouris, outline="")
-
-            # Get the chip parameters
-            # chip_params = current_dict_circuit[chip_id]
-            # pins = chip_params.get('pins', [])
-
-            # if pins:
-            #     # Get the chip's center position
-            #     chip_center_x, chip_center_y = chip_params["center"]
-            #     print(f"Chip center before snapping: ({chip_center_x}, {chip_center_y})")
-
-            #     # Get the matrix with snap points
-            #     matrix = matrix1260pts  # Ensure this is the correct matrix
-            #     # matrix_values = list(matrix.values())
-            #     # debug_matrix = matrix_values[500:1000] 
-            #     # Find the nearest snap point to the chip's center
-            #     nearest_x, nearest_y = self.find_nearest_snap_point(chip_center_x, chip_center_y, matrix)
-            #     print(f"Nearest snap point: ({nearest_x}, {nearest_y})")
-
-            #     # **Adjust for scaling if necessary**
-            #     scale = self.scale_factor  # or the appropriate scaling factor
-            #     dx = (nearest_x - chip_center_x) * scale
-            #     dy = (nearest_y - chip_center_y) * scale
-            #     print(f"Calculated movement delta: dx = {dx}, dy = {dy}")
-
-            #     # Move all items associated with the chip
-            #     for tag in chip_params["tags"]:
-            #         self.canvas.move(tag, dx, dy)
-
-            #     # Update the chip's position
-            #     current_x, current_y = chip_params["XY"]
-            #     current_dict_circuit[chip_id]["XY"] = (current_x + dx / scale, current_y + dy / scale)
-            #     # Update the chip's center position
-            #     chip_params["center"] = (chip_center_x + dx / scale, chip_center_y + dy / scale)
-
-            #     # Update pin positions
-            #     for pin_info in pins:
-            #         pin_x, pin_y = pin_info['position']
-            #         pin_info['position'] = (pin_x + dx / scale, pin_y + dy / scale)
-
-            #     print(f"Chip {chip_id} moved to new center position: ({chip_params['center'][0]}, {chip_params['center'][1]})")
-            # else:
-            #     print(f"No pins found for chip {chip_id}")
+    def get_chip_holes(self, x, y, pin_count):
+        """
+        Given the chip's upper-left pin position (x, y) and pin count,
+        compute the list of hole IDs that the chip occupies.
+        """
+        half_pin_count = pin_count // 2
+        holes = []
+        # Adjust x and y for the origin
+        (x_o, y_o) = id_origins["xyOrigin"]
+        col, line = self.getColLine(x, y, matrix=matrix1260pts)
+        if line not in [7, 21]:
+            return holes  # Chip not on correct lines
+        for i in range(half_pin_count):
+            hole_id_top = f"{col + i},{line}"
+            hole_id_bottom = f"{col + i},{line + 1}"
+            holes.extend([hole_id_top, hole_id_bottom])
+        return holes
 
     # def find_nearest_snap_point(self, x, y, matrix):
     #     """
@@ -438,6 +469,16 @@ class ComponentSketcher:
     #                 nearest_point = (grid_x, grid_y)
     #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
     #     return nearest_point
+
+    def mark_holes_as_free(self, hole_ids):
+        for hole_id in hole_ids:
+            if hole_id in matrix1260pts:
+                matrix1260pts[hole_id]["etat"] = FREE
+
+    def mark_holes_as_used(self, hole_ids):
+        for hole_id in hole_ids:
+            if hole_id in matrix1260pts:
+                matrix1260pts[hole_id]["etat"] = USED
     
 # AJOUT KH POUR DRAG_DROP 23/10/2024
     def xy_hole2chip(self,xH, yH, scale=1):
@@ -449,7 +490,7 @@ class ComponentSketcher:
         return (xC + 2*scale, yC - space)
 # FIN AJOUT KH DRAG_DROP 23/10/2024        
 
-    def find_nearest_grid(self, x, y, matrix=None):
+    def find_nearest_grid_wire(self, x, y, matrix=None):
         """
         Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
 
@@ -487,6 +528,51 @@ class ComponentSketcher:
                     nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
                     # FIN MODIF KH
                     nearest_point_col_lin = point[1]["coord"]
+
+        return nearest_point, nearest_point_col_lin
+
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 7 and 21 ('f' lines)
+            col, line = point[1]["coord"]
+            if line != 7 and line != 21:
+                continue
+                
+            grid_x, grid_y = point[1]["xy"]
+                
+            # MODIF KH DRAG-DROP 23/10/2024
+            # distance = math.hypot(x - grid_x , y - grid_y)
+            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+            # FIN MODIF KH
+            if distance < min_distance:
+                    
+                min_distance = distance
+                # MODIF KH DRAG_DROP 23/10/2024
+                # nearest_point = (grid_x, grid_y)
+                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # FIN MODIF KH
+                nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
 
@@ -1662,7 +1748,7 @@ class ComponentSketcher:
         if not tags:
             params["id"] = id
             params["XY"] = (xD, yD)
-
+            params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
             label = dim["label"] + "-" + str(id_type[type])
@@ -1896,13 +1982,11 @@ class ComponentSketcher:
                     xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
                 else: 
                     xO, yO = xs, ys
-                    (xn,yn), (cn,ln) = self.find_nearest_grid(xO+xD,yO+yD,matrix=matrix1260pts)
                     print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
                 if xF != -1:     
                     xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
                 else: 
                     xF, yF = xe, ye
-                    (xn,yn), (cn,ln) = self.find_nearest_grid(xF+xD,yF+yD,matrix=matrix1260pts)
                     print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
                 x1_old,y1_old,x2_old,y2_old = params["XY"]
                 dx1, dy1 = xO - x1_old, yO - y1_old
@@ -1923,7 +2007,8 @@ class ComponentSketcher:
                 p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
                 p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
                 p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
-                self.canvas.coords(wire_body_tag, [p1,p2,p3,p4])
+                flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
+                self.canvas.coords(wire_body_tag, flat_coords)
                 self.canvas.move(start_endpoint_tag, dx1, dy1)
                 self.canvas.move(end_endpoint_tag, dx2, dy2)
                 self.canvas.move(select_start_tag, dx1, dy1)
