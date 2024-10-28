@@ -1865,6 +1865,7 @@ class ComponentSketcher:
         matrix = matrix830pts
         mode= AUTO
         id = None
+        multipoints = []
         for key, value in kwargs.items():
             if key == "color":
                 color = value
@@ -1880,6 +1881,8 @@ class ComponentSketcher:
                 tags = value
             if key == "XY":
                 [(xs,ys,xe,ye)] = value
+            if key == "multipoints":
+                multipoints = value
 
         params = {}
         if id:  # If the wire already exists, delete it and redraw
@@ -2039,6 +2042,7 @@ class ComponentSketcher:
             #     width=6 * thickness,
             #     tags=(id, wire_body_tag),
             # )
+##############   MODIF KH MULTIPOINTS 27/10/2024  #########################
             divY  = yF - yO if yF != yO else 0.000001
             xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
             yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
@@ -2050,7 +2054,9 @@ class ComponentSketcher:
                                 xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
                                 fill=encre, outline=contour, width=1*thickness, 
                                 tags=(id, wire_body_tag) )  
-        # FIN MODIF KH
+            
+
+##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
             # Store tags and positions in params
             params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
             params["wire_body_tag"] = wire_body_tag
