@@ -7,20 +7,23 @@ from dataCDLT import matrix1260pts, id_origins, current_dict_circuit
 
 class Toolbar:
     def __init__(self, parent, canvas, board, sketcher):
-        """
-        Initializes the secondary top bar.
-        """
         self.parent = parent
         self.canvas = canvas
         self.board = board
         self.sketcher = sketcher
-        self.selected_color = "#479dff"  # Default connection color
-        self.images = {}  # Dictionary to hold PhotoImage references
-        self.icon_size = 24  # Desired icon size in pixels
-        self.buttons = {}   # Dictionary to hold button references
-        self.active_button = None  # Currently active button
-        self.wire_placement_active = False  # Flag to track wire placement mode
+        self.selected_color = "#479dff"
+        self.images = {}
+        self.icon_size = 24
+        self.buttons = {}
+        self.active_button = None
+        self.wire_placement_active = False
+        self.wire_start_point = None
+        self.wire_start_col_line = None
+        self.cursor_circle_id = None
         self.create_topbar()
+        self.canvas.bind("<Motion>", self.canvas_follow_mouse, add='+')
+        self.canvas.bind("<Button-1>", self.canvas_click, add='+')
+        self.canvas.bind("<Button-3>", self.cancel_wire_placement, add='+')
 
     def create_topbar(self):
         """
@@ -201,22 +204,23 @@ class Toolbar:
         """
         Creates a circle that follows the mouse cursor.
         """
-        self.cursor_circle_id = self.canvas.create_oval(0, 0, 10, 10, fill='grey', outline='')
-        self.canvas.tag_raise(self.cursor_circle_id)
+        if self.cursor_circle_id is None:
+            self.cursor_circle_id = self.canvas.create_oval(0, 0, 10, 10, fill='grey', outline='')
+            self.canvas.tag_raise(self.cursor_circle_id)
 
     def remove_cursor_circle(self):
         """
         Removes the cursor-following circle.
         """
-        if hasattr(self, 'cursor_circle_id'):
+        if self.cursor_circle_id is not None:
             self.canvas.delete(self.cursor_circle_id)
-            del self.cursor_circle_id
+            self.cursor_circle_id = None  # Set back to None instead of deleting
 
     def canvas_follow_mouse(self, event):
         """
         Moves the cursor-following circle to the mouse position.
         """
-        if not self.wire_placement_active:
+        if not self.wire_placement_active or self.cursor_circle_id is None:
             return
         x, y = event.x, event.y
         self.canvas.coords(self.cursor_circle_id, x - 5, y - 5, x + 5, y + 5)
@@ -281,24 +285,21 @@ class Toolbar:
         Activates wire placement mode.
         """
         self.wire_placement_active = True
-        self.canvas.config(cursor='none')  # Hide the default cursor
-        self.canvas.bind("<Motion>", self.canvas_follow_mouse, add='+')
-        self.canvas.bind("<Button-1>", self.canvas_click, add='+')
-        self.canvas.bind("<Button-3>", self.cancel_wire_placement, add='+')
-        self.wire_start_point = None  # Reset starting point
+        self.canvas.config(cursor='none')
+        self.wire_start_point = None
         self.wire_start_col_line = None
-        self.create_cursor_circle()  # Create the cursor-following circle
+        if self.cursor_circle_id is None:
+            self.create_cursor_circle()
 
     def deactivate_wire_placement_mode(self):
         """
         Deactivates wire placement mode.
         """
         self.wire_placement_active = False
-        self.canvas.config(cursor='')  # Reset to default cursor
+        self.canvas.config(cursor='')
         self.remove_cursor_circle()
-        self.wire_start_point = None  # Reset starting point
+        self.wire_start_point = None
         self.wire_start_col_line = None
-        # Remove temporary circles if any
         self.canvas.delete('wire_temp_circle')
 
     def cancel_wire_placement(self, event=None):
