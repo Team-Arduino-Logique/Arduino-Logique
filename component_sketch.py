@@ -221,7 +221,7 @@ class ComponentSketcher:
         if endpoint == "start":
             x =  canvas_x # pos[0] # + dx
             y =  canvas_y # pos[1] # + dy
-            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
             coords = [(col, line, coords[0][2], coords[0][3])]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
@@ -246,40 +246,25 @@ class ComponentSketcher:
         #self.update_wire_body(wire_id)
         ############## FIN MODIF KH 25/10/2024 #######################
 
-    def find_nearest_grid_point(self, x, y):
+    def find_nearest_grid_point(self, x, y, matrix=None):
         """
-        Finds the nearest grid point to (x, y), excluding central points used for chips.
+        Finds the nearest grid point to (x, y).
         """
+        if matrix is None:
+            matrix = matrix1260pts
+
         min_distance = float('inf')
         nearest_point = (x, y)
-        for id_in_matrix, point in matrix1260pts.items():
-            # Exclude central points (lines 8 and 22)
-            id_parts = id_in_matrix.split(',')
-            if len(id_parts) == 2:
-                column_str, line_str = id_parts
-            elif len(id_parts) == 3 and id_parts[0] != 'snap':
-                # Handle cases where id_in_matrix has three parts but is not a snap point
-                column_str, line_str = id_parts[1], id_parts[2]
-            else:
-                # Skip entries that don't match expected format
-                continue
+        nearest_point_col_lin = (0, 0)
+        for id_in_matrix, point in matrix.items():
+            grid_x, grid_y = point["xy"]
+            distance = math.hypot(x - grid_x - id_origins["xyOrigin"][0], y - grid_y - id_origins["xyOrigin"][1])
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = (grid_x, grid_y)
+                nearest_point_col_lin = point["coord"]
 
-            try:
-                line_num = float(line_str)
-            except ValueError:
-                # Skip if line_str is not a number
-                continue
-
-            if line_num != 8 and line_num != 22:
-                grid_x, grid_y = point["xy"]
-                # Adjust for scaling
-                grid_x *= self.scale_factor
-                grid_y *= self.scale_factor
-                distance = math.hypot(x - grid_x, y - grid_y)
-                if distance < min_distance:
-                    min_distance = distance
-                    nearest_point = (grid_x, grid_y)
-        return nearest_point
+        return nearest_point, nearest_point_col_lin
     
     def find_nearest_multipoint(self, x,y,wire_id):
         nearest_point = -1
@@ -471,7 +456,7 @@ class ComponentSketcher:
             # (x, y) = current_dict_circuit[chip_id]["XY"]
             (x, y) = current_dict_circuit[chip_id]["pinUL_XY"]
             # FIN MODIF KH
-            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
 
@@ -490,7 +475,7 @@ class ComponentSketcher:
                 real_x, real_y = self.getXY(col, line, matrix=matrix1260pts)
                 real_x += x_o
                 real_y += y_o
-                (real_x,real_y),(col,line) = self.find_nearest_grid(real_x,real_y)
+                (real_x,real_y),(col,line) = self.find_nearest_grid_chip(real_x,real_y)
 
             # Temporarily free the previous holes
             previous_x, previous_y = self.drag_chip_data["initial_XY"]
@@ -644,7 +629,7 @@ class ComponentSketcher:
 
         return nearest_point, nearest_point_col_lin
 
-    def find_nearest_grid(self, x, y, matrix=None):
+    def find_nearest_grid_chip(self, x, y, matrix=None):
         """
         Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
 
