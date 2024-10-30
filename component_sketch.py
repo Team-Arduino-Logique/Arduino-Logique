@@ -293,7 +293,15 @@ class ComponentSketcher:
 
 
         chip_params = current_dict_circuit[chip_id]
-        self.drag_chip_data["initial_XY"] = chip_params["pinUL_XY"]
+        self.drag_chip_data["initial_XY"] = chip_params["XY"]
+
+        if "occupied_holes" in chip_params:
+            # Store the previous occupied holes in case we need to restore them
+            self.drag_chip_data["previous_occupied_holes"] = chip_params["occupied_holes"]
+            for hole_id in chip_params["occupied_holes"]:
+                matrix1260pts[hole_id]["etat"] = FREE
+            chip_params["occupied_holes"] = []
+
 
         print(f"Chip {chip_id} clicked at ({adjusted_x}, {adjusted_y})")
 
@@ -379,12 +387,10 @@ class ComponentSketcher:
                 real_y += y_o
                 (real_x,real_y),(col,line) = self.find_nearest_grid(real_x,real_y)
 
-            # Temporarily free the previous holes
+            # the previous position to reset if the placement is not allowed
             previous_x, previous_y = self.drag_chip_data["initial_XY"]
 
-            # Free the holes at the previous position
-            prev_holes = self.get_chip_holes(chip_params["pinUL_XY"][0], chip_params["pinUL_XY"][1], pin_count)
-            self.mark_holes_as_free(prev_holes)
+            
 
             # Check if new holes are free
             holes_available = True
@@ -406,15 +412,24 @@ class ComponentSketcher:
 
             if not holes_available:
                 print("Holes are occupied. Cannot place the chip here.")
-                self.mark_holes_as_used(chip_params["occupied_holes"])
-                return
+                # Re-mark the previous holes as used
+                previous_occupied_holes = self.drag_chip_data.get("previous_occupied_holes", [])
+                for hole_id in previous_occupied_holes:
+                    matrix1260pts[hole_id]["etat"] = USED
+                chip_params["occupied_holes"] = previous_occupied_holes
+                
+
+                real_x = previous_x
+                real_y = previous_y
+            else:
+                # Mark new holes as used
+                for hole_id in occupied_holes:
+                    matrix1260pts[hole_id]["etat"] = USED
+                chip_params["occupied_holes"] = occupied_holes
 
             
 
-            # Mark new holes as used
-            for hole_id in occupied_holes:
-                matrix1260pts[hole_id]["etat"] = USED
-            chip_params["occupied_holes"] = occupied_holes
+            
 
             # AJOUT KH DRAG-DROP 23/10/2024
             pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
@@ -425,6 +440,7 @@ class ComponentSketcher:
             self.drag_chip_data["chip_id"] = None
             self.drag_chip_data["x"] = 0
             self.drag_chip_data["y"] = 0
+            self.drag_chip_data["previous_occupied_holes"] = []
 
 
     def get_chip_holes(self, x, y, pin_count):
@@ -470,15 +486,6 @@ class ComponentSketcher:
     #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
     #     return nearest_point
 
-    def mark_holes_as_free(self, hole_ids):
-        for hole_id in hole_ids:
-            if hole_id in matrix1260pts:
-                matrix1260pts[hole_id]["etat"] = FREE
-
-    def mark_holes_as_used(self, hole_ids):
-        for hole_id in hole_ids:
-            if hole_id in matrix1260pts:
-                matrix1260pts[hole_id]["etat"] = USED
     
 # AJOUT KH POUR DRAG_DROP 23/10/2024
     def xy_hole2chip(self,xH, yH, scale=1):
@@ -1762,6 +1769,8 @@ class ComponentSketcher:
             tagSouris = "activeArea" + id
 
             params["tags"] = [tagBase, tagSouris]
+
+            
 
             for i in range(dim["pinCount"]):
                 self.canvas.create_rectangle(
