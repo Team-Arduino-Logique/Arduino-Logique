@@ -297,16 +297,23 @@ class ComponentSketcher:
             x1, y1 = xO, yO
             i = 0
             while (nearest_point == -1 and i<len(multipoint)):
-                if x > min(x1-7,multipoint[i] - 10)  and x < max(multipoint[i]+7, x1 + 10):
-                    if y > min(y1-7, multipoint[i + 1] - 10) and y < max(multipoint[i + 1]+7, y1 + 10):
-                        nearest_point = i
-                    # dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
-                    # if dx ==0 and y > min(y1-7, multipoint[i + 1] - 7) and y < max(multipoint[i + 1]+7, y1 + 7):
-                    #         deltay = 1
-                    # else:
-                    #         deltay = math.fabs( y - (y1 + x*(dy/dx)) )
-                    # if deltay <=15:
-                    #     nearest_point = i
+                dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
+                t = max(0, min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+                proj_x = x1 + t * dx
+                proj_y = y1 + t * dy
+                dist_segment = math.hypot(x - proj_x, y - proj_y)
+                if dist_segment <=10:
+                    nearest_point = i
+                # if x > min(x1-5,multipoint[i] - 5)  and x < max(multipoint[i]+5, x1 + 5):
+                #     if y > min(y1-5, multipoint[i + 1] - 5) and y < max(multipoint[i + 1]+5, y1 + 5):
+                        
+                #         dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
+                #         if dx ==0 or dy == 0:
+                #             nearest_point = i
+                #         else:
+                #              deltay = math.fabs( y - (y1 + (x - x1)*(dy/dx)) )
+                #              if deltay <=5:
+                #                 nearest_point = i
                 x1, y1 = multipoint[i] , multipoint[i+1]
                 i+=2
             if nearest_point == -1:
@@ -336,6 +343,7 @@ class ComponentSketcher:
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = "selector_cable"
         endpoint_tag = "selector_cable"
+        x, y = event.x, event.y
 
         color = current_dict_circuit[wire_id]["color"]
         encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
@@ -343,11 +351,11 @@ class ComponentSketcher:
         x_o, y_o = id_origins["xyOrigin"]
         #endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
-        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(event.x - x_o, event.y - y_o, wire_id)
+        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
         if insert_point:
             multipoints = current_dict_circuit[wire_id]["multipoints"]
-            multipoints.insert(self.nearest_multipoint, event.x - x_o,)    
-            multipoints.insert(self.nearest_multipoint + 1, event.y - y_o)  
+            multipoints.insert(self.nearest_multipoint, x - x_o,)    
+            multipoints.insert(self.nearest_multipoint + 1, y - y_o)  
             current_dict_circuit[wire_id]["multipoints"] = multipoints
                 
     def on_wire_body_drag(self,event, wire_id):
