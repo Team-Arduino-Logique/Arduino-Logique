@@ -216,6 +216,8 @@ class Toolbar:
         """
         Moves the cursor-following circle to the mouse position.
         """
+        if not self.wire_placement_active:
+            return
         x, y = event.x, event.y
         self.canvas.coords(self.cursor_circle_id, x - 5, y - 5, x + 5, y + 5)
 
@@ -223,6 +225,9 @@ class Toolbar:
         """
         Handles mouse clicks during wire placement.
         """
+        if not self.wire_placement_active:
+            return
+    
         x, y = event.x, event.y
         # Find the nearest hole
         nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix1260pts)
@@ -277,9 +282,9 @@ class Toolbar:
         """
         self.wire_placement_active = True
         self.canvas.config(cursor='none')  # Hide the default cursor
-        self.canvas.bind("<Motion>", self.canvas_follow_mouse)
-        self.canvas.bind("<Button-1>", self.canvas_click)
-        self.canvas.bind("<Button-3>", self.cancel_wire_placement)  # Bind right-click
+        self.canvas.bind("<Motion>", self.canvas_follow_mouse, add='+')
+        self.canvas.bind("<Button-1>", self.canvas_click, add='+')
+        self.canvas.bind("<Button-3>", self.cancel_wire_placement, add='+')
         self.wire_start_point = None  # Reset starting point
         self.wire_start_col_line = None
         self.create_cursor_circle()  # Create the cursor-following circle
@@ -290,9 +295,6 @@ class Toolbar:
         """
         self.wire_placement_active = False
         self.canvas.config(cursor='')  # Reset to default cursor
-        self.canvas.unbind("<Motion>")
-        self.canvas.unbind("<Button-1>")
-        self.canvas.unbind("<Button-3>")  # Unbind right-click
         self.remove_cursor_circle()
         self.wire_start_point = None  # Reset starting point
         self.wire_start_col_line = None
@@ -303,6 +305,8 @@ class Toolbar:
         """
         Cancels the wire placement, untoggles the Connection button, and resets the state.
         """
+        if not self.wire_placement_active:
+            return
         # Deactivate the Connection button
         self.deactivate_button("Connection")
         self.active_button = None
