@@ -1,0 +1,27 @@
+{
+    "name": "74HC86",
+    "package": "DIP14",
+    "functions": [
+        {
+            "func_type": "XOR",
+            "input_pins": [1, 2],
+            "output_pins": [3]
+        },
+        {
+            "func_type": "XOR",
+            "input_pins": [4, 5],
+            "output_pins": [6]
+        },
+        {
+            "func_type": "XOR",
+            "input_pins": [9, 10],
+            "output_pins": [8]
+        },
+        {
+            "func_type": "XOR",
+            "input_pins": [12, 13],
+            "output_pins": [11]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15668/PHILIPS/74HC86.html"
+}

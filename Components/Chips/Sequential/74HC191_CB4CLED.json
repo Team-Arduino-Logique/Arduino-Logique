@@ -1,0 +1,22 @@
+{
+    "name": "74HC191",
+    "package": "DIP16",
+    "functions": [
+        {
+            "func_type": "BINARY_COUNTER",
+            "clock_pin": 14,
+            "clock_type": "RISING_EDGE",
+            "count_enable_pin": null,
+            "inv_count_enable_pin": 4,
+            "load_enable_pin": null,
+            "inv_load_enable_pin": 11,
+            "up_down_input_pin": null,
+            "inv_up_down_input_pin": 5,
+            "terminal_count_pin": 12,
+            "ripple_clock_output_pin": 13,
+            "data_pins": [15, 1, 10, 9],
+            "output_pins": [3, 2, 6, 7]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15557/PHILIPS/74HC191.html"
+}
