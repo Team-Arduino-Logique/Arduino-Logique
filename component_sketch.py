@@ -1022,7 +1022,7 @@ class ComponentSketcher:
         color = "#F5F5DC"
         sepAlim = dim["sepAlim"]
         sepDist = dim["sepDistribution"]
-        radius = 20
+        radius = 5
         for key, value in kwargs.items():
             if key == "dimLine":
                 dim["dimLine"] = value
@@ -1040,6 +1040,7 @@ class ComponentSketcher:
         thickness = 1 * scale
         dimLine = dim["dimLine"] * inter_space
         dimColumn = dim["dimColumn"] * inter_space
+        id_origins["bottomLimit"] = (dimLine + xD, yD + dimColumn)
         # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
         self.rounded_rect(xD, yD, dimLine, dimColumn, radius, outline=color, fill=color, thickness=thickness)
@@ -1841,6 +1842,7 @@ class ComponentSketcher:
         else:
             id_type[type] += 1
             id = "_chip_" + str(num_id)
+            current_dict_circuit["last_id"] = id
             num_id += 1
 
         if not tags:
@@ -2123,6 +2125,7 @@ class ComponentSketcher:
                 self.canvas.move(select_end_tag, dx2, dy2)
         else:
             id = "_wire_" + str(num_id)
+            current_dict_circuit["last_id"] = id
             num_id += 1
             params["id"] = id
             params["mode"] = mode

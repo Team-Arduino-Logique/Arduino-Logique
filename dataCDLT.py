@@ -30,4 +30,5 @@ selector_dx_ul, selector_dy_ul = -10,-10
 selector_dx_br, selector_dy_br = 0,0
 
 
+
 id_type.update({"DIP14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0})
