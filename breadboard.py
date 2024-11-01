@@ -29,7 +29,10 @@ from tkinter import Canvas
 
 
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix830pts, matrix1260pts, VERTICAL, HORIZONTAL, FREE, id_origins
+
+from dataCDLT import  matrix830pts,matrix1260pts, VERTICAL, HORIZONTAL,FREE, id_origins, selector_dx_ul, selector_dy_ul, selector_dx_br, selector_dy_br
+
+
 from dataComponent import ComponentData
 
 
@@ -86,6 +89,7 @@ class Breadboard:
         self.id_type.update(
             {"DIP14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0, "id_circuit": 0}
         )
+        self.selector()
 
         self.canvas.config(cursor="")
 
@@ -99,7 +103,22 @@ class Breadboard:
             event: An event object that contains the current mouse position.
         """
         self.mouse_x, self.mouse_y = event.x, event.y
+        self.canvas.coords("selector_cable", [ event.x + selector_dx_ul, event.y+selector_dy_ul, event.x + selector_dx_br, event.y + selector_dy_br])
+        
+    def selector(self):
 
+        self.canvas.create_oval(
+            100,
+            100,
+            110,
+            110,
+            fill="#dfdfdf",
+            outline="#404040",
+            width=1 ,
+            tags=("selector_cable"), 
+        )
+        self.canvas.itemconfig("selector_cable", state="hidden")
+        
     def fill_matrix_830_pts(self, col_distance=1, line_distance=1, **kwargs):
         """
         Fills a matrix representing an 830-point breadboard with initial values.

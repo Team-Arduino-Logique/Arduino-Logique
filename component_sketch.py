@@ -21,6 +21,10 @@ from dataCDLT import (
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
+    selector_dx_ul, 
+    selector_dy_ul,
+    selector_dx_br, 
+    selector_dy_br,
     FREE,
     USED,
 )
@@ -31,6 +35,9 @@ class ComponentSketcher:
         self.canvas = canvas
         self.funcHole = {"function": self.drawSquareHole}
         self.scale_factor = 1.0
+        self.drag_selector = False
+        self.nearest_multipoint = -1
+        
 
         self.drag_chip_data = {
             "chip_id": None,
@@ -44,6 +51,8 @@ class ComponentSketcher:
             "x": 0,
             "y": 0
         }
+        
+
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -121,6 +130,7 @@ class ComponentSketcher:
         """
         Event handler for dragging a wire endpoint.
         """
+        self.drag_selector = True
         if self.wire_drag_data["wire_id"] == wire_id and self.wire_drag_data["endpoint"] == endpoint:
             # Convert event coordinates to canvas coordinates
             canvas_x = self.canvas.canvasx(event.x)
@@ -128,6 +138,7 @@ class ComponentSketcher:
 
             color = current_dict_circuit[wire_id]["color"] 
             coords = current_dict_circuit[wire_id]["coord"]
+            multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
@@ -135,7 +146,8 @@ class ComponentSketcher:
             else:
                 coords = [(coords[0][0], coords[0][1], cn, ln)]
             
-            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "matrix": matrix1260pts})]
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords,"multipoints":multipoints,
+                                               "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
 
@@ -156,6 +168,7 @@ class ComponentSketcher:
             # Remove highlight
             endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline="#404040", fill="#dfdfdf")
+            self.drag_selector = False
 
     def update_wire_body(self, wire_id):
         """
@@ -208,7 +221,7 @@ class ComponentSketcher:
         if endpoint == "start":
             x =  canvas_x # pos[0] # + dx
             y =  canvas_y # pos[1] # + dy
-            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
             coords = [(col, line, coords[0][2], coords[0][3])]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
@@ -233,40 +246,125 @@ class ComponentSketcher:
         #self.update_wire_body(wire_id)
         ############## FIN MODIF KH 25/10/2024 #######################
 
-    def find_nearest_grid_point(self, x, y):
+    def find_nearest_grid_point(self, x, y, matrix=None):
         """
-        Finds the nearest grid point to (x, y), excluding central points used for chips.
+        Finds the nearest grid point to (x, y).
         """
+        if matrix is None:
+            matrix = matrix1260pts
+
         min_distance = float('inf')
         nearest_point = (x, y)
-        for id_in_matrix, point in matrix1260pts.items():
-            # Exclude central points (lines 8 and 22)
-            id_parts = id_in_matrix.split(',')
-            if len(id_parts) == 2:
-                column_str, line_str = id_parts
-            elif len(id_parts) == 3 and id_parts[0] != 'snap':
-                # Handle cases where id_in_matrix has three parts but is not a snap point
-                column_str, line_str = id_parts[1], id_parts[2]
-            else:
-                # Skip entries that don't match expected format
-                continue
+        nearest_point_col_lin = (0, 0)
+        for id_in_matrix, point in matrix.items():
+            grid_x, grid_y = point["xy"]
+            distance = math.hypot(x - grid_x - id_origins["xyOrigin"][0], y - grid_y - id_origins["xyOrigin"][1])
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = (grid_x, grid_y)
+                nearest_point_col_lin = point["coord"]
 
-            try:
-                line_num = float(line_str)
-            except ValueError:
-                # Skip if line_str is not a number
-                continue
+        return nearest_point, nearest_point_col_lin
+    
+    def find_nearest_multipoint(self, x,y,wire_id):
+        nearest_point = -1
+        multipoint = current_dict_circuit[wire_id]["multipoints"]
+        [(xO, yO, xF, yF)] = current_dict_circuit[wire_id]["coord"]
+        xO, yO = self.getXY(xO, yO, matrix=matrix1260pts)   
+        xF, yF = self.getXY(xF, yF, matrix=matrix1260pts)  
+        i = 0  
+        while (nearest_point == -1 and i < len(multipoint) ):
+            if math.hypot(x-multipoint[i], y - multipoint[i+1]) <= 15:
+                nearest_point = i
+            i+=2  
+        insert_point = False  
+        if nearest_point == -1:
+            x1, y1 = xO, yO
+            i = 0
+            while (nearest_point == -1 and i<len(multipoint)):
+                dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
+                t = max(0, min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+                proj_x = x1 + t * dx
+                proj_y = y1 + t * dy
+                dist_segment = math.hypot(x - proj_x, y - proj_y)
+                if dist_segment <=10:
+                    nearest_point = i
+                # if x > min(x1-5,multipoint[i] - 5)  and x < max(multipoint[i]+5, x1 + 5):
+                #     if y > min(y1-5, multipoint[i + 1] - 5) and y < max(multipoint[i + 1]+5, y1 + 5):
+                        
+                #         dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
+                #         if dx ==0 or dy == 0:
+                #             nearest_point = i
+                #         else:
+                #              deltay = math.fabs( y - (y1 + (x - x1)*(dy/dx)) )
+                #              if deltay <=5:
+                #                 nearest_point = i
+                x1, y1 = multipoint[i] , multipoint[i+1]
+                i+=2
+            if nearest_point == -1:
+                nearest_point = len(multipoint)
+            insert_point = True
+        #multipoint.insert(nearest_point, x)    
+        #multipoint.insert(nearest_point + 1, y)   
+        current_dict_circuit[wire_id]["multipoints"] = multipoint
+        return nearest_point , insert_point     
 
-            if line_num != 8 and line_num != 22:
-                grid_x, grid_y = point["xy"]
-                # Adjust for scaling
-                grid_x *= self.scale_factor
-                grid_y *= self.scale_factor
-                distance = math.hypot(x - grid_x, y - grid_y)
-                if distance < min_distance:
-                    min_distance = distance
-                    nearest_point = (grid_x, grid_y)
-        return nearest_point
+    def on_wire_body_enter(self,event, wire_id):
+        if  not self.drag_selector:
+            x, y = event.x, event.y
+            color = current_dict_circuit[wire_id]["color"]
+            encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+            contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"  
+            self.canvas.itemconfig("selector_cable", fill=contour, outline = encre)      
+            #self.canvas.coords("selector_cable", [x-10,y-10,x,y])
+            self.canvas.itemconfig("selector_cable", state="normal")
+            #self.canvas.tag_raise("selector_cable")
+        
+    def on_wire_body_leave(self, event, wire_id):
+        if  not self.drag_selector:
+            self.canvas.itemconfig("selector_cable", state="hidden")
+            
+    def on_wire_body_click(self,event, wire_id):
+        self.wire_drag_data["wire_id"] = wire_id
+        self.wire_drag_data["endpoint"] = "selector_cable"
+        endpoint_tag = "selector_cable"
+        x, y = event.x, event.y
+
+        color = current_dict_circuit[wire_id]["color"]
+        encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+        contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}" 
+        x_o, y_o = id_origins["xyOrigin"]
+        #endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
+        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
+        if insert_point:
+            multipoints = current_dict_circuit[wire_id]["multipoints"]
+            multipoints.insert(self.nearest_multipoint, x - x_o,)    
+            multipoints.insert(self.nearest_multipoint + 1, y - y_o)  
+            current_dict_circuit[wire_id]["multipoints"] = multipoints
+                
+    def on_wire_body_drag(self,event, wire_id):
+        #self.wire_drag_data["wire_id"] = wire_id
+        #self.wire_drag_data["endpoint"] = "selector_cable"
+        endpoint_tag = "selector_cable"
+        x_o, y_o = id_origins["xyOrigin"]
+        x, y = event.x - x_o, event.y-y_o
+        multipoints = current_dict_circuit[wire_id]["multipoints"]
+        coords = current_dict_circuit[wire_id]["coord"]
+        XY = [current_dict_circuit[wire_id]["XY"] ]
+        color = current_dict_circuit[wire_id]["color"] 
+        multipoints[self.nearest_multipoint] = x 
+        multipoints[self.nearest_multipoint + 1] = y
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coords":coords,"color":color, "XY":XY,
+                                               "matrix": matrix1260pts})]
+        self.circuit(x_o , y_o , model = model_wire)        
+
+            
+    def on_wire_body_release(self, event, wire_id):
+        self.wire_drag_data["wire_id"] = None
+        self.wire_drag_data["endpoint"] = None    
+        self.nearest_multipoint = -1
+        self.canvas.itemconfig("selector_cable", state="hidden")
 
     def on_chip_click(self, event, chip_id):
         """
@@ -366,7 +464,7 @@ class ComponentSketcher:
             # (x, y) = current_dict_circuit[chip_id]["XY"]
             (x, y) = current_dict_circuit[chip_id]["pinUL_XY"]
             # FIN MODIF KH
-            (real_x,real_y),(col,line) = self.find_nearest_grid(x,y)
+            (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
 
@@ -385,7 +483,7 @@ class ComponentSketcher:
                 real_x, real_y = self.getXY(col, line, matrix=matrix1260pts)
                 real_x += x_o
                 real_y += y_o
-                (real_x,real_y),(col,line) = self.find_nearest_grid(real_x,real_y)
+                (real_x,real_y),(col,line) = self.find_nearest_grid_chip(real_x,real_y)
 
             # the previous position to reset if the placement is not allowed
             previous_x, previous_y = self.drag_chip_data["initial_XY"]
@@ -522,6 +620,7 @@ class ComponentSketcher:
             
             # Consider only lines 6 and 21 ('f' lines)
             # if line_num == 7 or line_num == 22:
+            if point[1]["etat"]== FREE:
                 grid_x, grid_y = point[1]["xy"]
                 # MODIF KH DRAG-DROP 23/10/2024
                 # distance = math.hypot(x - grid_x , y - grid_y)
@@ -538,7 +637,7 @@ class ComponentSketcher:
 
         return nearest_point, nearest_point_col_lin
 
-    def find_nearest_grid(self, x, y, matrix=None):
+    def find_nearest_grid_chip(self, x, y, matrix=matrix1260pts):
         """
         Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
 
@@ -563,23 +662,23 @@ class ComponentSketcher:
             
             # Consider only lines 7 and 21 ('f' lines)
             col, line = point[1]["coord"]
-            if line != 7 and line != 21:
-                continue
+            if line == 7 and line == 21:
+                # mettre is_XY_free4Chip(x,y)
                 
-            grid_x, grid_y = point[1]["xy"]
-                
-            # MODIF KH DRAG-DROP 23/10/2024
-            # distance = math.hypot(x - grid_x , y - grid_y)
-            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
-            # FIN MODIF KH
-            if distance < min_distance:
+                grid_x, grid_y = point[1]["xy"]
                     
-                min_distance = distance
-                # MODIF KH DRAG_DROP 23/10/2024
-                # nearest_point = (grid_x, grid_y)
-                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # MODIF KH DRAG-DROP 23/10/2024
+                # distance = math.hypot(x - grid_x , y - grid_y)
+                distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
                 # FIN MODIF KH
-                nearest_point_col_lin = point[1]["coord"]
+                if distance < min_distance:
+                        
+                    min_distance = distance
+                    # MODIF KH DRAG_DROP 23/10/2024
+                    # nearest_point = (grid_x, grid_y)
+                    nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                    # FIN MODIF KH
+                    nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
 
@@ -931,7 +1030,7 @@ class ComponentSketcher:
         color = "#F5F5DC"
         sepAlim = dim["sepAlim"]
         sepDist = dim["sepDistribution"]
-        radius = 20
+        radius = 5
         for key, value in kwargs.items():
             if key == "dimLine":
                 dim["dimLine"] = value
@@ -949,6 +1048,7 @@ class ComponentSketcher:
         thickness = 1 * scale
         dimLine = dim["dimLine"] * inter_space
         dimColumn = dim["dimColumn"] * inter_space
+        id_origins["bottomLimit"] = (dimLine + xD, yD + dimColumn)
         # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
         self.rounded_rect(xD, yD, dimLine, dimColumn, radius, outline=color, fill=color, thickness=thickness)
@@ -1702,7 +1802,9 @@ class ComponentSketcher:
         self.canvas.itemconfig("symb_" + tag, state="hidden")
         self.canvas.itemconfig("pin_" + tag, state="hidden")
         self.canvas.itemconfig(tag, state="hidden")
-
+        
+    def change_hole_state(x,y,nbBroche,state):
+        pass
 
     def drawChip(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         global num_id
@@ -1750,11 +1852,13 @@ class ComponentSketcher:
         else:
             id_type[type] += 1
             id = "_chip_" + str(num_id)
+            current_dict_circuit["last_id"] = id
             num_id += 1
 
         if not tags:
             params["id"] = id
             params["XY"] = (xD, yD)
+            params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)  
             params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
@@ -1763,6 +1867,7 @@ class ComponentSketcher:
             params["type"] = type
             params["btnMenu"] = [1, 1, 0]
             nbBrocheParCote = dim["pinCount"] // 2
+            #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
             tagBase = "base" + id
             tagMenu = "menu" + id
             tagCapot = "chipCover" + id
@@ -1986,17 +2091,18 @@ class ComponentSketcher:
                 tags = params["tags"]
                 params["mode"] = mode
                 params["coord"] = coords
+                params["multipoints"] = multipoints
                 xO, yO, xF, yF = coords[0]
                 if xO != -1:
                     xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
                 else: 
                     xO, yO = xs, ys
-                    print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
+                    #print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
                 if xF != -1:     
                     xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
                 else: 
                     xF, yF = xe, ye
-                    print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
+                    #print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
                 x1_old,y1_old,x2_old,y2_old = params["XY"]
                 dx1, dy1 = xO - x1_old, yO - y1_old
                 dx2, dy2 = xF - x2_old, yF - y2_old
@@ -2005,29 +2111,40 @@ class ComponentSketcher:
                 encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
                 contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
                 wire_body_tag = f"{id}_body"
+                wire_body_shadow_tag = f"{id}_body_shadow"
                 start_endpoint_tag = f"{id}_start"
                 end_endpoint_tag = f"{id}_end"
                 select_start_tag = f"{id}_select_start"
                 select_end_tag = f"{id}_select_end"
-                divY  = yF - yO if yF != yO else 0.000001
-                xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-                yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-                p1    = ( xD + (xO + xDiff), yD + (yO + space - yDiff))
-                p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
-                p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
-                p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
-                flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
-                self.canvas.coords(wire_body_tag, flat_coords)
+                #divY  = yF - yO if yF != yO else 0.000001
+                # xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+                # yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+                # p1    = ( xD + (xO + xDiff), yD + (yO + space - yDiff))
+                # p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
+                # p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
+                # p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
+                # flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
+                multipoints = [xO, yO] + multipoints + [xF, yF]
+                #multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
+                multipoints = [val + 5*scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
+                # self.canvas.create_line(multipoints, fill=contour, width=8*thickness , 
+                #                 tags=(id, wire_body_tag))
+                # self.canvas.create_line(multipoints, fill=encre, width=6*thickness, 
+                #                 tags=(id, wire_body_tag))
+                self.canvas.coords(wire_body_tag, multipoints)
+                self.canvas.coords(wire_body_shadow_tag, multipoints)
                 self.canvas.move(start_endpoint_tag, dx1, dy1)
                 self.canvas.move(end_endpoint_tag, dx2, dy2)
                 self.canvas.move(select_start_tag, dx1, dy1)
                 self.canvas.move(select_end_tag, dx2, dy2)
         else:
             id = "_wire_" + str(num_id)
+            current_dict_circuit["last_id"] = id
             num_id += 1
             params["id"] = id
             params["mode"] = mode
             params["coord"] = coords
+            params["multipoints"] = multipoints
             xO, yO, xF, yF = coords[0]
     ############ MODIF KH 25/10/2024 ###############################
             if xO != -1:
@@ -2044,6 +2161,7 @@ class ComponentSketcher:
 
             # Define unique tags for the wire components
             wire_body_tag = f"{id}_body"
+            wire_body_shadow_tag = f"{id}_body_shadow"
             start_endpoint_tag = f"{id}_start"
             end_endpoint_tag = f"{id}_end"
             select_start_tag = f"{id}_select_start"
@@ -2137,19 +2255,26 @@ class ComponentSketcher:
             #     tags=(id, wire_body_tag),
             # )
 ##############   MODIF KH MULTIPOINTS 27/10/2024  #########################
-            divY  = yF - yO if yF != yO else 0.000001
-            xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-            yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-            p1    = ( (xO + xDiff), (yO + space - yDiff))
-            p2    = ( (xF + xDiff), (yF + space - yDiff))
-            p3    = ( (xF + space - xDiff), (yF + yDiff))
-            p4    = ( (xO+ space - xDiff), (yO + yDiff))
-            self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
-                                xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
-                                fill=encre, outline=contour, width=1*thickness, 
-                                tags=(id, wire_body_tag) )  
+            # divY  = yF - yO if yF != yO else 0.000001
+            # xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+            # yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+            # p1    = ( (xO + xDiff), (yO + space - yDiff))
+            # p2    = ( (xF + xDiff), (yF + space - yDiff))
+            # p3    = ( (xF + space - xDiff), (yF + yDiff))
+            # p4    = ( (xO+ space - xDiff), (yO + yDiff))
+            # self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
+            #                     xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
+            #                     fill=encre, outline=contour, width=1*thickness, 
+            #                     tags=(id, wire_body_tag) )  
             
-            
+            #multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
+            #multipoints = [x + xD + 5*scale, y + yD + 5*scale for (x, y) in multipoints]
+            multipoints = [xO, yO] + multipoints + [xF, yF]
+            multipoints = [val  + 5*scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
+            self.canvas.create_line(multipoints, fill=contour, width=8*thickness , 
+                                tags=(id,  wire_body_shadow_tag))
+            self.canvas.create_line(multipoints, fill=encre, width=4*thickness, 
+                                tags=(id, wire_body_tag))
 ##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
             # Store tags and positions in params
             params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
@@ -2160,7 +2285,15 @@ class ComponentSketcher:
             }
             self.canvas.tag_raise(select_start_tag)
             self.canvas.tag_raise(select_end_tag)
+            self.canvas.tag_raise("selector_cable")
             # Bind events to the endpoints for drag-and-drop
+            
+            self.canvas.tag_bind(wire_body_tag, "<Enter>", lambda event, wire_id=id: self.on_wire_body_enter(event, wire_id))
+            self.canvas.tag_bind(wire_body_tag, "<Leave>", lambda event, wire_id=id: self.on_wire_body_leave(event, wire_id))
+            self.canvas.tag_bind(wire_body_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_body_click(event, wire_id))
+            self.canvas.tag_bind(wire_body_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_body_drag(event, wire_id))
+            
+            self.canvas.tag_bind(wire_body_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_body_click(event, wire_id))
             self.canvas.tag_bind(select_start_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, 'end'))
 

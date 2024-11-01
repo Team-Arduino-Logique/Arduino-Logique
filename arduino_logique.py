@@ -61,14 +61,12 @@ def main():
     win.grid_columnconfigure(0, weight=0)  # Sidebar
     win.grid_columnconfigure(1, weight=1)  # Canvas
 
-    # Creating the toolbar instance
-    toolbar = Toolbar(parent=win)
-    # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
-    toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
+
 
     # Creating the canvas in row=2, column=1
     canvas = tk.Canvas(win, bg="#626262", highlightthickness=0, bd=0)
     canvas.grid(row=2, column=1, sticky="nsew")
+    
 
     # Initializing the breadboard and components
     board = Breadboard(canvas)
@@ -77,6 +75,11 @@ def main():
     # Create a single instance of ComponentSketcher
     sketcher = ComponentSketcher(canvas)
     board.sketcher = sketcher  # Use the same sketcher instance in the board
+
+    # Creating the toolbar instance
+    toolbar = Toolbar(parent=win, canvas=canvas, board=board, sketcher=sketcher)
+    # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
+    toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
     # Initialize component data with the same sketcher
     component_data = ComponentData(sketcher)

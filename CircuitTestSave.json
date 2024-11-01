@@ -1,0 +1,133 @@
+{
+    "_chip_1": {
+        "XY": [
+            71.0,
+            161.5
+        ],
+        "type": "74HC08",
+        "label": "74HC08-1",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ]
+    },
+    "_chip_2": {
+        "XY": [
+            176.05,
+            161.5
+        ],
+        "type": "74HC02",
+        "label": "74HC02-1",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ]
+    },
+    "_chip_3": {
+        "XY": [
+            281.1,
+            161.5
+        ],
+        "type": "74HC04",
+        "label": "74HC04-1",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ]
+    },
+    "_chip_4": {
+        "XY": [
+            400.5,
+            161.5
+        ],
+        "type": "74HC00",
+        "label": "74HC00-1",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ]
+    },
+    "_chip_5": {
+        "XY": [
+            613.5,
+            218.5
+        ],
+        "type": "74HC32",
+        "label": "74HC32-1",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ]
+    },
+    "_wire_6": {
+        "XY": [
+            22.5,
+            415.5,
+            367.5,
+            625.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    },
+    "_wire_7": {
+        "XY": [
+            532.5,
+            247.5,
+            532.5,
+            292.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    },
+    "_wire_8": {
+        "XY": [
+            82.5,
+            217.5,
+            232.5,
+            217.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    },
+    "_wire_9": {
+        "XY": [
+            37.5,
+            127.5,
+            607.5,
+            82.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    },
+    "_wire_10": {
+        "XY": [
+            772.5,
+            22.5,
+            727.5,
+            292.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    },
+    "_wire_11": {
+        "XY": [
+            772.5,
+            355.5,
+            727.5,
+            625.5
+        ],
+        "type": null,
+        "label": null,
+        "btnMenu": null
+    }
+}
