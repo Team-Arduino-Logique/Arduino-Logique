@@ -1,6 +1,6 @@
 from component_params import DIP14_PARAMS
 from component_sketch import ComponentSketcher
-from dataCDLT import AUTO, YES, NO, matrix1260pts, HORIZONTAL, VERTICAL, PERSO
+from dataCDLT import AUTO, YES, NO, matrix1260pts, HORIZONTAL, VERTICAL, PERSO, INPUT, OUTPUT
 
 # TODO: refactor to use small data classes for chips, boards, etc.
 class ComponentData:
@@ -249,6 +249,11 @@ class ComponentData:
             (self.sketcher.goXY, 1, {"line": 18.5, "column": 0.5, "id_origin": "bboard830"}),
             (bandeAlim, 1, {"direction": VERTICAL}),
         ]  # ,1,{"direction":VERTICAL})]
+
+        model_pin_IO = [(self.sketcher.drawPinIO, 1, {"XY": (0, 0), "type": INPUT , "mode": AUTO})]
+        model_pin_IO2 = [(self.sketcher.drawPinIO, 1, {"XY": (400, 270), "type": OUTPUT , "mode": AUTO})]
+
+
         # ,(setFoncTrou,1,{"function":drawRoundHole})
         boardTest = [(self.sketcher.setXYOrigin, 1), (bandeAlim, 1, {"direction": HORIZONTAL})]
         boardTestMinimal = [(self.sketcher.setXYOrigin, 1), (railAlimPlus, 4, {"direction": VERTICAL})]
@@ -264,7 +269,11 @@ class ComponentData:
             (chip7432, 1, {"direction": HORIZONTAL}),
             (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
             (wireTest, 1),
+            (model_pin_IO, 1),
+            (self.sketcher.goXY, 1, {"line": 10, "column": 8, "id_origin": "circTest"}),
+            (model_pin_IO2, 1),
         ]
+
 
         self.chipDIP14 = chipDIP14
         self.chip7400 = chip7400

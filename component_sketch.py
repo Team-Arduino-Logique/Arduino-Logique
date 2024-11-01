@@ -27,6 +27,8 @@ from dataCDLT import (
     selector_dy_br,
     FREE,
     USED,
+    INPUT,
+    OUTPUT,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
@@ -266,7 +268,6 @@ class ComponentSketcher:
         nearest_point = (x, y)
         nearest_point_col_lin = (0, 0)
         for id_in_matrix, point in matrix.items():
-            print(f"Checking point {id_in_matrix}")
             grid_x, grid_y = point["xy"]
             distance = math.hypot(x - grid_x - id_origins["xyOrigin"][0], y - grid_y - id_origins["xyOrigin"][1])
             if distance < min_distance:
@@ -2373,4 +2374,145 @@ class ComponentSketcher:
         current_dict_circuit[id] = params
 
         return xD, yD
+    
+
+    def drawPinIO(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        global num_id
+
+        if width != -1:
+            scale = width / 9.0
+        inter_space = 15 * scale
+        space = 9 * scale
+        thickness = 1 * scale
+        matrix = matrix830pts
+        mode= AUTO
+        id = None
+        multipoints = []
+        for key, value in kwargs.items():
+            if key == "mode":
+                mode = value
+            if key == "matrix":
+                matrix = value
+            if key == "id":
+                id = value
+            if key == "tags":
+                tags = value
+            if key == "type":
+                type = value
+
+        params = {}
+        if id:  # If the wire already exists, delete it and redraw
+            if current_dict_circuit.get(id):
+                params = current_dict_circuit[id]
+                tags = params["tags"]
+                
+#################    ICI TON CODE PRIMITIVES GRAPHIQUE SI LA PIN EST DÉJÀ PLACÉE  ####################
+        else:
+            id = "_io_" + str(num_id)
+            num_id += 1
+            params["id"] = id
+        params["XY"] = (xD, yD)
+        _,(col, line) = self.find_nearest_grid_point(xD, yD)
+        params["coords"] = (col, line)
+        params["controller_pin"] = "IO"
+#################    ICI TON CODE PRIMITIVES GRAPHIQUE SI LA PIN N'EST PAS ENCORE PRÉSENTE ####################
+
+        current_dict_circuit[id] = params
+
+
+        # Calculate center of the rhombus
+        center_x = xD + 5 * scale
+        center_y = yD + 5 * scale
+
+        # Double the size of the rhombus
+        rhombus_size = 12 * scale  # Original was 5 * scale
+
+        # Draw the vertical line first
+        self.canvas.create_line(
+            center_x,
+            center_y + rhombus_size,  # Bottom of rhombus
+            center_x,
+            yD + 20 * scale,
+            fill="#479dff",
+            width=4 * thickness,
+            tags=(id,),
+        )
+
+        # Draw the circle at the bottom
+        self.canvas.create_oval(
+            xD,
+            yD + 20 * scale,
+            xD + 10 * scale,
+            yD + 30 * scale,
+            fill="#dfdfdf",
+            outline="#404040",
+            width=1 * thickness,
+            tags=(id,),
+        )
+
+        # Draw the larger rhombus on top of the line
+        self.canvas.create_polygon(
+            center_x, center_y - rhombus_size,           # Top point
+            center_x + rhombus_size, center_y,           # Right point
+            center_x, center_y + rhombus_size,           # Bottom point
+            center_x - rhombus_size, center_y,           # Left point
+            fill="#479dff",
+            outline="#404040",
+            width=1 * thickness,
+            tags=(id,),
+        )
+
+        # Bring the rhombus to the front to appear on top of the line
+        self.canvas.tag_raise(id)
+
+        # Adjust the arrow inside the rhombus
+        arrow_shaft_length = 8 * scale
+        arrow_head_size = 4 * scale
+
+        # Adjust the arrow inside the rhombus
+        arrow_offset = 4 * scale  # Adjust this value as needed
+        if type == INPUT:
+            # Arrow pointing down
+            # Draw arrow shaft
+            self.canvas.create_line(
+                center_x,
+                center_y - arrow_head_size,
+                center_x,
+                center_y + arrow_shaft_length,
+                fill="#404040",
+                width=2 * thickness,
+                tags=(id,),
+            )
+            # Draw arrowhead
+            self.canvas.create_polygon(
+                center_x - arrow_head_size, center_y + arrow_shaft_length - arrow_head_size,
+                center_x + arrow_head_size, center_y + arrow_shaft_length - arrow_head_size,
+                center_x, center_y + arrow_shaft_length + arrow_head_size,
+                fill="#404040",
+                outline="#404040",
+                tags=(id,),
+            )
+        elif type == OUTPUT:
+            # Arrow pointing up
+            # Draw arrow shaft
+            self.canvas.create_line(
+                center_x,
+                center_y + arrow_head_size,
+                center_x,
+                center_y - arrow_shaft_length,
+                fill="#404040",
+                width=2 * thickness,
+                tags=(id,),
+            )
+            # Draw arrowhead
+            self.canvas.create_polygon(
+                center_x - arrow_head_size, center_y - arrow_shaft_length + arrow_head_size,
+                center_x + arrow_head_size, center_y - arrow_shaft_length + arrow_head_size,
+                center_x, center_y - arrow_shaft_length - arrow_head_size,
+                fill="#404040",
+                outline="#404040",
+                tags=(id,),
+            )
+
+        return xD, yD 
 
