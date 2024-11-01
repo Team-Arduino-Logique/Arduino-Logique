@@ -121,6 +121,7 @@ class ComponentSketcher:
         """
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
+        
 
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
@@ -138,8 +139,16 @@ class ComponentSketcher:
 
             color = current_dict_circuit[wire_id]["color"] 
             coords = current_dict_circuit[wire_id]["coord"]
+            
+
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
+            if endpoint == "start":
+                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["etat"] = FREE
+            else:
+                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["etat"] = FREE
+
+
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
                 coords = [(cn, ln, coords[0][2], coords[0][3])]
@@ -257,12 +266,58 @@ class ComponentSketcher:
         nearest_point = (x, y)
         nearest_point_col_lin = (0, 0)
         for id_in_matrix, point in matrix.items():
+            print(f"Checking point {id_in_matrix}")
             grid_x, grid_y = point["xy"]
             distance = math.hypot(x - grid_x - id_origins["xyOrigin"][0], y - grid_y - id_origins["xyOrigin"][1])
             if distance < min_distance:
                 min_distance = distance
                 nearest_point = (grid_x, grid_y)
                 nearest_point_col_lin = point["coord"]
+
+        return nearest_point, nearest_point_col_lin
+    
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 7 and 21 ('f' lines)
+            col, line = point[1]["coord"]
+            if line != 7 and line != 21:
+                continue
+                
+            grid_x, grid_y = point[1]["xy"]
+                
+            # MODIF KH DRAG-DROP 23/10/2024
+            # distance = math.hypot(x - grid_x , y - grid_y)
+            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+            # FIN MODIF KH
+            if distance < min_distance:
+                    
+                min_distance = distance
+                # MODIF KH DRAG_DROP 23/10/2024
+                # nearest_point = (grid_x, grid_y)
+                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # FIN MODIF KH
+                nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
     
@@ -1803,8 +1858,12 @@ class ComponentSketcher:
         self.canvas.itemconfig("pin_" + tag, state="hidden")
         self.canvas.itemconfig(tag, state="hidden")
         
-    def change_hole_state(x,y,nbBroche,state):
-        pass
+    def change_hole_state(self, col, line,pinCount,state):
+        for i in range(pinCount//2):
+                matrix1260pts[f"{col+i},{line}"]["etat"] = state
+                matrix1260pts[f"{col+i},{line+1}"]["etat"] = state
+            
+        
 
     def drawChip(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         global num_id
@@ -1854,6 +1913,10 @@ class ComponentSketcher:
             id = "_chip_" + str(num_id)
             current_dict_circuit["last_id"] = id
             num_id += 1
+            _,(col, line) = self.find_nearest_grid_point(xD, yD)
+            self.change_hole_state(col, line, dim["pinCount"], USED)
+            # dim["occupied_holes"] =
+
 
         if not tags:
             params["id"] = id
@@ -2083,6 +2146,7 @@ class ComponentSketcher:
                 [(xs,ys,xe,ye)] = value
             if key == "multipoints":
                 multipoints = value
+        
 
         params = {}
         if id:  # If the wire already exists, delete it and redraw
@@ -2302,6 +2366,9 @@ class ComponentSketcher:
 
             self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
+
+        matrix[f"{coords[0][0]},{coords[0][1]}"]["etat"] = USED
+        matrix[f"{coords[0][2]},{coords[0][3]}"]["etat"] = USED
 
         current_dict_circuit[id] = params
 
