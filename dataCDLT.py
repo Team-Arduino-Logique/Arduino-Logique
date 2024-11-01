@@ -18,6 +18,12 @@ id_origins = {"xyOrigin": (0, 0)}
 
 id_type = {}
 current_dict_circuit = {}
+connexion_circuit = {
+    "io": [],
+    "wire" : [],
+    "pwr" : [],
+    "func" : []
+}
 num_id = 1
 mouse_x, mouse_y = 0, 0
 drag_mouse_x, drag_mouse_y = 0, 0
