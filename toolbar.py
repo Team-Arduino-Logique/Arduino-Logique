@@ -57,8 +57,16 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
+        icons_folder = None
+        for item in os.listdir(os.path.dirname(__file__)):
+            if os.path.isdir(item) and item.lower() == "icons":
+                icons_folder = item
+                break
+        if icons_folder is None:
+            messagebox.showerror("Folder Error", "Icons folder not found.")
+            return
         for name in icon_names:
-            path = os.path.join("icons", f"{name}.png")
+            path = os.path.join(icons_folder, f"{name}.png")
             try:
                 image = tk.PhotoImage(file=path)
                 # Calculate the scaling factor based on original image size and desired icon_size
