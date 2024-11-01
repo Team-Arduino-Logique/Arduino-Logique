@@ -613,6 +613,7 @@ class ComponentSketcher:
             
             # Consider only lines 6 and 21 ('f' lines)
             # if line_num == 7 or line_num == 22:
+            if point[1]["etat"]== FREE:
                 grid_x, grid_y = point[1]["xy"]
                 # MODIF KH DRAG-DROP 23/10/2024
                 # distance = math.hypot(x - grid_x , y - grid_y)
@@ -629,7 +630,7 @@ class ComponentSketcher:
 
         return nearest_point, nearest_point_col_lin
 
-    def find_nearest_grid_chip(self, x, y, matrix=None):
+    def find_nearest_grid_chip(self, x, y, matrix=matrix1260pts):
         """
         Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
 
@@ -654,23 +655,23 @@ class ComponentSketcher:
             
             # Consider only lines 7 and 21 ('f' lines)
             col, line = point[1]["coord"]
-            if line != 7 and line != 21:
-                continue
+            if line == 7 and line == 21:
+                # mettre is_XY_free4Chip(x,y)
                 
-            grid_x, grid_y = point[1]["xy"]
-                
-            # MODIF KH DRAG-DROP 23/10/2024
-            # distance = math.hypot(x - grid_x , y - grid_y)
-            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
-            # FIN MODIF KH
-            if distance < min_distance:
+                grid_x, grid_y = point[1]["xy"]
                     
-                min_distance = distance
-                # MODIF KH DRAG_DROP 23/10/2024
-                # nearest_point = (grid_x, grid_y)
-                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # MODIF KH DRAG-DROP 23/10/2024
+                # distance = math.hypot(x - grid_x , y - grid_y)
+                distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
                 # FIN MODIF KH
-                nearest_point_col_lin = point[1]["coord"]
+                if distance < min_distance:
+                        
+                    min_distance = distance
+                    # MODIF KH DRAG_DROP 23/10/2024
+                    # nearest_point = (grid_x, grid_y)
+                    nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                    # FIN MODIF KH
+                    nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
 
@@ -1794,7 +1795,9 @@ class ComponentSketcher:
         self.canvas.itemconfig("symb_" + tag, state="hidden")
         self.canvas.itemconfig("pin_" + tag, state="hidden")
         self.canvas.itemconfig(tag, state="hidden")
-
+        
+    def change_hole_state(x,y,nbBroche,state):
+        pass
 
     def drawChip(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         global num_id
@@ -1848,6 +1851,7 @@ class ComponentSketcher:
         if not tags:
             params["id"] = id
             params["XY"] = (xD, yD)
+            params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)  
             params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
@@ -1856,6 +1860,7 @@ class ComponentSketcher:
             params["type"] = type
             params["btnMenu"] = [1, 1, 0]
             nbBrocheParCote = dim["pinCount"] // 2
+            #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
             tagBase = "base" + id
             tagMenu = "menu" + id
             tagCapot = "chipCover" + id
