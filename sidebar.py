@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import os
-from dataCDLT import matrix1260pts
+from dataCDLT import matrix1260pts, id_origins, FREE, USED, current_dict_circuit
 
 class Tooltip:
     """Simple tooltip implementation doesn't work now, I need to figure out why."""
@@ -308,7 +308,7 @@ class Sidebar:
 
         # Create the chip cursor image if it doesn't exist
         if not hasattr(self.canvas, 'chip_cursor_id'):
-            self.canvas.chip_cursor_id = self.canvas.create_image(x, y, image=self.chip_cursor_image, anchor="center")
+            self.canvas.chip_cursor_id = self.canvas.create_image(x, y, image=self.chip_cursor_image, anchor="nw")
         else:
             # Move the existing chip cursor image
             self.canvas.coords(self.canvas.chip_cursor_id, x, y)
@@ -346,29 +346,32 @@ class Sidebar:
 
     def place_chip_at(self, x, y, chip_name):
         """
-        Places the selected chip on the breadboard at the nearest snap point.
+        Places the selected chip on the breadboard at the nearest grid point.
         """
-        # Find the nearest snap point
-        column, line = self.sketcher.find_nearest_snap_point(x, y, matrix1260pts)
-        print(f"Nearest snap point: {column}, {line}")
+        # Find the nearest grid point
+        (nearest_x, nearest_y), (column, line) = self.sketcher.find_nearest_grid(x, y, matrix=matrix1260pts)
+        print(f"Nearest grid point: {nearest_x}, {nearest_y}, Column: {column}, Line: {line}")
 
         if column is None or line is None:
-            messagebox.showerror("Placement Error", "No snap point found nearby.")
+            messagebox.showerror("Placement Error", "No grid point found nearby.")
             return
 
-        # Adjust for scaling and origin if necessary
+        # Adjust for scaling and origin
         scale = self.sketcher.scale_factor
-        xO, yO = 0, 0  # Origin coordinates
+        xO, yO = id_origins["xyOrigin"]
 
-        # Calculate exact position using goXY
-        exact_x, exact_y = self.sketcher.goXY(
-                xO, 
-                yO, 
-                scale=1, 
-                width=-2, 
-                column=column, 
-                line=line
-            )
+        # # Use goXY to get the exact position
+        # exact_x, exact_y = self.sketcher.goXY(
+        #     xO,
+        #     yO,
+        #     scale=scale,
+        #     width=-1,
+        #     column=column,
+        #     line=line
+        # )
+
+        
+
         # Retrieve chip parameters from component data
         chip_model = None
         if chip_name == '74HC00.png':
@@ -387,21 +390,61 @@ class Sidebar:
             return
 
         if chip_model:
-            #Draw the chip at the calculated exact position
-            exact_x, exact_y = self.sketcher.goXY(
-                xO, 
-                yO, 
-                scale=1, 
-                width=-2, 
-                column=column, 
-                line=line
-            )
-            self.board.circuit(exact_x, exact_y, scale=scale, model=chip_model)
-            self.component_data.add_component(chip_model, exact_x, exact_y, scale)
+            # Draw the chip at the calculated exact position
+            pin_x, pin_y = self.sketcher.xy_chip2pin(nearest_x, nearest_y)
+            pin_count = chip_model[0][2]["pinCount"]
+            half_pin_count = pin_count // 2
+
+
+            max_column = column + half_pin_count - 1
+            if max_column > 63:
+                # Not enough space, prevent placement and look for the nearest snap point on the left
+                print("Not enough space to place the chip here.")
+                self.cancel_chip_placement()
+                return
             
+            # Check if new holes are free
+            holes_available = True
+            occupied_holes = []
+            for i in range(half_pin_count):
+                # Top row (line 7 or 21)
+                hole_id_top = f"{column + i},{line}"
+                # Bottom row (line 6 or 20)
+                hole_id_bottom = f"{column + i},{line + 1}"
+
+                hole_top = matrix1260pts.get(hole_id_top)
+                hole_bottom = matrix1260pts.get(hole_id_bottom)
+
+                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                    holes_available = False
+                    break
+                else:
+                    occupied_holes.extend([hole_id_top, hole_id_bottom])
+
+            if not holes_available:
+                print("Holes are occupied. Cannot place the chip here.")
+                self.cancel_chip_placement()
+                return
+            
+            else:
+                # Mark new holes as used
+                for hole_id in occupied_holes:
+                    matrix1260pts[hole_id]["etat"] = USED
+                model_chip = [(chip_model, 1, {"XY": (nearest_x,nearest_y), "pinUL_XY":(pin_x, pin_y)})]
+                self.sketcher.circuit(nearest_x, nearest_y, scale=scale, model=model_chip)
+                print(f"Chip {chip_name} placed at ({column}, {line}).")
 
 
-
+                # Update the current_dict_circuit with the new chip
+                chip_keys = [key for key in current_dict_circuit.keys() if key.startswith("_chip")]
+                if chip_keys:
+                    last_chip_key = chip_keys[-1]  # Get the last key in sorted order
+                    added_chip_params = current_dict_circuit[last_chip_key]
+                    print("Last chip parameter:", added_chip_params)
+                    added_chip_params["occupied_holes"] = occupied_holes
+                else:
+                    #delete the chip
+                    print("need to delete the added chip")
 
     def manage_components(self):
         """
