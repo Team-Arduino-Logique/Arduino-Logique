@@ -662,7 +662,7 @@ class ComponentSketcher:
             
             # Consider only lines 7 and 21 ('f' lines)
             col, line = point[1]["coord"]
-            if line == 7 and line == 21:
+            if line == 7 or line == 21:
                 # mettre is_XY_free4Chip(x,y)
                 
                 grid_x, grid_y = point[1]["xy"]
