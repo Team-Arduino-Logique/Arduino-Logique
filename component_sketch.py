@@ -1833,6 +1833,10 @@ class ComponentSketcher:
                 tags = value
             if key == "type":
                 type = value
+            if key == "io":
+                io = value
+            if key == "symbScript":
+                symbScript = value
 
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
         dimColumn = dim["chipWidth"] * inter_space
@@ -1859,6 +1863,8 @@ class ComponentSketcher:
             params["label"] = label
             params["type"] = type
             params["btnMenu"] = [1, 1, 0]
+            params["symbScript"] = symbScript
+            params["io"] = io
             nbBrocheParCote = dim["pinCount"] // 2
             #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
             tagBase = "base" + id
@@ -1905,7 +1911,6 @@ class ComponentSketcher:
             )            
             # FIN AJOUT KH
             self.rounded_rect(xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase)
-
             
             self.canvas.create_rectangle(
                 xD + 2 * scale,

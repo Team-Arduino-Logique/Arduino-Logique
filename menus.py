@@ -3,9 +3,10 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
 import json
+from dataCDLT import current_dict_circuit
 
 class Menus:
-    def __init__(self, parent, canvas, board, component_data, model, current_dict_circuit, zoom_function):
+    def __init__(self, parent, canvas, board, component_data, model, current_dict_circuit, zoom_function,sketcher=None):
         """
         Initializes the custom menu bar.
 
@@ -25,29 +26,32 @@ class Menus:
         self.model = model
         self.current_dict_circuit = current_dict_circuit
         self.zoom = zoom_function
+        self.sketcher = sketcher
 
         # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
 
         # Define menu items and their corresponding dropdown options
         self.menus = {
-            "File": ["New", "Open", "Save", "Exit"],
-            "Controllers": ["Arduino", "ESP32"],
-            "Ports": ["Configure Ports"],
-            "Help": ["Documentation", "About"]
+            "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
+            "Circuit": ["Vérification","Téléverser"],
+            "Controllers": ["Arduino", "ESP32","STM32"],
+            "Ports": ["Configurer le port série"],
+            "Help": ["Documentation", "A propos"]
         }
 
         # Mapping menu labels to their handler functions
         self.menu_commands = {
-            "New": self.new_file,
-            "Open": self.open_file,
-            "Save": self.save_file,
-            "Exit": self.parent.quit,
+            "Nouveau": self.new_file,
+            "Ouvrir": self.open_file,
+            "Enregistrer": self.save_file,
+            "Quitter": self.parent.quit,
+            "Vérification": self.checkCircuit,
             "Arduino": self.Arduino,
             "ESP32": self.ESP32,
-            "Configure Ports": self.configure_ports,
+            "Configurer le port série": self.configure_ports,
             "Documentation": self.open_documentation,
-            "About": self.about
+            "A propos": self.about
         }
 
         # Create each menu button and its dropdown
@@ -70,9 +74,11 @@ class Menus:
             self.menu_bar,
             text=menu_name,
             bg="#333333",
-            fg="white",
+            fg="blue",
             activebackground="#444444",
-            activeforeground="white",
+            activeforeground="blue",
+            highlightbackground="#333333",  # Border color when inactive
+            highlightcolor="#444444",       # Border color when active
             bd=0,
             padx=10,
             pady=5,
@@ -96,9 +102,11 @@ class Menus:
                 dropdown,
                 text=option,
                 bg="#333333",
-                fg="white",
+                fg="blue",
                 activebackground="#444444",
-                activeforeground="white",
+                activeforeground="blue",
+                highlightbackground="#333333",  # Border color when inactive
+                highlightcolor="#444444",       # Border color when active
                 bd=0,
                 anchor="w",
                 padx=20,
@@ -255,3 +263,15 @@ class Menus:
         """Handler for the 'About' menu item."""
         print("About this software")
         messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
+        
+    def checkCircuit(self):
+        print("Lancer la vérification")
+        func =[]
+        for id, chip in current_dict_circuit.items():
+            if id[:6] == "_chip_":
+                (x, y) = chip["pinUL_XY"]
+                numPinUL = chip["pinCount"] // 2
+                (real_x,real_y),(col,line) = self.sketcher.find_nearest_grid_chip(x,y)
+                for io in chip["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
+                    print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                    
