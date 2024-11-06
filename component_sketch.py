@@ -1844,6 +1844,8 @@ class ComponentSketcher:
                 io = value
             if key == "symbScript":
                 symbScript = value
+            if key == "logicFunction":
+                logicFunction = value
 
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
         dimColumn = dim["chipWidth"] * inter_space
@@ -1873,6 +1875,7 @@ class ComponentSketcher:
             params["btnMenu"] = [1, 1, 0]
             params["symbScript"] = symbScript
             params["io"] = io
+            params["logicFunction"] = logicFunction
             nbBrocheParCote = dim["pinCount"] // 2
             #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
             tagBase = "base" + id
