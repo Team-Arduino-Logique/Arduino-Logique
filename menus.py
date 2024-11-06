@@ -1,16 +1,49 @@
-# Menus.py
+"""
+This module defines the `Menus` class for creating a custom menu bar in a Tkinter application.
+The menu bar includes options for file operations, controller selection, port configuration, and help documentation.
+"""
+
+from copy import deepcopy
 
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import json
-#<<<<<<< HEAD
+from typing import Callable
+import serial.tools.list_ports  # type: ignore
+
+from breadboard import Breadboard
+from component_sketch import ComponentSketcher
+from dataComponent import ComponentData
+from dataCDLT import id_origins, matrix1260pts
+
 from dataCDLT import current_dict_circuit
-#=======
-import serial.tools.list_ports
-#>>>>>>> 111353088d7b042fcb1ec0d1a7a8920073a0c7c7
+
 
 class Menus:
-    def __init__(self, parent, canvas, board, component_data, model, current_dict_circuit, zoom_function,sketcher=None):
+    """
+    Menus class for creating a custom menu bar in a Tkinter application.
+    Attributes:
+        parent (tk.Tk | tk.Frame): The main window or parent frame.
+        canvas (tk.Canvas): The canvas widget for drawing circuits.
+        board (Breadboard): The Breadboard instance.
+        component_data (ComponentData): The ComponentData instance.
+        model (list): The model data for the circuit.
+        current_dict_circuit (dict): The current circuit data.
+        zoom (Callable): The zoom function to adjust the canvas.
+        com_port (str | None): The selected COM port.
+    """
+
+    def __init__(
+        self,
+        parent: tk.Tk | tk.Frame,
+        canvas: tk.Canvas,
+        board: Breadboard,
+        component_data: ComponentData,
+        model: list,
+        current_dict_circuit: dict,
+        zoom_function:Callable,
+        sketcher=None
+    ):
         """
         Initializes the custom menu bar.
 
@@ -23,30 +56,39 @@ class Menus:
         - current_dict_circuit (dict): The current circuit data.
         - zoom_function (callable): The zoom function to adjust the canvas.
         """
-        self.parent = parent
-        self.canvas = canvas
-        self.board = board
-        self.component_data = component_data
-        self.model = model
-        self.current_dict_circuit = current_dict_circuit
-        self.zoom = zoom_function
+        self.parent: tk.Tk | tk.Frame = parent
+        """The main window or parent frame."""
+        self.canvas: tk.Canvas = canvas
+        """The canvas widget for drawing circuits."""
+        self.board: Breadboard = board
+        """The Breadboard instance."""
+        self.component_data: ComponentData = component_data
+        """The ComponentData instance."""
+        self.model: list = model
+        """The model data for the circuit."""
+        self.current_dict_circuit: dict = current_dict_circuit
+        """The current circuit data."""
+        self.zoom: Callable = zoom_function
+        """The zoom function to adjust the canvas."""
         self.sketcher = sketcher
-        self.com_port = None
+        self.com_port: str | None = None
+        """The selected COM port."""
 
         # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
+        """The frame containing the menu bar buttons."""
 
         # Define menu items and their corresponding dropdown options
-        self.menus = {
+        menus = {
             "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
             "Circuit": ["Vérification","Téléverser"],
             "Controllers": ["Arduino", "ESP32","STM32"],
             "Ports": ["Configurer le port série"],
-            "Help": ["Documentation", "A propos"]
+            "Help": ["Documentation", "A propos"],
         }
 
         # Mapping menu labels to their handler functions
-        self.menu_commands = {
+        menu_commands = {
             "Nouveau": self.new_file,
             "Ouvrir": self.open_file,
             "Enregistrer": self.save_file,
@@ -60,13 +102,13 @@ class Menus:
         }
 
         # Create each menu button and its dropdown
-        for menu_name, options in self.menus.items():
-            self.create_menu(menu_name, options)
+        for menu_name, options in menus.items():
+            self.create_menu(menu_name, options, menu_commands)
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown)
 
-    def create_menu(self, menu_name, options):
+    def create_menu(self, menu_name, options, menu_commands):
         """
         Creates a menu button with a dropdown.
 
@@ -88,7 +130,7 @@ class Menus:
             padx=10,
             pady=5,
             font=("FiraCode-Bold", 12),
-            command=lambda m=menu_name: self.toggle_dropdown(m)
+            command=lambda m=menu_name: self.toggle_dropdown(m),
         )
         btn.pack(side="left")
 
@@ -117,7 +159,7 @@ class Menus:
                 padx=20,
                 pady=5,
                 font=("FiraCode-Bold", 12),
-                command=self.menu_commands.get(option, lambda: print(f"{option} selected"))
+                command=menu_commands.get(option, lambda opt=option: print(f"{opt} selected")),
             )
             option_btn.pack(fill="x")
 
@@ -133,8 +175,8 @@ class Menus:
         - menu_name (str): The name of the menu to toggle.
         """
         for child in self.menu_bar.winfo_children():
-            if isinstance(child, tk.Button) and hasattr(child, 'dropdown'):
-                if child['text'] == menu_name:
+            if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+                if child["text"] == menu_name:
                     if child.dropdown.winfo_ismapped():
                         child.dropdown.place_forget()
                     else:
@@ -172,18 +214,19 @@ class Menus:
         - event (tk.Event): The event object.
         """
         if not self.is_descendant(event.widget, self.menu_bar) and not any(
-            self.is_descendant(event.widget, child.dropdown) for child in self.menu_bar.winfo_children()
-            if isinstance(child, tk.Button) and hasattr(child, 'dropdown')
+            self.is_descendant(event.widget, child.dropdown)
+            for child in self.menu_bar.winfo_children()
+            if isinstance(child, tk.Button) and hasattr(child, "dropdown")
         ):
             for child in self.menu_bar.winfo_children():
-                if isinstance(child, tk.Button) and hasattr(child, 'dropdown'):
+                if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
                     child.dropdown.place_forget()
 
     # Menu Handler Functions
     def new_file(self):
         """Handler for the 'New' menu item."""
         # Clear the canvas and reset the circuit
-        self.canvas.delete("all")
+        self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
         self.component_data = ComponentData(ComponentSketcher(self.canvas))
         self.model = self.component_data.circuitTest
@@ -194,22 +237,54 @@ class Menus:
     def open_file(self):
         """Handler for the 'Open' menu item."""
         print("Open File")
-        file_path = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
+        file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
             try:
                 with open(file_path, "r", encoding="utf-8") as file:
                     circuit_data = json.load(file)
                 print(f"Circuit loaded from {file_path}")
                 # Update current_dict_circuit and redraw the circuit
-                self.current_dict_circuit.clear()
-                self.current_dict_circuit.update(circuit_data)
-                self.zoom(self.canvas, 10.0, self.board, 50, 10, self.model)
+                self.board.sketcher.clear_board()
+
+                self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
+                x_o, y_o = id_origins["xyOrigin"]
+                self.board.sketcher.circuit(x_o, y_o, model=[])
+
+                for key, val in circuit_data.items():
+                    if "chip" in key:
+                        x, y = val["XY"]
+                        model_chip = [
+                            (
+                                self.board.sketcher.drawChip,
+                                1,
+                                {
+                                    **val,
+                                    "matrix": matrix1260pts,
+                                },
+                            )
+                        ]
+                        self.board.sketcher.circuit(x, y, model=model_chip)
+
+                    elif "wire" in key:
+                        model_wire = [
+                            (
+                                self.board.sketcher.drawWire,
+                                1,
+                                {
+                                    **val,
+                                    "matrix": matrix1260pts,
+                                },
+                            )
+                        ]
+                        self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+                    else:
+                        # TODO add IO
+                        print(f"Unspecified component: {key}")
                 messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
             except Exception as e:
                 print(f"Error loading file: {e}")
                 messagebox.showerror("Open Error", f"An error occurred while opening the file:\n{e}")
+                raise e
         else:
             print("Open file cancelled.")
 
@@ -217,22 +292,22 @@ class Menus:
         """Handler for the 'Save' menu item."""
         print("Save File")
         file_path = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
         )
         if file_path:
             try:
                 # Extract the circuit data from current_dict_circuit
-                circuit_data = {
-                    comp_id: {
-                        "XY": comp_data.get("XY"),
-                        "type": comp_data.get("type"),
-                        "label": comp_data.get("label"),
-                        "btnMenu": comp_data.get("btnMenu"),
-                        # Add other necessary attributes
-                    }
-                    for comp_id, comp_data in self.current_dict_circuit.items()
-                }
+                circuit_data = deepcopy(self.current_dict_circuit)
+
+                circuit_data.pop("last_id", None)  # Remove the "last_id" key
+                for key, comp_data in circuit_data.items():
+                    # Remove the "id" and "tags" keys before saving
+                    comp_data.pop("id", None)
+                    comp_data.pop("tags", None)
+                    if "label" in comp_data:
+                        comp_data["label"] = comp_data["type"]
+                    if "wire" in key:
+                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
@@ -257,7 +332,6 @@ class Menus:
     def configure_ports(self):
         """Handler for the 'Configure Ports' menu item."""
         print("Configure Ports")
-        
 
         options = [comport.device for comport in serial.tools.list_ports.comports()]
         if len(options) == 0:
@@ -288,7 +362,6 @@ class Menus:
 
             confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
             confirm_button.pack(pady=10)
-
 
     def open_documentation(self):
         """Handler for the 'Documentation' menu item."""
