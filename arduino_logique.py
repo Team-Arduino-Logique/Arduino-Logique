@@ -48,11 +48,12 @@ def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: in
 
 def main():
     # Creating main window
-    win = tk.Tk()
-    win.title("Laboratoire virtuel de circuit logique - GIF-1002")
-    win.geometry("1600x900")  # Initial window size
-    win.configure(bg="#333333")  # Setting consistent background color
-
+    window = tk.Tk()
+    window.title("Laboratoire virtuel de circuit logique - GIF-1002")
+    window.geometry("1600x900")  # Initial window size
+    #win.configure(bg="#333333")  # Setting consistent background color
+    win = tk.Frame(window, bg="#333333")
+    win.pack(fill="both", expand=True)
     # Configuring grid layout for the main window
     win.grid_rowconfigure(0, weight=0)  # Menu bar
     win.grid_rowconfigure(1, weight=0)  # Secondary toolbar
@@ -111,7 +112,8 @@ def main():
         component_data=component_data,
         model=model,
         current_dict_circuit=current_dict_circuit,
-        zoom_function=zoom
+        zoom_function=zoom,
+        sketcher=sketcher
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")

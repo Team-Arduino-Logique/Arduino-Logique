@@ -139,8 +139,15 @@ class Toolbar:
             self.selected_color = color_code[1]
             self.color_button.configure(bg=self.selected_color)
             self.canvas.itemconfig(self.cursor_circle_id,fill=self.selected_color)
-            # Here you can add logic to apply the selected color to new connections
-
+            if self.wire_start_point:
+                color =self.hex_to_rgb(self.selected_color )
+                encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+                contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
+                wire_body_tag = f"{self.wire_id}_body"
+                wire_body_shadow_tag = f"{self.wire_id}_body_shadow"
+                self.canvas.itemconfig(wire_body_tag,fill=encre)
+                self.canvas.itemconfig(wire_body_shadow_tag,fill=contour)
+                
     def button_action(self, action_name):
         """
         Defines the action to perform when a button is clicked.
