@@ -1,9 +1,13 @@
 # Menus.py
 
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, ttk
 import json
+#<<<<<<< HEAD
 from dataCDLT import current_dict_circuit
+#=======
+import serial.tools.list_ports
+#>>>>>>> 111353088d7b042fcb1ec0d1a7a8920073a0c7c7
 
 class Menus:
     def __init__(self, parent, canvas, board, component_data, model, current_dict_circuit, zoom_function,sketcher=None):
@@ -27,6 +31,7 @@ class Menus:
         self.current_dict_circuit = current_dict_circuit
         self.zoom = zoom_function
         self.sketcher = sketcher
+        self.com_port = None
 
         # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
@@ -252,7 +257,38 @@ class Menus:
     def configure_ports(self):
         """Handler for the 'Configure Ports' menu item."""
         print("Configure Ports")
-        messagebox.showinfo("Configure Ports", "Configure Ports functionality not implemented yet.")
+        
+
+        options = [comport.device for comport in serial.tools.list_ports.comports()]
+        if len(options) == 0:
+            message = "No COM ports available. Please connect a device and try again."
+            print(message)
+            messagebox.showwarning("No COM Ports", message)
+        else:
+            # Create a new top-level window for the dialog
+            dialog = tk.Toplevel(self.parent)
+            dialog.title("Configure Ports")
+
+            # Set the size and position of the dialog
+            dialog.geometry("300x150")
+
+            # Create a label for the combobox
+            label = tk.Label(dialog, text="Select an option:")
+            label.pack(pady=10)
+            # Create a combobox with the options
+            combobox = ttk.Combobox(dialog, values=options)
+            combobox.pack(pady=10)
+
+            # Create a button to confirm the selection
+            def confirm_selection():
+                selected_option = combobox.get()
+                print(f"Selected option: {selected_option}")
+                self.com_port = selected_option
+                dialog.destroy()
+
+            confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+            confirm_button.pack(pady=10)
+
 
     def open_documentation(self):
         """Handler for the 'Documentation' menu item."""
