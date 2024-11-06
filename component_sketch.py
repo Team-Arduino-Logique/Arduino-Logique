@@ -1844,8 +1844,7 @@ class ComponentSketcher:
                 io = value
             if key == "symbScript":
                 symbScript = value
-            if key == "logicFunction":
-                logicFunction = value
+
 
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
         dimColumn = dim["chipWidth"] * inter_space
@@ -1875,7 +1874,7 @@ class ComponentSketcher:
             params["btnMenu"] = [1, 1, 0]
             params["symbScript"] = symbScript
             params["io"] = io
-            params["logicFunction"] = logicFunction
+            #params["logicFunction"] = logicFunction
             nbBrocheParCote = dim["pinCount"] // 2
             #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
             tagBase = "base" + id
@@ -1934,8 +1933,8 @@ class ComponentSketcher:
                 outline="#000000",
                 tags=tagBase,
             )
-            if dim["internalFunc"] is not None:
-                dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
+            # if dim["internalFunc"] is not None:
+            #     dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
             self.rounded_rect(
                 xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
@@ -2000,10 +1999,10 @@ class ComponentSketcher:
             else:
                 params["tags"].append(tagCapot)
             current_dict_circuit[id] = params
-            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
-            self.canvas.tag_bind(
-                tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
-            )
+            # self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
+            # self.canvas.tag_bind(
+            #     tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
+            # )
              # Bind left-click to initiate drag
             self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
 

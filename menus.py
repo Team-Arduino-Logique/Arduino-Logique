@@ -381,6 +381,14 @@ class Menus:
                 (x, y) = chip["pinUL_XY"]
                 numPinUL = chip["pinCount"] // 2
                 (real_x,real_y),(col,line) = self.sketcher.find_nearest_grid_chip(x,y)
+                ioIn, ioOut = [], []
                 for io in chip["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
-                    print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                    #ioIN, ioOut = [], []
+                    ioIn = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[0]]
+                    ioOut = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[1]]
+                    func += [(ioIn, chip["symbScript"], ioOut)]
+                    print(f"ioIN  = {ioIn}")
+                    print(f"ioOUT = {ioOut}")
+                    print(f"func= {func}")
+                    #print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
                     

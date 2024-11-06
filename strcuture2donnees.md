@@ -19,7 +19,7 @@ Ce dictionnaire est rempli lors de la création des composants à travers les fo
 ```python
 connexion_circuit = {
     "io": [(col, line, "in"/"out"), ...],
-    "wire" : [(col, line), ...],
+    "wire" : [(col1, line1,col2,line2), ...],
     "pwr" : [(col, line, "+" ou "-"), ...],
     "func" : [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
 }
