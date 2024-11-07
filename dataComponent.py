@@ -185,7 +185,7 @@ class ComponentData:
         chip7408 = [(self.sketcher.drawChip, 1, {**dip7408, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7408})]
         chip7432 = [(self.sketcher.drawChip, 1, {**dip7432, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7432})]
         wireTest = [
-            (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coords": [(1, 17, 32, 25)],"multipoints":[200,415,200,600,400,500], "matrix": matrix1260pts}),
+            (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coords": [(9, 10, 32, 25)],"multipoints":[200,415,200,600,400,500], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (10, 10, 10, 255), "mode": AUTO, "coords": [(35, 12, 35, 13)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 80, 0, 255), "mode": AUTO, "coords": [(5, 10, 15, 10)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 255, 0, 255), "mode": AUTO, "coords": [(2, 6, 40, 1)], "matrix": matrix1260pts}),
@@ -250,8 +250,8 @@ class ComponentData:
             (bandeAlim, 1, {"direction": VERTICAL}),
         ]  # ,1,{"direction":VERTICAL})]
 
-        model_pin_IO = [(self.sketcher.drawPinIO, 1, {"XY": (0, 0), "type": INPUT , "mode": AUTO})]
-        model_pin_IO2 = [(self.sketcher.drawPinIO, 1, {"XY": (400, 270), "type": OUTPUT , "mode": AUTO})]
+        model_pin_IO = [(self.sketcher.drawPinIO, 1, {"coords": [(9, 10)], "type": INPUT , "mode": AUTO, "matrix": matrix1260pts})]
+        model_pin_IO2 = [(self.sketcher.drawPinIO, 1, {"coords": [(9, 10)], "type": OUTPUT , "mode": AUTO, "matrix": matrix1260pts})]
 
 
         # ,(setFoncTrou,1,{"function":drawRoundHole})
@@ -268,10 +268,11 @@ class ComponentData:
             (chip7400, 1, {"direction": HORIZONTAL}),
             (chip7432, 1, {"direction": HORIZONTAL}),
             (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
-            (wireTest, 1),
-            (model_pin_IO, 1),
-            (self.sketcher.goXY, 1, {"line": 10, "column": 8, "id_origin": "circTest"}),
-            (model_pin_IO2, 1),
+            (wireTest, 1, {"direction": HORIZONTAL}),
+            (model_pin_IO, 1, {"direction": HORIZONTAL}),
+            (model_pin_IO2, 1, {"direction": HORIZONTAL}),
+            # (self.sketcher.goXY, 1, {"line": 10, "column": 8, "id_origin": "circTest"}),
+            # (model_pin_IO2, 1),
         ]
 
 
