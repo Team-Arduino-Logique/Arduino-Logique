@@ -1,6 +1,13 @@
 {
     "configurations": [
         {
+            "name": "ArduinoLogique",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/arduino_logique.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "ObjectModel",
             "type": "debugpy",
             "request": "launch",
