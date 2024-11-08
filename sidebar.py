@@ -415,7 +415,7 @@ class Sidebar:
                 hole_top = matrix1260pts.get(hole_id_top)
                 hole_bottom = matrix1260pts.get(hole_id_bottom)
 
-                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                     holes_available = False
                     break
                 else:
@@ -429,7 +429,7 @@ class Sidebar:
             else:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
-                    matrix1260pts[hole_id]["etat"] = USED
+                    matrix1260pts[hole_id]["state"] = USED
                 model_chip = [(chip_model, 1, {"XY": (nearest_x,nearest_y), "pinUL_XY":(pin_x, pin_y)})]
                 self.sketcher.circuit(nearest_x, nearest_y, scale=scale, model=model_chip)
                 print(f"Chip {chip_name} placed at ({column}, {line}).")

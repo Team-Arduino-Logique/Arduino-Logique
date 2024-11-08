@@ -154,9 +154,9 @@ class ComponentSketcher:
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
             if endpoint == "start":
-                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["etat"] = FREE
+                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["state"] = FREE
             else:
-                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["etat"] = FREE
+                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["state"] = FREE
 
 
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
@@ -461,7 +461,7 @@ class ComponentSketcher:
             # Store the previous occupied holes in case we need to restore them
             self.drag_chip_data["previous_occupied_holes"] = chip_params["occupied_holes"]
             for hole_id in chip_params["occupied_holes"]:
-                matrix1260pts[hole_id]["etat"] = FREE
+                matrix1260pts[hole_id]["state"] = FREE
             chip_params["occupied_holes"] = []
 
 
@@ -566,7 +566,7 @@ class ComponentSketcher:
                 hole_top = matrix1260pts.get(hole_id_top)
                 hole_bottom = matrix1260pts.get(hole_id_bottom)
 
-                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                     holes_available = False
                     break
                 else:
@@ -577,7 +577,7 @@ class ComponentSketcher:
                 # Re-mark the previous holes as used
                 previous_occupied_holes = self.drag_chip_data.get("previous_occupied_holes", [])
                 for hole_id in previous_occupied_holes:
-                    matrix1260pts[hole_id]["etat"] = USED
+                    matrix1260pts[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = previous_occupied_holes
                 
 
@@ -586,7 +586,7 @@ class ComponentSketcher:
             else:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
-                    matrix1260pts[hole_id]["etat"] = USED
+                    matrix1260pts[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = occupied_holes
 
             
@@ -684,7 +684,7 @@ class ComponentSketcher:
             
             # Consider only lines 6 and 21 ('f' lines)
             # if line_num == 7 or line_num == 22:
-            if point[1]["etat"]== FREE:
+            if point[1]["state"]== FREE:
                 grid_x, grid_y = point[1]["xy"]
                 # MODIF KH DRAG-DROP 23/10/2024
                 # distance = math.hypot(x - grid_x , y - grid_y)
@@ -1930,8 +1930,8 @@ class ComponentSketcher:
         
     def change_hole_state(self, col, line,pinCount,state):
         for i in range(pinCount//2):
-                matrix1260pts[f"{col+i},{line}"]["etat"] = state
-                matrix1260pts[f"{col+i},{line+1}"]["etat"] = state
+                matrix1260pts[f"{col+i},{line}"]["state"] = state
+                matrix1260pts[f"{col+i},{line+1}"]["state"] = state
             
         
 
@@ -2437,8 +2437,8 @@ class ComponentSketcher:
             self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
 
-        matrix[f"{coords[0][0]},{coords[0][1]}"]["etat"] = USED
-        matrix[f"{coords[0][2]},{coords[0][3]}"]["etat"] = USED
+        matrix[f"{coords[0][0]},{coords[0][1]}"]["state"] = USED
+        matrix[f"{coords[0][2]},{coords[0][3]}"]["state"] = USED
 
         current_dict_circuit[id] = params
 
