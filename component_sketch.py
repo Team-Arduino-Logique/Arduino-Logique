@@ -27,6 +27,8 @@ from dataCDLT import (
     selector_dy_br,
     FREE,
     USED,
+    INPUT,
+    OUTPUT,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
@@ -48,6 +50,12 @@ class ComponentSketcher:
         self.wire_drag_data = {
             "wire_id": None,
             "endpoint": None,
+            "x": 0,
+            "y": 0
+        }
+        
+        self.pinIO_drag_data = {
+            "pin_id": None,
             "x": 0,
             "y": 0
         }
@@ -114,6 +122,8 @@ class ComponentSketcher:
             y_distance = y - inter_space * delta_y
 
         return (x_distance, y_distance)
+    
+
 
     def on_wire_endpoint_click(self, event, wire_id, endpoint):
         """
@@ -121,6 +131,7 @@ class ComponentSketcher:
         """
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
+        
 
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
@@ -138,8 +149,16 @@ class ComponentSketcher:
 
             color = current_dict_circuit[wire_id]["color"] 
             coords = current_dict_circuit[wire_id]["coord"]
+            
+
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
+            if endpoint == "start":
+                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["etat"] = FREE
+            else:
+                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["etat"] = FREE
+
+
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
                 coords = [(cn, ln, coords[0][2], coords[0][3])]
@@ -263,6 +282,51 @@ class ComponentSketcher:
                 min_distance = distance
                 nearest_point = (grid_x, grid_y)
                 nearest_point_col_lin = point["coord"]
+
+        return nearest_point, nearest_point_col_lin
+    
+    def find_nearest_grid(self, x, y, matrix=None):
+        """
+        Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
+
+        Parameters:
+            x (float): The x-coordinate.
+            y (float): The y-coordinate.
+            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+
+        Returns:
+            tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
+        """
+        if matrix is None:
+            matrix = matrix1260pts
+
+        min_distance = float('inf')
+
+        (x_o, y_o) = id_origins["xyOrigin"]
+        
+        nearest_point = (0, 0)
+        nearest_point_col_lin = (0, 0)
+        for point in matrix.items():
+            
+            # Consider only lines 7 and 21 ('f' lines)
+            col, line = point[1]["coord"]
+            if line != 7 and line != 21:
+                continue
+                
+            grid_x, grid_y = point[1]["xy"]
+                
+            # MODIF KH DRAG-DROP 23/10/2024
+            # distance = math.hypot(x - grid_x , y - grid_y)
+            distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
+            # FIN MODIF KH
+            if distance < min_distance:
+                    
+                min_distance = distance
+                # MODIF KH DRAG_DROP 23/10/2024
+                # nearest_point = (grid_x, grid_y)
+                nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
+                # FIN MODIF KH
+                nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
     
@@ -662,7 +726,7 @@ class ComponentSketcher:
             
             # Consider only lines 7 and 21 ('f' lines)
             col, line = point[1]["coord"]
-            if line == 7 and line == 21:
+            if line == 7 or line == 21:
                 # mettre is_XY_free4Chip(x,y)
                 
                 grid_x, grid_y = point[1]["xy"]
@@ -681,6 +745,67 @@ class ComponentSketcher:
                     nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
+    
+
+    def on_pinIO_click(self, event, pin_id):
+        """
+        Event handler for when a pinIO element is clicked.
+        """
+        print(f"PinIO clicked: {pin_id}")
+        self.pinIO_drag_data["pin_id"] = pin_id
+
+        # Convert event coordinates to canvas coordinates
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
+        # Store initial positions
+        self.pinIO_drag_data["x"] = canvas_x
+        self.pinIO_drag_data["y"] = canvas_y
+
+        # Highlight the pinIO to indicate selection using outline_tag
+        outline_tag = current_dict_circuit[pin_id]["outline_tag"]
+        print(f"Highlighting outline_tag: {outline_tag}")
+        self.canvas.itemconfig(outline_tag, outline="red")
+
+
+    def on_pinIO_drag(self, event, pin_id):
+        """
+        Event handler for dragging a pinIO element.
+        """
+        if self.pinIO_drag_data["pin_id"] == pin_id:
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+
+            x_o = id_origins["xyOrigin"][0]
+            y_o = id_origins["xyOrigin"][1]
+
+            # Find nearest grid point
+            (nearest_x, nearest_y), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
+
+            # Update the model with new coordinates
+            params = current_dict_circuit[pin_id]
+            
+
+            # Redraw the pinIO at the new position
+            model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coords": [(col, line)], "matrix": matrix1260pts})]
+            self.circuit(x_o, y_o, model=model_pinIO)
+
+            print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
+
+
+    def on_pinIO_release(self, event, pin_id):
+        """
+        Event handler for when the pinIO element is released.
+        """
+        if self.pinIO_drag_data["pin_id"] == pin_id:
+            # Reset drag data
+            self.pinIO_drag_data["pin_id"] = None
+
+            # Remove highlight using outline_tag
+            outline_tag = current_dict_circuit[pin_id]["outline_tag"]
+            print(f"Removing highlight from outline_tag: {outline_tag}")
+            self.canvas.itemconfig(outline_tag, outline="")
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -1803,8 +1928,12 @@ class ComponentSketcher:
         self.canvas.itemconfig("pin_" + tag, state="hidden")
         self.canvas.itemconfig(tag, state="hidden")
         
-    def change_hole_state(x,y,nbBroche,state):
-        pass
+    def change_hole_state(self, col, line,pinCount,state):
+        for i in range(pinCount//2):
+                matrix1260pts[f"{col+i},{line}"]["etat"] = state
+                matrix1260pts[f"{col+i},{line+1}"]["etat"] = state
+            
+        
 
     def drawChip(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         global num_id
@@ -1854,6 +1983,10 @@ class ComponentSketcher:
             id = "_chip_" + str(num_id)
             current_dict_circuit["last_id"] = id
             num_id += 1
+            _,(col, line) = self.find_nearest_grid_point(xD, yD)
+            self.change_hole_state(col, line, dim["pinCount"], USED)
+            # dim["occupied_holes"] =
+
 
         if not tags:
             params["id"] = id
@@ -2084,6 +2217,7 @@ class ComponentSketcher:
                 [(xs,ys,xe,ye)] = value
             if key == "multipoints":
                 multipoints = value
+        
 
         params = {}
         if id:  # If the wire already exists, delete it and redraw
@@ -2304,7 +2438,179 @@ class ComponentSketcher:
             self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
 
+        matrix[f"{coords[0][0]},{coords[0][1]}"]["etat"] = USED
+        matrix[f"{coords[0][2]},{coords[0][3]}"]["etat"] = USED
+
         current_dict_circuit[id] = params
+
+        return xD, yD
+    
+
+    def drawPinIO(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        global num_id
+
+        if width != -1:
+            scale = width / 9.0
+        inter_space = 15 * scale
+        space = 9 * scale
+        thickness = 1 * scale
+        matrix = matrix830pts
+        mode = AUTO
+        id = None
+        multipoints = []
+        type = INPUT  # Default type
+        for key, value in kwargs.items():
+            if key == "mode":
+                mode = value
+            elif key == "matrix":
+                matrix = value
+            elif key == "id":
+                id = value
+            elif key == "coords":
+                coords = value
+            elif key == "tags":
+                tags = value
+            elif key == "type":
+                type = value
+
+
+        if id and current_dict_circuit.get(id):
+            # If the PinIO already exists, move it instead of redrawing
+            params = current_dict_circuit[id]
+            old_x, old_y = params["XY"]
+            params["coords"] = coords
+            xO, yO = coords[0]
+            xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+            dx = xO - old_x
+            dy = yO - old_y
+
+            # Move all items associated with the PinIO using their tags
+            self.canvas.move(id, dx, dy)
+
+            # Update stored position and coordinates
+            params["XY"] = (xO, yO)
+            
+        else:
+            # Create a new PinIO
+            id = "_io_" + str(num_id)
+            num_id += 1
+            params = {}
+            params["id"] = id
+            params["tags"] = []
+            params["coord"] = coords
+            xO, yO = coords[0]
+            xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+            params["XY"] = (xO, yO)
+            params["controller_pin"] = "IO"
+            params["type"] = type
+
+            # Define the main tag and the outlineable tag
+            pin_tag = f"pinIO_{id}"
+            outline_tag = f"pinIO_outline_{id}"
+            params["outline_tag"] = outline_tag  # Store the outline_tag in params
+            params["tag"] = pin_tag  # Store the main tag in params
+
+
+            # Draw the vertical line first (no outline_tag)
+            line_id = self.canvas.create_line(
+                xD + xO + 5*scale,
+                yD + yO - 3*scale,
+                xD + xO + 5*scale,
+                yD + yO + 2*scale,
+                fill="#479dff",
+                width=4 * thickness,
+                tags=(id, pin_tag),
+            )
+            params["tags"].append(line_id)
+
+            # Draw the circle at the bottom (supports outline)
+            oval_id = self.canvas.create_oval(
+                xD + xO + 2*scale,
+                yD + yO + 2*scale,
+                xD + xO + 7*scale,
+                yD + yO + 7*scale,
+                fill="#dfdfdf",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id,pin_tag, outline_tag),
+            )
+            params["tags"].append(oval_id)
+
+            # Draw the larger rhombus on top of the line (supports outline)
+            polygon_id = self.canvas.create_polygon(
+                xD + xO + -10*scale, yD + yO - 18*scale,
+                xD + xO + 5*scale, yD + yO - 33*scale,
+                xD + xO + 20*scale, yD + yO - 18*scale,
+                xD + xO + 5*scale, yD + yO - 3*scale,
+                fill="#479dff",
+                outline="#404040",
+                width=1 * thickness,
+                tags=(id, pin_tag, outline_tag),  # Add outline_tag here
+            )
+            params["tags"].append(polygon_id)
+
+            # Bring the rhombus to the front
+            self.canvas.tag_raise(id)
+
+
+            if type == INPUT:
+                # Arrow pointing down
+                # Draw the arrow line (no outline_tag)
+                arrow_line_id = self.canvas.create_line(
+                    xD + xO + 5*scale,
+                    yD + yO - 23*scale,
+                    xD + xO + 5*scale,
+                    yD + yO - 13*scale,
+                    fill="#404040",
+                    width=2 * thickness,
+                    tags=(id,),  # Remove outline_tag
+                )
+                params["tags"].append(arrow_line_id)
+
+                # Draw the arrow head (supports outline)
+                arrow_head_id = self.canvas.create_polygon(
+                    xD + xO + 0*scale, yD + yO - 13*scale,
+                    xD + xO + 10*scale, yD + yO - 13*scale,
+                    xD + xO + 5*scale, yD + yO - 8*scale,
+                    fill="#404040",
+                    outline="#404040",
+                    tags=(id, outline_tag),  # Add outline_tag here
+                )
+                params["tags"].append(arrow_head_id)
+            elif type == OUTPUT:
+                # Arrow pointing up
+                # Draw the arrow line (no outline_tag)
+                arrow_line_id = self.canvas.create_line(
+                    xD + xO + 5*scale,
+                    yD + yO - 23*scale,
+                    xD + xO + 5*scale,
+                    yD + yO - 13*scale,
+                    fill="#404040",
+                    width=2 * thickness,
+                    tags=(id,),  # Remove outline_tag
+                )
+                params["tags"].append(arrow_line_id)
+
+                # Draw the arrow head (supports outline)
+                arrow_head_id = self.canvas.create_polygon(
+                    xD + xO + 0*scale, yD + yO - 23*scale,
+                    xD + xO + 10*scale, yD + yO - 23*scale,
+                    xD + xO + 5*scale, yD + yO - 28*scale,
+                    fill="#404040",
+                    outline="#404040",
+                    tags=(id, outline_tag),  # Add outline_tag here
+                )
+                params["tags"].append(arrow_head_id)
+
+            current_dict_circuit[id] = params
+
+            # Bind events only to outlineable items
+            self.canvas.tag_bind(outline_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
+            self.canvas.tag_bind(outline_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
+            self.canvas.tag_bind(outline_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
+
+            # Debug: Print the params to ensure 'tag' and 'outline_tag' are set
+            print(f"Drawing PinIO with params: {params}")
 
         return xD, yD
 
@@ -2319,3 +2625,4 @@ class ComponentSketcher:
             id_type[key] = 0
         current_dict_circuit.clear()
         # TODO Khalid update the Circuit instance
+
