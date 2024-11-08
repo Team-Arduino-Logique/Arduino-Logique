@@ -805,7 +805,7 @@ class ComponentSketcher:
             # Remove highlight using outline_tag
             outline_tag = current_dict_circuit[pin_id]["outline_tag"]
             print(f"Removing highlight from outline_tag: {outline_tag}")
-            self.canvas.itemconfig(outline_tag, outline="")
+            self.canvas.itemconfig(outline_tag, outline="#404040")
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -2458,6 +2458,8 @@ class ComponentSketcher:
         id = None
         multipoints = []
         type = INPUT  # Default type
+        coords = []
+        color = "#479dff"  # Default color
         for key, value in kwargs.items():
             if key == "mode":
                 mode = value
@@ -2471,9 +2473,10 @@ class ComponentSketcher:
                 tags = value
             elif key == "type":
                 type = value
+            elif key == "color":
+                color = value
 
         if id and current_dict_circuit.get(id):
-            # If the PinIO already exists, move it instead of redrawing
             params = current_dict_circuit[id]
             old_x, old_y = params["XY"]
             params["coords"] = coords
@@ -2482,14 +2485,11 @@ class ComponentSketcher:
             dx = xO - old_x
             dy = yO - old_y
 
-            # Move all items associated with the PinIO using their tags
             self.canvas.move(id, dx, dy)
-
-            # Update stored position and coordinates
             params["XY"] = (xO, yO)
-            
+            params["color"] = color
+
         else:
-            # Create a new PinIO
             id = "_io_" + str(num_id)
             num_id += 1
             params = {}
@@ -2501,27 +2501,28 @@ class ComponentSketcher:
             params["XY"] = (xO, yO)
             params["controller_pin"] = "IO"
             params["type"] = type
+            params["color"] = color
 
-            # Define the main tag and the outlineable tag
+            # tags here
             pin_tag = f"pinIO_{id}"
             outline_tag = f"pinIO_outline_{id}"
-            params["outline_tag"] = outline_tag  # Store the outline_tag in params
-            params["tag"] = pin_tag  # Store the main tag in params
+            interactive_tag = f"pinIO_interactive_{id}"
+            params["outline_tag"] = outline_tag
+            params["tag"] = pin_tag
 
-
-            # Draw the vertical line first (no outline_tag)
+            # Draw the vertical line
             line_id = self.canvas.create_line(
                 xD + xO + 5*scale,
                 yD + yO - 3*scale,
                 xD + xO + 5*scale,
                 yD + yO + 2*scale,
-                fill="#479dff",
+                fill= color,
                 width=4 * thickness,
-                tags=(id, pin_tag),
+                tags=(id, pin_tag, interactive_tag),
             )
             params["tags"].append(line_id)
 
-            # Draw the circle at the bottom (supports outline)
+            # Draw the circle at the bottom
             oval_id = self.canvas.create_oval(
                 xD + xO + 2*scale,
                 yD + yO + 2*scale,
@@ -2530,30 +2531,28 @@ class ComponentSketcher:
                 fill="#dfdfdf",
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id,pin_tag, outline_tag),
+                tags=(id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(oval_id)
 
             # Draw the larger rhombus on top of the line (supports outline)
             polygon_id = self.canvas.create_polygon(
-                xD + xO + -10*scale, yD + yO - 18*scale,
+                xD + xO - 10*scale, yD + yO - 18*scale,
                 xD + xO + 5*scale, yD + yO - 33*scale,
                 xD + xO + 20*scale, yD + yO - 18*scale,
                 xD + xO + 5*scale, yD + yO - 3*scale,
-                fill="#479dff",
+                fill= color,
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, pin_tag, outline_tag),  # Add outline_tag here
+                tags=(id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(polygon_id)
 
             # Bring the rhombus to the front
             self.canvas.tag_raise(id)
 
-
             if type == INPUT:
                 # Arrow pointing down
-                # Draw the arrow line (no outline_tag)
                 arrow_line_id = self.canvas.create_line(
                     xD + xO + 5*scale,
                     yD + yO - 23*scale,
@@ -2561,53 +2560,48 @@ class ComponentSketcher:
                     yD + yO - 13*scale,
                     fill="#404040",
                     width=2 * thickness,
-                    tags=(id,),  # Remove outline_tag
+                    tags=(id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
-                # Draw the arrow head (supports outline)
                 arrow_head_id = self.canvas.create_polygon(
                     xD + xO + 0*scale, yD + yO - 13*scale,
                     xD + xO + 10*scale, yD + yO - 13*scale,
                     xD + xO + 5*scale, yD + yO - 8*scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, outline_tag),  # Add outline_tag here
+                    tags=(id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
             elif type == OUTPUT:
                 # Arrow pointing up
-                # Draw the arrow line (no outline_tag)
                 arrow_line_id = self.canvas.create_line(
                     xD + xO + 5*scale,
                     yD + yO - 23*scale,
                     xD + xO + 5*scale,
                     yD + yO - 13*scale,
-                    fill="#404040",
+                    fill="#000000",
                     width=2 * thickness,
-                    tags=(id,),  # Remove outline_tag
+                    tags=(id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
-                # Draw the arrow head (supports outline)
                 arrow_head_id = self.canvas.create_polygon(
                     xD + xO + 0*scale, yD + yO - 23*scale,
                     xD + xO + 10*scale, yD + yO - 23*scale,
                     xD + xO + 5*scale, yD + yO - 28*scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, outline_tag),  # Add outline_tag here
+                    tags=(id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
 
             current_dict_circuit[id] = params
 
-            # Bind events only to outlineable items
-            self.canvas.tag_bind(outline_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
-            self.canvas.tag_bind(outline_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
-            self.canvas.tag_bind(outline_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
 
-            # Debug: Print the params to ensure 'tag' and 'outline_tag' are set
             print(f"Drawing PinIO with params: {params}")
 
         return xD, yD
