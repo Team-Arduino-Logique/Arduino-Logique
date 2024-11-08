@@ -1,12 +1,17 @@
 # sidebar.py
 
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, font
 import os
+from typing import Tuple
+from component_sketch import ComponentSketcher
 from dataCDLT import matrix1260pts, id_origins, FREE, USED, current_dict_circuit
+from object_model.circuit_object_model import Chip, get_all_available_chips
+
 
 class Tooltip:
     """Simple tooltip implementation doesn't work now, I need to figure out why."""
+
     def __init__(self, widget, text):
         self.widget = widget
         self.text = text
@@ -24,13 +29,7 @@ class Tooltip:
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
         label = tk.Label(
-            tw, 
-            text=self.text, 
-            justify='left',
-            background="#ffffff", 
-            relief='solid', 
-            borderwidth=1,
-            font=("Arial", 10)
+            tw, text=self.text, justify="left", background="#ffffff", relief="solid", borderwidth=1, font=("Arial", 10)
         )
         label.pack(ipadx=1)
 
@@ -40,18 +39,24 @@ class Tooltip:
         if tw:
             tw.destroy()
 
+
 class Sidebar:
-    def __init__(self, parent, chip_images_path="chips", canvas=None, board=None, sketcher=None, component_data=None):
+    def __init__(
+        self, parent, chip_images_path="chips", canvas=None, board=None, sketcher=None, component_data=None
+    ) -> None:
         """
         Initializes the sidebar.
         """
         self.parent = parent
-        self.chip_images_path = chip_images_path
-        self.chip_images = []
-        self.load_chip_images()
+
+        images = self.load_chip_images(chip_images_path)
+        self.available_chips_and_imgs: dict[str, Tuple[Chip, tk.PhotoImage | None]] = {
+            name: (chip, images.get(chip.package_name)) for name, chip in get_all_available_chips().items()
+        }
+
         self.canvas = canvas
         self.board = board
-        self.sketcher = sketcher
+        self.sketcher: ComponentSketcher = sketcher
         self.component_data = component_data
         self.selected_chip_name = None
         self.chip_cursor_image = None
@@ -73,28 +78,32 @@ class Sidebar:
         self.create_chips_area()
         self.create_manage_button()
 
-    def load_chip_images(self):
+    def load_chip_images(self, img_path) -> dict[str, tk.PhotoImage]:
         """
         Loads chip images from the specified directory and scales them down.
         """
-        if not os.path.isdir(self.chip_images_path):
-            messagebox.showerror("Error", f"Chip images directory '{self.chip_images_path}' not found.")
-            return
+        images_dict: dict[str, tk.PhotoImage] = {}
 
-        supported_formats = ('.png', '.gif', '.ppm', '.pgm')
-        for filename in os.listdir(self.chip_images_path):
+        if not os.path.isdir(img_path):
+            messagebox.showerror("Error", f"Chip images directory '{img_path}' not found.")
+            return images_dict
+
+        supported_formats = (".png", ".gif", ".ppm", ".pgm")
+        for filename in os.listdir(img_path):
             if filename.lower().endswith(supported_formats):
-                image_path = os.path.join(self.chip_images_path, filename)
+                image_path = os.path.join(img_path, filename)
                 try:
                     img = tk.PhotoImage(file=image_path)
                     # Scaling down the image using subsample
                     # For example, if images are 150x150 and we want ~30x30, using subsample(5, 5)
                     scaled_img = img.subsample(5, 5)  # Further increased scaling factor
-                    self.chip_images.append((filename, scaled_img))
+                    img_name = os.path.splitext(filename)[0]
+                    images_dict[img_name] = scaled_img
                     print(f"Loaded and scaled chip image: {filename}")
                 except Exception as e:
                     print(f"Error loading image '{filename}': {e}")
                     messagebox.showwarning("Image Load Error", f"Failed to load '{filename}'.")
+        return images_dict
 
     def create_search_bar(self):
         """
@@ -106,22 +115,13 @@ class Sidebar:
 
         # Search label
         search_label = tk.Label(
-            search_frame,
-            text="Search Chips",
-            bg="#333333",
-            fg="#479dff",
-            font=("Arial", 10, "bold")
+            search_frame, text="Search Chips", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
         )
         search_label.pack(anchor="w")
 
         # Search entry
         self.search_entry = tk.Entry(
-            search_frame,
-            font=("Arial", 10),
-            bg="#444444",
-            fg="white",
-            insertbackground="#479dff",
-            relief="flat"
+            search_frame, font=("Arial", 10), bg="#444444", fg="white", insertbackground="#479dff", relief="flat"
         )
         self.search_entry.pack(fill="x", pady=(2, 0))
         self.search_entry.bind("<KeyRelease>", self.on_search)
@@ -137,11 +137,7 @@ class Sidebar:
 
         # Chips label
         chips_label = tk.Label(
-            chips_label_frame,
-            text="Available Chips",
-            bg="#333333",
-            fg="#479dff",
-            font=("Arial", 10, "bold")
+            chips_label_frame, text="Available Chips", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
         )
         chips_label.pack(anchor="w")
 
@@ -151,7 +147,7 @@ class Sidebar:
 
         # Adding a scrollbar to the canvas
         scrollbar = tk.Scrollbar(self.sidebar_frame, orient="vertical", command=self.canvas_chips.yview)
-        scrollbar.grid(row=2, column=0, sticky='nse')
+        scrollbar.grid(row=2, column=0, sticky="nse")
 
         self.canvas_chips.configure(yscrollcommand=scrollbar.set)
 
@@ -160,7 +156,9 @@ class Sidebar:
         self.canvas_chips.create_window((0, 0), window=self.chips_inner_frame, anchor="nw")
 
         # Binding the configure event to update the scrollregion
-        self.chips_inner_frame.bind("<Configure>", lambda event: self.canvas_chips.configure(scrollregion=self.canvas_chips.bbox("all")))
+        self.chips_inner_frame.bind(
+            "<Configure>", lambda event: self.canvas_chips.configure(scrollregion=self.canvas_chips.bbox("all"))
+        )
 
         # Defining grid properties
         self.columns = 2  # Number of columns in the grid
@@ -168,9 +166,9 @@ class Sidebar:
         self.grid_capacity = self.columns * self.visible_rows  # Total slots visible
 
         # Displaying chips
-        self.display_chips(self.chip_images)
+        self.display_chips(self.available_chips_and_imgs)
 
-    def display_chips(self, chips):
+    def display_chips(self, chips: dict[str, Tuple[Chip, tk.PhotoImage]]):
         """
         Displays chip buttons in the chips_inner_frame.
         """
@@ -182,21 +180,26 @@ class Sidebar:
         total_slots = self.grid_capacity
 
         # Limiting the number of chips displayed to grid_capacity for initial display
-        display_chips = chips[:total_slots]
-
+        # display_chips = chips[:total_slots]
+        display_chips = chips.items()
+        firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=12)
         # Displaying existing chips
-        for index, (chip_name, chip_image) in enumerate(display_chips):
+        for index, (chip_name, (_, chip_image)) in enumerate(display_chips):
             row = index // self.columns
             col = index % self.columns
             btn = tk.Button(
                 self.chips_inner_frame,
                 image=chip_image,
+                text=chip_name,
+                compound="top",
+                font=firaCodeFont,
+                fg="white",  # Set text color to white
                 bg="#333333",
                 activebackground="#479dff",
                 relief="flat",
                 command=lambda name=chip_name: self.select_chip(name),
-                width=100,   # Fixed width to match image size
-                height=60   # Fixed height to match image size
+                width=100,  # Fixed width to match image size
+                height=60,  # Fixed height to match image size
             )
             btn.grid(row=row, column=col, padx=1, pady=1)
             Tooltip(btn, chip_name)  # Adding tooltip with chip name
@@ -205,20 +208,7 @@ class Sidebar:
             btn.bind("<Enter>", lambda e, b=btn: b.configure(bg="#479dff"))
             btn.bind("<Leave>", lambda e, b=btn: b.configure(bg="#333333"))
 
-        # Filling remaining slots with empty frames to maintain grid layout
-        remaining_slots = total_slots - len(display_chips)
-        for i in range(remaining_slots):
-            row = (len(display_chips) + i) // self.columns
-            col = (len(display_chips) + i) % self.columns
-            empty_frame = tk.Frame(
-                self.chips_inner_frame,
-                width=100,  # Fixed size to match chip buttons
-                height=60,
-                bg="#555555",
-                relief="flat"
-            )
-            empty_frame.grid_propagate(False)  # Preventing frame from resizing
-            empty_frame.grid(row=row, column=col, padx=1, pady=1)
+
 
     def create_manage_button(self):
         """
@@ -234,7 +224,7 @@ class Sidebar:
             font=("Arial", 9, "bold"),
             relief="flat",
             borderwidth=0,
-            command=self.manage_components
+            command=self.manage_components,
         )
         manage_button.grid(row=3, column=0, padx=10, pady=5, sticky="we")
 
@@ -254,13 +244,7 @@ class Sidebar:
         Initiates the chip placement process by changing the cursor to the chip image.
         """
         # Get the chip image
-        for name, img in self.chip_images:
-            if name == chip_name:
-                self.chip_cursor_image = img
-                break
-        else:
-            self.chip_cursor_image = None
-            return
+        self.chip_cursor_image = self.available_chips_and_imgs.get(chip_name)[1]
 
         # Keep a reference to the image to prevent garbage collection
         self.canvas.chip_cursor_image = self.chip_cursor_image
@@ -281,7 +265,7 @@ class Sidebar:
         """
         if self.selected_chip_name:
             # Remove the cursor-following image if it exists
-            if hasattr(self.canvas, 'chip_cursor_id'):
+            if hasattr(self.canvas, "chip_cursor_id"):
                 self.canvas.delete(self.canvas.chip_cursor_id)
                 del self.canvas.chip_cursor_id
 
@@ -307,7 +291,7 @@ class Sidebar:
         x, y = event.x, event.y
 
         # Create the chip cursor image if it doesn't exist
-        if not hasattr(self.canvas, 'chip_cursor_id'):
+        if not hasattr(self.canvas, "chip_cursor_id"):
             self.canvas.chip_cursor_id = self.canvas.create_image(x, y, image=self.chip_cursor_image, anchor="nw")
         else:
             # Move the existing chip cursor image
@@ -327,7 +311,7 @@ class Sidebar:
         self.place_chip_at(x, y, self.selected_chip_name)
 
         # Remove the cursor-following image
-        if hasattr(self.canvas, 'chip_cursor_id'):
+        if hasattr(self.canvas, "chip_cursor_id"):
             self.canvas.delete(self.canvas.chip_cursor_id)
             del self.canvas.chip_cursor_id
 
@@ -370,24 +354,26 @@ class Sidebar:
         #     line=line
         # )
 
-        
+        available_chips = get_all_available_chips()  # FIXME valeur devrait être chargée au démarrage
 
-        # Retrieve chip parameters from component data
-        chip_model = None
-        if chip_name == '74HC00.png':
-            chip_model = self.component_data.chip7400
-        elif chip_name == '74HC02.png':
-            chip_model = self.component_data.chip7402
-        elif chip_name == '74HC04.png':
-            chip_model = self.component_data.chip7404
-        elif chip_name == '74HC08.png':
-            chip_model = self.component_data.chip7408
-        elif chip_name == '74HC32.png':
-            chip_model = self.component_data.chip7432
-        else:
-            # Default chip or show error
+        try:
+            chip_dict = available_chips.get(chip_name).to_generic_dict()
+        except AttributeError as e:
+            print(f"Error: {e}")
             messagebox.showerror("Error", f"Unknown chip: {chip_name}")
             return
+
+        chip_dict["internalFunc"] = self.sketcher.internalFunc
+        chip_dict["open"] = 0
+        chip_dict["logicFunction"] = self.sketcher.drawSymb(chip_dict["logicFunctionName"])
+
+        chip_model = [
+            (
+                self.sketcher.drawChip,
+                1,
+                chip_dict,
+            )
+        ]
 
         if chip_model:
             # Draw the chip at the calculated exact position
@@ -395,14 +381,13 @@ class Sidebar:
             pin_count = chip_model[0][2]["pinCount"]
             half_pin_count = pin_count // 2
 
-
             max_column = column + half_pin_count - 1
             if max_column > 63:
                 # Not enough space, prevent placement and look for the nearest snap point on the left
                 print("Not enough space to place the chip here.")
                 self.cancel_chip_placement()
                 return
-            
+
             # Check if new holes are free
             holes_available = True
             occupied_holes = []
@@ -425,15 +410,14 @@ class Sidebar:
                 print("Holes are occupied. Cannot place the chip here.")
                 self.cancel_chip_placement()
                 return
-            
+
             else:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
                     matrix1260pts[hole_id]["etat"] = USED
-                model_chip = [(chip_model, 1, {"XY": (nearest_x,nearest_y), "pinUL_XY":(pin_x, pin_y)})]
+                model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
                 self.sketcher.circuit(nearest_x, nearest_y, scale=scale, model=model_chip)
                 print(f"Chip {chip_name} placed at ({column}, {line}).")
-
 
                 # Update the current_dict_circuit with the new chip
                 chip_keys = [key for key in current_dict_circuit.keys() if key.startswith("_chip")]
@@ -443,7 +427,7 @@ class Sidebar:
                     print("Last chip parameter:", added_chip_params)
                     added_chip_params["occupied_holes"] = occupied_holes
                 else:
-                    #delete the chip
+                    # delete the chip
                     print("need to delete the added chip")
 
     def manage_components(self):
@@ -458,10 +442,13 @@ class Sidebar:
         """
         query = self.search_entry.get().lower()
         if not query:
-            filtered_chips = self.chip_images
+            filtered_chips = self.available_chips_and_imgs
         else:
-            filtered_chips = [
-                (name, img) for name, img in self.chip_images
+            filtered_chips = {
+                name: chip_data
+                for name, chip_data in self.available_chips_and_imgs.items()
                 if query in name.lower()
-            ]
+                or query in chip_data[0].package_name.lower()
+                or any(query in func.__class__.__name__.lower() for func in chip_data[0].functions)
+            }
         self.display_chips(filtered_chips)

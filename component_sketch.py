@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import font
 import math
+from typing import Callable
 
 
 from dataCDLT import (
@@ -60,7 +61,6 @@ class ComponentSketcher:
             "y": 0
         }
         
-
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -1411,6 +1411,18 @@ class ComponentSketcher:
             tags=tag,
         )
 
+    def drawSymb(self, logic_fn_name: str) -> Callable | None:
+        logic_func_sketchers = {
+            "NandGate": self.symbNAND,
+            "NorGate": self.symbNOR,
+            "AndGate": self.symbAND,
+            "OrGate": self.symbOR,
+            "NotGate": self.symbNOT,
+        }
+        if logic_fn_name in logic_func_sketchers:
+            return logic_func_sketchers[logic_fn_name]
+        return None
+
 
     def drawInv(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
         if width != -1:
@@ -1944,7 +1956,7 @@ class ComponentSketcher:
         space = 9 * scale
         thickness = 1 * scale
 
-        dim = DIP14_PARAMS
+        dim = DIP14_PARAMS.copy()
         open = NO
         internalFunc = None
         cursorOver = ""
@@ -1979,6 +1991,8 @@ class ComponentSketcher:
                 params = current_dict_circuit[id]
                 tags = params["tags"]
         else:
+            if type not in id_type:
+                id_type[type] = 0
             id_type[type] += 1
             id = "_chip_" + str(num_id)
             current_dict_circuit["last_id"] = id
@@ -2059,7 +2073,7 @@ class ComponentSketcher:
                 outline="#000000",
                 tags=tagBase,
             )
-            if dim["internalFunc"] is not None:
+            if "internalFunc" in dim and dim["internalFunc"] is not None:
                 dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
             self.rounded_rect(
@@ -2126,9 +2140,12 @@ class ComponentSketcher:
                 params["tags"].append(tagCapot)
             current_dict_circuit[id] = params
             self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
-            self.canvas.tag_bind(
-                tagSouris, "<Button-2>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
-            )
+            # Only bind a tag to the menu if it has an internal function
+            # FIXME (maybe?)
+            if "internalFunc" in dim and dim["internalFunc"] is not None:
+                self.canvas.tag_bind(
+                    tagSouris, "<Button-3>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
+                )
              # Bind left-click to initiate drag
             self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
 
