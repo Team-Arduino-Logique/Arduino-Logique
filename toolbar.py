@@ -57,8 +57,16 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
+        icons_folder = None
+        for item in os.listdir(os.path.dirname(__file__)):
+            if os.path.isdir(item) and item.lower() == "icons":
+                icons_folder = item
+                break
+        if icons_folder is None:
+            messagebox.showerror("Folder Error", "Icons folder not found.")
+            return
         for name in icon_names:
-            path = os.path.join("icons", f"{name}.png")
+            path = os.path.join(icons_folder, f"{name}.png")
             try:
                 image = tk.PhotoImage(file=path)
                 # Calculate the scaling factor based on original image size and desired icon_size
@@ -238,7 +246,7 @@ class Toolbar:
                 coords = [(coords[0][0], coords[0][1], col, line)]
                 
                 #XY =[(XY[0], XY[1], x, y)]
-                model_wire = [(self.sketcher.drawWire, 1, {"id":self.wire_id, "color":color, "coords":coords,
+                model_wire = [(self.sketcher.drawWire, 1, {"id":self.wire_id, "color":color, "coord":coords,
                                                 "matrix": matrix1260pts})]
                 self.sketcher.circuit(x_min , y_min , model = model_wire)         
         ############ FIN AJOUT KH 31/10/2024 #########################
@@ -276,7 +284,7 @@ class Toolbar:
             if self.wire_start_point is None:
                 color =self.hex_to_rgb(self.selected_color )
                 coords = [(col, line, col, line,)]
-                model_wire = [(self.sketcher.drawWire, 1, {"color":color, "coords": coords,
+                model_wire = [(self.sketcher.drawWire, 1, {"color":color, "coord": coords,
                                                "matrix": matrix1260pts})]
                 self.sketcher.circuit(xO , yO , model = model_wire)    
                 self.wire_id = current_dict_circuit["last_id" ]        
@@ -310,7 +318,7 @@ class Toolbar:
                 #             "XY": [
                 #                 (self.wire_start_point[0], self.wire_start_point[1], adjusted_x, adjusted_y)
                 #             ],
-                #             "coords": [
+                #             "coord": [
                 #                 (self.wire_start_col_line[0], self.wire_start_col_line[1], col, line)
                 #             ],
                 #             "matrix": matrix1260pts

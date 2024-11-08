@@ -165,7 +165,7 @@ class ComponentSketcher:
             else:
                 coords = [(coords[0][0], coords[0][1], cn, ln)]
             
-            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords,"multipoints":multipoints,
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coords,"multipoints":multipoints,
                                                "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
@@ -249,7 +249,7 @@ class ComponentSketcher:
             (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
             coords = [(coords[0][0], coords[0][1], col, line)]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coords, "XY":XY, "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
         #dx = nearest_x - x
@@ -419,7 +419,7 @@ class ComponentSketcher:
         color = current_dict_circuit[wire_id]["color"] 
         multipoints[self.nearest_multipoint] = x 
         multipoints[self.nearest_multipoint + 1] = y
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coords":coords,"color":color, "XY":XY,
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coord":coords,"color":color, "XY":XY,
                                                "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)        
 
@@ -1992,6 +1992,7 @@ class ComponentSketcher:
             params["id"] = id
             params["XY"] = (xD, yD)
             params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)  
+            params["chipWidth"] = dim["chipWidth"]
             params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
@@ -2204,7 +2205,7 @@ class ComponentSketcher:
                 color = value
             if key == "mode":
                 mode = value
-            if key == "coords":
+            if key == "coord":
                 coords = value
             if key == "matrix":
                 matrix = value
@@ -2472,6 +2473,7 @@ class ComponentSketcher:
             elif key == "type":
                 type = value
 
+
         if id and current_dict_circuit.get(id):
             # If the PinIO already exists, move it instead of redrawing
             params = current_dict_circuit[id]
@@ -2611,3 +2613,16 @@ class ComponentSketcher:
             print(f"Drawing PinIO with params: {params}")
 
         return xD, yD
+
+    def clear_board(self):
+        """Clear the board of all drawn components."""
+        for item in current_dict_circuit.values():
+            if "tags" not in item:
+                continue
+            for tag in item["tags"]:
+                self.canvas.delete(tag)
+        for key in id_type:
+            id_type[key] = 0
+        current_dict_circuit.clear()
+        # TODO Khalid update the Circuit instance
+
