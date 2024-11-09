@@ -1,6 +1,9 @@
 {
     "name": "74HC74",
+    "description": "Dual D-type flip-flop with set and reset; positive-edge trigger",
     "package": "DIP14",
+    "vcc_pin": 14,
+    "gnd_pin": 7,
     "functions": [
         {
             "func_type": "D_FLIP_FLOP",

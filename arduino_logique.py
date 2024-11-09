@@ -11,14 +11,12 @@ from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from dataComponent import ComponentData
 from dataCDLT import current_dict_circuit, id_origins
-import json
-
-
 from menus import Menus
-from sidebar import Sidebar 
+from sidebar import Sidebar
 from toolbar import Toolbar
 
-def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: int, p_board_y: int, p_model: list) -> None:
+
+def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard) -> None:
     """
     Adjusts the zoom level of the given canvas by scaling the board and updating the scale factor.
 
@@ -26,9 +24,6 @@ def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: in
     - p_canvas (tk.Canvas): The canvas on which the board is drawn.
     - p_scale (float): The scale factor to apply to the board.
     - p_board (Breadboard): The existing Breadboard instance.
-    - p_board_x (int): The x-coordinate of the board's position.
-    - p_board_y (int): The y-coordinate of the board's position.
-    - p_model (list): The model data for the circuit.
 
     Returns:
     - None
@@ -46,7 +41,12 @@ def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard, p_board_x: in
     # Optionally, you may need to adjust the canvas scroll region or other properties
     p_canvas.configure(scrollregion=p_canvas.bbox("all"))
 
+
 def main():
+    """
+    Main function for the ArduinoLogique program. This function initializes the main window,
+    creates the canvas, toolbar, sidebar, and menus, and draws the initial circuit diagram.
+    """
     # Creating main window
     win = tk.Tk()
     win.title("Laboratoire virtuel de circuit logique - GIF-1002")
@@ -61,12 +61,9 @@ def main():
     win.grid_columnconfigure(0, weight=0)  # Sidebar
     win.grid_columnconfigure(1, weight=1)  # Canvas
 
-
-
     # Creating the canvas in row=2, column=1
     canvas = tk.Canvas(win, bg="#626262", highlightthickness=0, bd=0)
     canvas.grid(row=2, column=1, sticky="nsew")
-    
 
     # Initializing the breadboard and components
     board = Breadboard(canvas)
@@ -94,13 +91,11 @@ def main():
     id_origins["xyOrigin"] = (50, 10)
 
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
-    sidebar = Sidebar(
-        parent=win, 
-        chip_images_path="Assets/chips", 
-        canvas=canvas, 
-        board=board, 
-        sketcher=sketcher, 
-        component_data=component_data
+    _ = Sidebar(
+        parent=win,
+        chip_images_path="Assets/chips",
+        canvas=canvas,
+        sketcher=sketcher,
     )
 
     # Creating the Menus instance with proper references
@@ -111,7 +106,7 @@ def main():
         component_data=component_data,
         model=model,
         current_dict_circuit=current_dict_circuit,
-        zoom_function=zoom
+        zoom_function=zoom,
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
@@ -130,7 +125,7 @@ def main():
         from_=10,
         to=30,
         orient="horizontal",
-        command=lambda scale: zoom(canvas, float(scale), board, 50, 10, model),
+        command=lambda scale: zoom(canvas, float(scale), board),
         bg="#333333",
         fg="white",
         activebackground="#444444",
@@ -138,7 +133,7 @@ def main():
         highlightbackground="#333333",
         sliderrelief="flat",
         bd=0,
-        highlightthickness=0    
+        highlightthickness=0,
     )
     h_slider.set(10)  # Setting initial slider value
 
@@ -151,6 +146,7 @@ def main():
     # board.draw_matrix_points(scale=1) # for debugging purposes
 
     win.mainloop()
+
 
 if __name__ == "__main__":
     main()

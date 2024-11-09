@@ -1,6 +1,9 @@
 {
     "name": "74HC04",
+    "description": "Hex Inverter",
     "package": "DIP14",
+    "vcc_pin": 14,
+    "gnd_pin": 7,
     "functions": [
         {
             "func_type": "NOT",

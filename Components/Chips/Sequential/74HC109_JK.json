@@ -1,6 +1,9 @@
 {
     "name": "74HC109",
+    "description": "Dual JK flip-flop with set and reset; positive-edge trigger",
     "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
     "functions": [
         {
             "func_type": "JK_FLIP_FLOP",
