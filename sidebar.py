@@ -1,9 +1,12 @@
 # sidebar.py
 
+from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, font
 import os
-from typing import Tuple
+from typing import Callable, Tuple
+import subprocess
+import sys
 from component_sketch import ComponentSketcher
 from dataCDLT import matrix1260pts, id_origins, FREE, USED, current_dict_circuit
 from object_model.circuit_object_model import Chip, get_all_available_chips
@@ -54,14 +57,15 @@ class Sidebar:
             (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
         ]
         # Sort the chips based on the number after 'HC' in their chip_type
-        self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split('HC')[-1]))
+        self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split("HC")[-1]))
 
-        self.canvas = canvas
+        self.canvas: tk.Canvas = canvas
         self.board = board
         self.sketcher: ComponentSketcher = sketcher
         self.component_data = component_data
         self.selected_chip_name = None
         self.chip_cursor_image = None
+        self.saved_bindings: dict[str, Callable] = {}
 
         # Creating the sidebar frame
         self.sidebar_frame = tk.Frame(self.parent, bg="#333333", width=250, bd=0, highlightthickness=0)
@@ -258,9 +262,15 @@ class Sidebar:
         self.canvas.config(cursor="none")
 
         # Bind events to the canvas
-        self.canvas.bind("<Motion>", self.canvas_on_mouse_move)
-        self.canvas.bind("<Button-1>", self.canvas_on_click)
-        self.canvas.bind("<Button-3>", self.cancel_chip_placement)  # Bind right-click to cancel
+        # Save the current bindings
+        self.saved_bindings = {
+            "<Motion>": self.canvas.bind("<Motion>"),
+            "<Button-1>": self.canvas.bind("<Button-1>"),
+            "<Button-3>": self.canvas.bind("<Button-3>"),
+        }
+        self.canvas.bind("<Motion>", self.canvas_on_mouse_move, add="+")
+        self.canvas.bind("<Button-1>", self.canvas_on_click, add="+")
+        self.canvas.bind("<Button-3>", self.cancel_chip_placement, add="+")  # Bind right-click to cancel
 
         print(f"Started placement for chip: {chip_name}")
 
@@ -281,6 +291,9 @@ class Sidebar:
             self.canvas.unbind("<Motion>")
             self.canvas.unbind("<Button-1>")
             self.canvas.unbind("<Button-3>")  # Unbind right-click if bound
+            # Restore the saved bindings
+            for evt, handler in self.saved_bindings.items():
+                self.canvas.bind(evt, handler)
 
             # Reset the selected chip
             self.selected_chip_name = None
@@ -327,7 +340,10 @@ class Sidebar:
         self.canvas.unbind("<Motion>")
         self.canvas.unbind("<Button-1>")
         self.canvas.unbind("<Button-3>")  # Unbind right-click
-
+        # Restore the saved bindings
+        for event, handler in self.saved_bindings.items():
+            self.canvas.bind(event, handler)
+        
         # Reset the selected chip
         print(f"Chip {self.selected_chip_name} placed.")
         self.selected_chip_name = None
@@ -420,7 +436,7 @@ class Sidebar:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
                     matrix1260pts[hole_id]["state"] = USED
-                model_chip = [(chip_model, 1, {"XY": (nearest_x,nearest_y), "pinUL_XY":(pin_x, pin_y)})]
+                model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
                 self.sketcher.circuit(nearest_x, nearest_y, scale=scale, model=model_chip)
                 print(f"Chip {chip_name} placed at ({column}, {line}).")
 
@@ -439,7 +455,13 @@ class Sidebar:
         """
         Handler for the 'Manage Components' button.
         """
-        messagebox.showinfo("Manage Components", "Manage Components functionality not implemented yet.")
+        path = Path("Components").resolve()
+        if os.name == "nt":  # For Windows
+            os.startfile(path)
+        elif os.name == "posix":  # For macOS and Linux
+            subprocess.Popen(["open", path] if sys.platform == "darwin" else ["xdg-open", path])
+        else:
+            messagebox.showerror("Error", "Unsupported operating system.")
 
     def on_search(self, event):
         """
@@ -450,7 +472,8 @@ class Sidebar:
             filtered_chips = self.available_chips_and_imgs
         else:
             filtered_chips = [
-                chip_data for chip_data in self.available_chips_and_imgs
+                chip_data
+                for chip_data in self.available_chips_and_imgs
                 if query in chip_data[0].chip_type.lower()
                 or query in chip_data[0].package_name.lower()
                 or any(query in func.__class__.__name__.lower() for func in chip_data[0].functions)

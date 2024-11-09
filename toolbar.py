@@ -1,10 +1,12 @@
 # toolbar.py
 
+from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
 from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE, USED, matrix1260pts
 from component_sketch import ComponentSketcher
+
 
 class Toolbar:
     def __init__(self, parent, canvas, board, sketcher):
@@ -25,9 +27,9 @@ class Toolbar:
         self.cursor_indicator_id = None
         self.wire_id = None  # To track the current wire being drawn
         self.create_topbar()
-        self.canvas.bind("<Motion>", self.canvas_follow_mouse, add='+')
-        self.canvas.bind("<Button-1>", self.canvas_click, add='+')
-        self.canvas.bind("<Button-3>", self.cancel_placement, add='+')
+        self.canvas.bind("<Motion>", self.canvas_follow_mouse, add="+")
+        self.canvas.bind("<Button-1>", self.canvas_click, add="+")
+        self.canvas.bind("<Button-3>", self.cancel_placement, add="+")
 
     def create_topbar(self):
         """
@@ -61,14 +63,8 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
-        icons_folder = None
-        for item in os.listdir(os.path.dirname(__file__)):
-            if os.path.isdir(item) and item.lower() == "icons":
-                icons_folder = item
-                break
-        if icons_folder is None:
-            messagebox.showerror("Folder Error", "Icons folder not found.")
-            return
+        icons_folder = Path("assets/icons").resolve()
+
         for name in icon_names:
             path = os.path.join(icons_folder, f"{name}.png")
             try:
@@ -81,7 +77,9 @@ class Toolbar:
                     image = image.subsample(scale_factor, scale_factor)
                 self.images[name] = image
             except tk.TclError:
-                messagebox.showerror("Image Load Error", f"Failed to load {path}. Ensure the file exists and is a valid PNG image.")
+                messagebox.showerror(
+                    "Image Load Error", f"Failed to load {path}. Ensure the file exists and is a valid PNG image."
+                )
                 self.images[name] = None  # Fallback if image fails to load
 
     def create_button(self, action, parent_frame):
@@ -102,7 +100,7 @@ class Toolbar:
                 relief="flat",
                 command=lambda: self.button_action(action),
                 padx=2,
-                pady=2
+                pady=2,
             )
             btn.image = image  # Keep a reference to prevent garbage collection
         else:
@@ -118,7 +116,7 @@ class Toolbar:
                 relief="flat",
                 command=lambda: self.button_action(action),
                 padx=2,
-                pady=2
+                pady=2,
             )
         btn.pack(side=tk.LEFT, padx=10, pady=2)  # Minimal spacing between buttons
         self.buttons[action] = btn  # Store button reference
@@ -129,13 +127,7 @@ class Toolbar:
         """
         square_size = self.icon_size
         self.color_button = tk.Button(
-            parent_frame,
-            bg=self.selected_color,
-            width=2,
-            height=1,
-            relief="raised",
-            bd=1,
-            command=self.choose_color
+            parent_frame, bg=self.selected_color, width=2, height=1, relief="raised", bd=1, command=self.choose_color
         )
         self.color_button.pack(side=tk.LEFT, padx=2, pady=2)
 
@@ -215,7 +207,7 @@ class Toolbar:
         Activates wire placement mode.
         """
         self.wire_placement_active = True
-        self.canvas.config(cursor='none')
+        self.canvas.config(cursor="none")
         self.wire_start_point = None
         self.wire_start_col_line = None
         if self.cursor_indicator_id is None:
@@ -226,11 +218,11 @@ class Toolbar:
         Deactivates wire placement mode.
         """
         self.wire_placement_active = False
-        self.canvas.config(cursor='')
+        self.canvas.config(cursor="")
         self.remove_cursor_indicator()
         self.wire_start_point = None
         self.wire_start_col_line = None
-        self.canvas.delete('wire_temp_circle')
+        self.canvas.delete("wire_temp_circle")
 
     def activate_pinIO_placement_mode(self, pin_type):
         """
@@ -238,7 +230,7 @@ class Toolbar:
         """
         self.pinIO_placement_active = True
         self.pinIO_type = pin_type  # Store the type for use during placement
-        self.canvas.config(cursor='none')
+        self.canvas.config(cursor="none")
         if self.cursor_indicator_id is None:
             self.create_cursor_indicator(pin_type)
 
@@ -248,7 +240,7 @@ class Toolbar:
         """
         self.pinIO_placement_active = False
         self.pinIO_type = None
-        self.canvas.config(cursor='')
+        self.canvas.config(cursor="")
         self.remove_cursor_indicator()
 
     def create_cursor_indicator(self, pin_type=None):
@@ -281,20 +273,23 @@ class Toolbar:
             nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix1260pts)
             x, y = nearest_point[0], nearest_point[1]
             if self.wire_placement_active and self.wire_start_point and matrix1260pts[f"{col},{line}"]["state"] == FREE:
-                
 
                 coord = current_dict_circuit[self.wire_id]["coord"]
                 matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
                 color = self.hex_to_rgb(self.selected_color)
                 coord = [(coord[0][0], coord[0][1], col, line)]
-                model_wire = [(self.sketcher.drawWire, 1, {"id": self.wire_id, "color": color, "coord": coord,
-                                                           "matrix": matrix1260pts})]
+                model_wire = [
+                    (
+                        self.sketcher.drawWire,
+                        1,
+                        {"id": self.wire_id, "color": color, "coord": coord, "matrix": matrix1260pts},
+                    )
+                ]
                 xO, yO = id_origins.get("xyOrigin", (0, 0))
                 self.sketcher.circuit(xO, yO, model=model_wire)
-                
+
         # Move the cursor indicator
         self.canvas.coords(self.cursor_indicator_id, x + x_min - 5, y + y_min - 5, x + x_min + 5, y + y_min + 5)
-
 
     def canvas_click(self, event):
         """
@@ -309,17 +304,18 @@ class Toolbar:
         nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix=matrix1260pts)
         xO, yO = id_origins.get("xyOrigin", (0, 0))
 
-        if self.wire_placement_active :
+        if self.wire_placement_active:
             # Wire placement logic
             adjusted_x, adjusted_y = nearest_point[0], nearest_point[1]
             if self.wire_start_point is None:
 
-                if  matrix1260pts[f"{col},{line}"]["state"] == FREE:
-                    
+                if matrix1260pts[f"{col},{line}"]["state"] == FREE:
+
                     color = self.hex_to_rgb(self.selected_color)
                     coord = [(col, line, col, line)]
-                    model_wire = [(self.sketcher.drawWire, 1, {"color": color, "coord": coord,
-                                                            "matrix": matrix1260pts})]
+                    model_wire = [
+                        (self.sketcher.drawWire, 1, {"color": color, "coord": coord, "matrix": matrix1260pts})
+                    ]
                     self.sketcher.circuit(xO, yO, model=model_wire)
                     self.wire_id = current_dict_circuit["last_id"]
                     self.wire_start_point = (adjusted_x, adjusted_y)
@@ -330,14 +326,19 @@ class Toolbar:
                 self.wire_start_point = None
                 self.wire_start_col_line = None
                 print("Wire placement completed.")
-                
+
         elif self.pinIO_placement_active and matrix1260pts[f"{col},{line}"]["state"] == FREE:
 
             # PinIO placement logic
             color = self.selected_color
             type_const = INPUT if self.pinIO_type == "Input" else OUTPUT
-            model_pinIO = [(self.sketcher.drawPinIO, 1, {"color": color, "type": type_const, "coord": [(col, line)],
-                                                         "matrix": matrix1260pts})]
+            model_pinIO = [
+                (
+                    self.sketcher.drawPinIO,
+                    1,
+                    {"color": color, "type": type_const, "coord": [(col, line)], "matrix": matrix1260pts},
+                )
+            ]
             self.sketcher.circuit(xO, yO, model=model_pinIO)
             # Optionally deactivate after placement
             # self.cancel_pinIO_placement()
@@ -381,5 +382,5 @@ class Toolbar:
         """
         Converts a hex color string to an RGB tuple.
         """
-        hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        hex_color = hex_color.lstrip("#")
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
