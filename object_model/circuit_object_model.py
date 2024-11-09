@@ -231,7 +231,13 @@ class Chip:
                 raise ValueError(f"Unknown function type: {func_type}")
 
         if package_dict is not None and isinstance(json_data["package"], str):
-            return Chip(json_data["name"], json_data["name"], json_data["description"], package_dict[json_data["package"]], functions)
+            return Chip(
+                json_data["name"],
+                json_data["name"],
+                json_data["description"],
+                package_dict[json_data["package"]],
+                functions,
+            )
 
         raise ValueError("The package does not exist in the Components/Packages directory.")
 

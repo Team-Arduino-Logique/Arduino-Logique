@@ -365,8 +365,8 @@ class Sidebar:
         self.canvas.unbind("<Button-1>")
         self.canvas.unbind("<Button-3>")  # Unbind right-click
         # Restore the saved bindings
-        for event, handler in self.saved_bindings.items():
-            self.canvas.bind(event, handler)
+        for evt, handler in self.saved_bindings.items():
+            self.canvas.bind(evt, handler)
 
         # Reset the selected chip
         print(f"Chip {self.selected_chip_name} placed.")
@@ -386,7 +386,7 @@ class Sidebar:
             return
 
         # Adjust for scaling and origin
-        scale = self.sketcher.scale_factor
+        # scale = self.sketcher.scale_factor
         # xO, yO = id_origins["xyOrigin"]
 
         # # Use goXY to get the exact position
@@ -420,60 +420,58 @@ class Sidebar:
             )
         ]
 
-        if chip_model:
-            # Draw the chip at the calculated exact position
-            pin_x, pin_y = self.sketcher.xy_chip2pin(nearest_x, nearest_y)
-            pin_count = chip_model[0][2]["pinCount"]
-            half_pin_count = pin_count // 2
+        # Draw the chip at the calculated exact position
+        pin_x, pin_y = self.sketcher.xy_chip2pin(nearest_x, nearest_y)
+        pin_count = chip_model[0][2]["pinCount"]
+        half_pin_count = pin_count // 2
 
-            max_column = column + half_pin_count - 1
-            if max_column > 63:
-                # Not enough space, prevent placement and look for the nearest snap point on the left
-                print("Not enough space to place the chip here.")
-                self.cancel_chip_placement()
-                return
+        max_column = column + half_pin_count - 1
+        if max_column > 63:
+            # Not enough space, prevent placement and look for the nearest snap point on the left
+            print("Not enough space to place the chip here.")
+            self.cancel_chip_placement()
+            return
 
-            # Check if new holes are free
-            holes_available = True
-            occupied_holes = []
-            for i in range(half_pin_count):
-                # Top row (line 7 or 21)
-                hole_id_top = f"{column + i},{line}"
-                # Bottom row (line 6 or 20)
-                hole_id_bottom = f"{column + i},{line + 1}"
+        # Check if new holes are free
+        holes_available = True
+        occupied_holes = []
+        for i in range(half_pin_count):
+            # Top row (line 7 or 21)
+            hole_id_top = f"{column + i},{line}"
+            # Bottom row (line 6 or 20)
+            hole_id_bottom = f"{column + i},{line + 1}"
 
-                hole_top = matrix1260pts.get(hole_id_top)
-                hole_bottom = matrix1260pts.get(hole_id_bottom)
+            hole_top = matrix1260pts.get(hole_id_top)
+            hole_bottom = matrix1260pts.get(hole_id_bottom)
 
-                if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
-                    holes_available = False
-                    break
-                else:
-                    occupied_holes.extend([hole_id_top, hole_id_bottom])
+            if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
+                holes_available = False
+                break
 
-            if not holes_available:
-                print("Holes are occupied. Cannot place the chip here.")
-                self.cancel_chip_placement()
-                return
+            occupied_holes.extend([hole_id_top, hole_id_bottom])
 
-            else:
-                # Mark new holes as used
-                for hole_id in occupied_holes:
-                    matrix1260pts[hole_id]["state"] = USED
-                model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
-                self.sketcher.circuit(nearest_x, nearest_y, scale=scale, model=model_chip)
-                print(f"Chip {chip_name} placed at ({column}, {line}).")
+        if not holes_available:
+            print("Holes are occupied. Cannot place the chip here.")
+            self.cancel_chip_placement()
+            return
 
-                # Update the current_dict_circuit with the new chip
-                chip_keys = [key for key in current_dict_circuit if key.startswith("_chip")]
-                if chip_keys:
-                    last_chip_key = chip_keys[-1]  # Get the last key in sorted order
-                    added_chip_params = current_dict_circuit[last_chip_key]
-                    print("Last chip parameter:", added_chip_params)
-                    added_chip_params["occupied_holes"] = occupied_holes
-                else:
-                    # delete the chip
-                    print("need to delete the added chip")
+        # Mark new holes as used
+        for hole_id in occupied_holes:
+            matrix1260pts[hole_id]["state"] = USED
+        model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
+        self.sketcher.circuit(nearest_x, nearest_y, scale=self.sketcher.scale_factor, model=model_chip)
+        print(f"Chip {chip_name} placed at ({column}, {line}).")
+
+        # Update the current_dict_circuit with the new chip
+        chip_keys = [key for key in current_dict_circuit if key.startswith("_chip")]
+        if chip_keys:
+            last_chip_key = chip_keys[-1]  # Get the last key in sorted order
+            added_chip_params = current_dict_circuit[last_chip_key]
+            print("Last chip parameter:", added_chip_params)
+            added_chip_params["occupied_holes"] = occupied_holes
+        else:
+            # delete the chip
+            print("need to delete the added chip")
 
     def manage_components(self):
         """
