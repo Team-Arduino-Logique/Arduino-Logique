@@ -156,7 +156,7 @@ class Breadboard:
                     (1.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6,  line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "lien": None,
                 
             }
@@ -167,7 +167,7 @@ class Breadboard:
                     (2.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "lien": None,
             }
             matrix[id_bot_minus] = {
@@ -177,7 +177,7 @@ class Breadboard:
                     (19.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "lien": None,
             }
             matrix[id_bot_plus] = {
@@ -187,7 +187,7 @@ class Breadboard:
                     (20.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "lien": None,
             }
         for l in range(5):
@@ -200,7 +200,7 @@ class Breadboard:
                         (5.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
                     "coord": (c + col_distance, l + 2 + line_distance),
-                    "etat": FREE,
+                    "state": FREE,
                     "lien": None,
                 }
                 id_in_matrix = str(c + col_distance) + "," + str(l + 7 + line_distance)
@@ -211,7 +211,7 @@ class Breadboard:
                         (12.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
                     "coord": (c + col_distance, l + 7 + line_distance),
-                    "etat": FREE,
+                    "state": FREE,
                     "lien": None,
                 }
 

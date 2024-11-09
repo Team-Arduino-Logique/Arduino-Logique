@@ -148,24 +148,26 @@ class ComponentSketcher:
             canvas_y = self.canvas.canvasy(event.y)
 
             color = current_dict_circuit[wire_id]["color"] 
-            coords = current_dict_circuit[wire_id]["coord"]
+            coord = current_dict_circuit[wire_id]["coord"]
             
 
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
             if endpoint == "start":
-                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["etat"] = FREE
+                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
             else:
-                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["etat"] = FREE
+                matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
 
 
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
-                coords = [(cn, ln, coords[0][2], coords[0][3])]
+                coord = [(cn, ln, coord[0][2], coord[0][3])]
             else:
-                coords = [(coords[0][0], coords[0][1], cn, ln)]
+                coord = [(coord[0][0], coord[0][1], cn, ln)]
             
-            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coords,"multipoints":multipoints,
+
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord,"multipoints":multipoints,
+
                                                "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
@@ -234,22 +236,24 @@ class ComponentSketcher:
         x_o , y_o = id_origins["xyOrigin"]
         #nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
         
-        coords = current_dict_circuit[wire_id]["coord"]
+        coord = current_dict_circuit[wire_id]["coord"]
         XY = [current_dict_circuit[wire_id]["XY"] ]
         color = current_dict_circuit[wire_id]["color"] 
         if endpoint == "start":
             x =  canvas_x # pos[0] # + dx
             y =  canvas_y # pos[1] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
-            coords = [(col, line, coords[0][2], coords[0][3])]
+            coord = [(col, line, coord[0][2], coord[0][3])]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
             x = canvas_x # pos[2] # + dx
             y = canvas_y # pos[3] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
-            coords = [(coords[0][0], coords[0][1], col, line)]
+            coord = [(coord[0][0], coord[0][1], col, line)]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coords, "XY":XY, "matrix": matrix1260pts})]
+
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord, "XY":XY, "matrix": matrix1260pts})]
+
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
         #dx = nearest_x - x
@@ -414,12 +418,14 @@ class ComponentSketcher:
         x_o, y_o = id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y-y_o
         multipoints = current_dict_circuit[wire_id]["multipoints"]
-        coords = current_dict_circuit[wire_id]["coord"]
+        coord = current_dict_circuit[wire_id]["coord"]
         XY = [current_dict_circuit[wire_id]["XY"] ]
         color = current_dict_circuit[wire_id]["color"] 
         multipoints[self.nearest_multipoint] = x 
         multipoints[self.nearest_multipoint + 1] = y
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coord":coords,"color":color, "XY":XY,
+
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coord":coord,"color":color, "XY":XY,
+
                                                "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)        
 
@@ -461,7 +467,7 @@ class ComponentSketcher:
             # Store the previous occupied holes in case we need to restore them
             self.drag_chip_data["previous_occupied_holes"] = chip_params["occupied_holes"]
             for hole_id in chip_params["occupied_holes"]:
-                matrix1260pts[hole_id]["etat"] = FREE
+                matrix1260pts[hole_id]["state"] = FREE
             chip_params["occupied_holes"] = []
 
 
@@ -566,7 +572,7 @@ class ComponentSketcher:
                 hole_top = matrix1260pts.get(hole_id_top)
                 hole_bottom = matrix1260pts.get(hole_id_bottom)
 
-                if hole_top["etat"] != FREE or hole_bottom["etat"] != FREE:
+                if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                     holes_available = False
                     break
                 else:
@@ -577,7 +583,7 @@ class ComponentSketcher:
                 # Re-mark the previous holes as used
                 previous_occupied_holes = self.drag_chip_data.get("previous_occupied_holes", [])
                 for hole_id in previous_occupied_holes:
-                    matrix1260pts[hole_id]["etat"] = USED
+                    matrix1260pts[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = previous_occupied_holes
                 
 
@@ -586,7 +592,7 @@ class ComponentSketcher:
             else:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
-                    matrix1260pts[hole_id]["etat"] = USED
+                    matrix1260pts[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = occupied_holes
 
             
@@ -684,7 +690,7 @@ class ComponentSketcher:
             
             # Consider only lines 6 and 21 ('f' lines)
             # if line_num == 7 or line_num == 22:
-            if point[1]["etat"]== FREE:
+            if point[1]["state"]== FREE:
                 grid_x, grid_y = point[1]["xy"]
                 # MODIF KH DRAG-DROP 23/10/2024
                 # distance = math.hypot(x - grid_x , y - grid_y)
@@ -780,18 +786,18 @@ class ComponentSketcher:
             x_o = id_origins["xyOrigin"][0]
             y_o = id_origins["xyOrigin"][1]
 
-            # Find nearest grid point
+            coord = current_dict_circuit[pin_id]["coord"]
+
             (nearest_x, nearest_y), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
 
-            # Update the model with new coordinates
-            params = current_dict_circuit[pin_id]
-            
 
-            # Redraw the pinIO at the new position
-            model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coords": [(col, line)], "matrix": matrix1260pts})]
-            self.circuit(x_o, y_o, model=model_pinIO)
+            if(matrix1260pts[f"{col},{line}"]["state"] == FREE):
+                
+                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
+                model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
+                self.circuit(x_o, y_o, model=model_pinIO)
 
-            print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
+            # print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
 
 
     def on_pinIO_release(self, event, pin_id):
@@ -805,7 +811,7 @@ class ComponentSketcher:
             # Remove highlight using outline_tag
             outline_tag = current_dict_circuit[pin_id]["outline_tag"]
             print(f"Removing highlight from outline_tag: {outline_tag}")
-            self.canvas.itemconfig(outline_tag, outline="")
+            self.canvas.itemconfig(outline_tag, outline="#404040")
 
     def rounded_rect(self, x: int, y: int, width: int, height: int, radius: int, thickness: int, **kwargs) -> None:
         """
@@ -1907,8 +1913,8 @@ class ComponentSketcher:
         global xSouris, ySouris
 
         space = 9
-        tagCoords = self.canvas.coords(tag)
-        self.canvas.move(tag, xSouris - tagCoords[0] - space, 0)
+        tagcoord = self.canvas.coords(tag)
+        self.canvas.move(tag, xSouris - tagcoord[0] - space, 0)
         self.canvas.tag_raise(tag)
         self.canvas.itemconfig(tag, state="normal")
 
@@ -1930,8 +1936,8 @@ class ComponentSketcher:
         
     def change_hole_state(self, col, line,pinCount,state):
         for i in range(pinCount//2):
-                matrix1260pts[f"{col+i},{line}"]["etat"] = state
-                matrix1260pts[f"{col+i},{line+1}"]["etat"] = state
+                matrix1260pts[f"{col+i},{line}"]["state"] = state
+                matrix1260pts[f"{col+i},{line+1}"]["state"] = state
             
         
 
@@ -2206,7 +2212,9 @@ class ComponentSketcher:
             if key == "mode":
                 mode = value
             if key == "coord":
-                coords = value
+
+                coord = value
+
             if key == "matrix":
                 matrix = value
             if key == "id":
@@ -2225,9 +2233,9 @@ class ComponentSketcher:
                 params = current_dict_circuit[id]
                 tags = params["tags"]
                 params["mode"] = mode
-                params["coord"] = coords
+                params["coord"] = coord
                 params["multipoints"] = multipoints
-                xO, yO, xF, yF = coords[0]
+                xO, yO, xF, yF = coord[0]
                 if xO != -1:
                     xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
                 else: 
@@ -2258,7 +2266,7 @@ class ComponentSketcher:
                 # p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
                 # p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
                 # p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
-                # flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
+                # flat_coord = [coord for point in [p1, p2, p3, p4] for coord in point]
                 multipoints = [xO, yO] + multipoints + [xF, yF]
                 #multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
                 multipoints = [val + 5*scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
@@ -2278,9 +2286,9 @@ class ComponentSketcher:
             num_id += 1
             params["id"] = id
             params["mode"] = mode
-            params["coord"] = coords
+            params["coord"] = coord
             params["multipoints"] = multipoints
-            xO, yO, xF, yF = coords[0]
+            xO, yO, xF, yF = coord[0]
     ############ MODIF KH 25/10/2024 ###############################
             if xO != -1:
                 xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
@@ -2438,8 +2446,8 @@ class ComponentSketcher:
             self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
 
-        matrix[f"{coords[0][0]},{coords[0][1]}"]["etat"] = USED
-        matrix[f"{coords[0][2]},{coords[0][3]}"]["etat"] = USED
+        matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
+        matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = USED
 
         current_dict_circuit[id] = params
 
@@ -2459,6 +2467,8 @@ class ComponentSketcher:
         id = None
         multipoints = []
         type = INPUT  # Default type
+        coord = []
+        color = "#479dff"  # Default color
         for key, value in kwargs.items():
             if key == "mode":
                 mode = value
@@ -2466,64 +2476,63 @@ class ComponentSketcher:
                 matrix = value
             elif key == "id":
                 id = value
-            elif key == "coords":
-                coords = value
+            elif key == "coord":
+                coord = value
             elif key == "tags":
                 tags = value
             elif key == "type":
                 type = value
+            elif key == "color":
+                color = value
 
 
         if id and current_dict_circuit.get(id):
-            # If the PinIO already exists, move it instead of redrawing
             params = current_dict_circuit[id]
             old_x, old_y = params["XY"]
-            params["coords"] = coords
-            xO, yO = coords[0]
+            params["coord"] = coord
+            xO, yO = coord[0]
             xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
             dx = xO - old_x
             dy = yO - old_y
 
-            # Move all items associated with the PinIO using their tags
             self.canvas.move(id, dx, dy)
-
-            # Update stored position and coordinates
             params["XY"] = (xO, yO)
-            
+            params["color"] = color
+
         else:
-            # Create a new PinIO
             id = "_io_" + str(num_id)
             num_id += 1
             params = {}
             params["id"] = id
             params["tags"] = []
-            params["coord"] = coords
-            xO, yO = coords[0]
+            params["coord"] = coord
+            xO, yO = coord[0]
             xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
             params["XY"] = (xO, yO)
             params["controller_pin"] = "IO"
             params["type"] = type
+            params["color"] = color
 
-            # Define the main tag and the outlineable tag
+            # tags here
             pin_tag = f"pinIO_{id}"
             outline_tag = f"pinIO_outline_{id}"
-            params["outline_tag"] = outline_tag  # Store the outline_tag in params
-            params["tag"] = pin_tag  # Store the main tag in params
+            interactive_tag = f"pinIO_interactive_{id}"
+            params["outline_tag"] = outline_tag
+            params["tag"] = pin_tag
 
-
-            # Draw the vertical line first (no outline_tag)
+            # Draw the vertical line
             line_id = self.canvas.create_line(
                 xD + xO + 5*scale,
                 yD + yO - 3*scale,
                 xD + xO + 5*scale,
                 yD + yO + 2*scale,
-                fill="#479dff",
+                fill= color,
                 width=4 * thickness,
-                tags=(id, pin_tag),
+                tags=(id, pin_tag, interactive_tag),
             )
             params["tags"].append(line_id)
 
-            # Draw the circle at the bottom (supports outline)
+            # Draw the circle at the bottom
             oval_id = self.canvas.create_oval(
                 xD + xO + 2*scale,
                 yD + yO + 2*scale,
@@ -2532,30 +2541,28 @@ class ComponentSketcher:
                 fill="#dfdfdf",
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id,pin_tag, outline_tag),
+                tags=(id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(oval_id)
 
             # Draw the larger rhombus on top of the line (supports outline)
             polygon_id = self.canvas.create_polygon(
-                xD + xO + -10*scale, yD + yO - 18*scale,
+                xD + xO - 10*scale, yD + yO - 18*scale,
                 xD + xO + 5*scale, yD + yO - 33*scale,
                 xD + xO + 20*scale, yD + yO - 18*scale,
                 xD + xO + 5*scale, yD + yO - 3*scale,
-                fill="#479dff",
+                fill= color,
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, pin_tag, outline_tag),  # Add outline_tag here
+                tags=(id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(polygon_id)
 
             # Bring the rhombus to the front
             self.canvas.tag_raise(id)
 
-
             if type == INPUT:
                 # Arrow pointing down
-                # Draw the arrow line (no outline_tag)
                 arrow_line_id = self.canvas.create_line(
                     xD + xO + 5*scale,
                     yD + yO - 23*scale,
@@ -2563,54 +2570,55 @@ class ComponentSketcher:
                     yD + yO - 13*scale,
                     fill="#404040",
                     width=2 * thickness,
-                    tags=(id,),  # Remove outline_tag
+                    tags=(id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
-                # Draw the arrow head (supports outline)
                 arrow_head_id = self.canvas.create_polygon(
                     xD + xO + 0*scale, yD + yO - 13*scale,
                     xD + xO + 10*scale, yD + yO - 13*scale,
                     xD + xO + 5*scale, yD + yO - 8*scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, outline_tag),  # Add outline_tag here
+                    tags=(id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
             elif type == OUTPUT:
                 # Arrow pointing up
-                # Draw the arrow line (no outline_tag)
                 arrow_line_id = self.canvas.create_line(
                     xD + xO + 5*scale,
                     yD + yO - 23*scale,
                     xD + xO + 5*scale,
                     yD + yO - 13*scale,
-                    fill="#404040",
+                    fill="#000000",
                     width=2 * thickness,
-                    tags=(id,),  # Remove outline_tag
+                    tags=(id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
-                # Draw the arrow head (supports outline)
                 arrow_head_id = self.canvas.create_polygon(
                     xD + xO + 0*scale, yD + yO - 23*scale,
                     xD + xO + 10*scale, yD + yO - 23*scale,
                     xD + xO + 5*scale, yD + yO - 28*scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, outline_tag),  # Add outline_tag here
+                    tags=(id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
 
             current_dict_circuit[id] = params
 
-            # Bind events only to outlineable items
-            self.canvas.tag_bind(outline_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
-            self.canvas.tag_bind(outline_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
-            self.canvas.tag_bind(outline_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
+            
 
-            # Debug: Print the params to ensure 'tag' and 'outline_tag' are set
-            print(f"Drawing PinIO with params: {params}")
+            print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
+
+            self.canvas.tag_bind(interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
+            # print(f"Drawing PinIO with params: {params}")
+
+        matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
+            
 
         return xD, yD
 
