@@ -248,12 +248,7 @@ class Toolbar:
         Creates a cursor indicator that follows the mouse position.
         """
         if self.cursor_indicator_id is None:
-            if pin_type == "Input":
-                color = "#00ff00"  # Green for Input
-            elif pin_type == "Output":
-                color = "#ff0000"  # Red for Output
-            else:
-                color = self.selected_color
+            color = self.selected_color
             self.cursor_indicator_id = self.canvas.create_oval(0, 0, 10, 10, fill=color, outline="#000000")
             self.canvas.tag_raise(self.cursor_indicator_id)
 
