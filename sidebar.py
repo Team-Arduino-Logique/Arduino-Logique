@@ -50,9 +50,11 @@ class Sidebar:
         self.parent = parent
 
         images = self.load_chip_images(chip_images_path)
-        self.available_chips_and_imgs: dict[str, Tuple[Chip, tk.PhotoImage | None]] = {
-            name: (chip, images.get(chip.package_name)) for name, chip in get_all_available_chips().items()
-        }
+        self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
+            (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
+        ]
+        # Sort the chips based on the number after 'HC' in their chip_type
+        self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split('HC')[-1]))
 
         self.canvas = canvas
         self.board = board
@@ -168,7 +170,7 @@ class Sidebar:
         # Displaying chips
         self.display_chips(self.available_chips_and_imgs)
 
-    def display_chips(self, chips: dict[str, Tuple[Chip, tk.PhotoImage]]):
+    def display_chips(self, chips: list[Tuple[Chip, tk.PhotoImage]]):
         """
         Displays chip buttons in the chips_inner_frame.
         """
@@ -181,34 +183,32 @@ class Sidebar:
 
         # Limiting the number of chips displayed to grid_capacity for initial display
         # display_chips = chips[:total_slots]
-        display_chips = chips.items()
+        display_chips = chips
         firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=12)
         # Displaying existing chips
-        for index, (chip_name, (_, chip_image)) in enumerate(display_chips):
+        for index, (chip, chip_image) in enumerate(display_chips):
             row = index // self.columns
             col = index % self.columns
             btn = tk.Button(
                 self.chips_inner_frame,
                 image=chip_image,
-                text=chip_name,
+                text=chip.chip_type,
                 compound="top",
                 font=firaCodeFont,
                 fg="white",  # Set text color to white
                 bg="#333333",
                 activebackground="#479dff",
                 relief="flat",
-                command=lambda name=chip_name: self.select_chip(name),
+                command=lambda name=chip.chip_type: self.select_chip(name),
                 width=100,  # Fixed width to match image size
                 height=60,  # Fixed height to match image size
             )
             btn.grid(row=row, column=col, padx=1, pady=1)
-            Tooltip(btn, chip_name)  # Adding tooltip with chip name
+            Tooltip(btn, chip.chip_type)  # Adding tooltip with chip name
 
             # Binding hover effects
             btn.bind("<Enter>", lambda e, b=btn: b.configure(bg="#479dff"))
             btn.bind("<Leave>", lambda e, b=btn: b.configure(bg="#333333"))
-
-
 
     def create_manage_button(self):
         """
@@ -244,7 +244,12 @@ class Sidebar:
         Initiates the chip placement process by changing the cursor to the chip image.
         """
         # Get the chip image
-        self.chip_cursor_image = self.available_chips_and_imgs.get(chip_name)[1]
+        chip_data = next((chip for chip in self.available_chips_and_imgs if chip[0].chip_type == chip_name), None)
+        if not chip_data:
+            print("Error", f"Chip '{chip_name}' not found.")
+            return
+
+        self.chip_cursor_image = chip_data[1]
 
         # Keep a reference to the image to prevent garbage collection
         self.canvas.chip_cursor_image = self.chip_cursor_image
