@@ -10,6 +10,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
+from component_sketch import ComponentSketcher
 from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE
 
 class Toolbar:
@@ -33,11 +34,11 @@ class Toolbar:
         - cursor_indicator_id (int or None): The ID of the cursor-following indicator.
         - wire_id (int or None): The ID of the current wire being drawn.
     """
-    def __init__(self, parent, canvas, board, sketcher):
+    def __init__(self, parent, canvas, board, sketcher) -> None:
         self.parent = parent
         self.canvas = canvas
         self.board = board
-        self.sketcher = sketcher
+        self.sketcher: ComponentSketcher = sketcher
         self.selected_color = "#479dff"
         self.images = {}
         self.icon_size = 24
@@ -216,6 +217,8 @@ class Toolbar:
             self.activate_wire_placement_mode()
         elif action_name in ["Input", "Output"]:
             self.activate_pin_io_placement_mode(action_name)
+        elif action_name == "Delete":
+            self.sketcher.delete_mode_active = True
 
     def deactivate_mode(self, action_name):
         """
@@ -225,6 +228,8 @@ class Toolbar:
             self.deactivate_wire_placement_mode()
         elif action_name in ["Input", "Output"]:
             self.deactivate_pin_io_placement_mode()
+        elif action_name == "Delete":
+            self.sketcher.delete_mode_active = False
 
     def activate_wire_placement_mode(self):
         """
@@ -358,7 +363,7 @@ class Toolbar:
             type_const = INPUT if self.pin_io_type == "Input" else OUTPUT
             model_pin_io = [
                 (
-                    self.sketcher.drawPinIO,
+                    self.sketcher.drawpin_io,
                     1,
                     {"color": color, "type": type_const, "coord": [(col, line)], "matrix": matrix1260pts},
                 )

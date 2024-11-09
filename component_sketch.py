@@ -1,3 +1,8 @@
+"""
+This module provides a class `ComponentSketcher` for sketching and manipulating electronic components on 
+a Tkinter canvas. It includes methods for drawing various components such as chips, wires, and pins, as 
+well as handling events like dragging and clicking.
+"""
 import tkinter as tk
 from tkinter import font
 import math
@@ -11,7 +16,6 @@ from dataCDLT import (
     VERTICAL_END_HORIZONTAL,
     LEFT,
     PERSO,
-    YES,
     NO,
     AUTO,
     id_origins,
@@ -22,10 +26,6 @@ from dataCDLT import (
     matrix830pts,
     drag_mouse_x,
     drag_mouse_y,
-    selector_dx_ul, 
-    selector_dy_ul,
-    selector_dx_br, 
-    selector_dy_br,
     FREE,
     USED,
     INPUT,
@@ -34,13 +34,25 @@ from dataCDLT import (
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 
 class ComponentSketcher:
-    def __init__(self, canvas):
-        self.canvas = canvas
-        self.funcHole = {"function": self.drawSquareHole}
+    """
+    A class to sketch and manipulate electronic components on a canvas.
+    Attributes:
+    canvas (tk.Canvas): The canvas on which components are drawn.
+    hole_func (dict): A dictionary containing the function to draw holes.
+    scale_factor (float): The scaling factor for the components.
+    drag_selector (bool): A flag to indicate if dragging is in progress.
+    nearest_multipoint (int): Index of the nearest multipoint during dragging.
+    drag_chip_data (dict): Data related to the chip being dragged.
+    wire_drag_data (dict): Data related to the wire being dragged.
+    pin_io_drag_data (dict): Data related to the pin_io being dragged.
+    delete_mode_active (bool): A flag to indicate if delete mode is active.
+    """
+    def __init__(self, canvas) -> None:
+        self.canvas: tk.Canvas = canvas
+        self.hole_func = {"function": self.drawSquareHole}
         self.scale_factor = 1.0
         self.drag_selector = False
         self.nearest_multipoint = -1
-        
 
         self.drag_chip_data = {
             "chip_id": None,
@@ -54,13 +66,14 @@ class ComponentSketcher:
             "x": 0,
             "y": 0
         }
-        
-        self.pinIO_drag_data = {
+
+        self.pin_io_drag_data = {
             "pin_id": None,
             "x": 0,
             "y": 0
         }
-        
+
+        self.delete_mode_active = False
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -86,9 +99,10 @@ class ComponentSketcher:
         inter_space = 15 * scale
 
         # component_data = ComponentData(self.sketcher)
-        Hole = [(self.drawHole, 1)] #model specified by default in case of no model
+        hole_model = [(self.drawHole, 1)] #model specified by default in case of no model
 
-        model = Hole
+        model = hole_model
+        delta_y = 1
         for key, value in kwargs.items():
             if key == "model":
                 model = value
@@ -122,20 +136,18 @@ class ComponentSketcher:
             y_distance = y - inter_space * delta_y
 
         return (x_distance, y_distance)
-    
 
 
-    def on_wire_endpoint_click(self, event, wire_id, endpoint):
+    def on_wire_endpoint_click(self, _, wire_id, endpoint):
         """
         Event handler for when a wire endpoint is clicked.
         """
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
-        
 
         endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
-        
+
 
     def on_wire_endpoint_drag(self, event, wire_id, endpoint):
         """
@@ -149,7 +161,6 @@ class ComponentSketcher:
 
             color = current_dict_circuit[wire_id]["color"] 
             coord = current_dict_circuit[wire_id]["coord"]
-            
 
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
@@ -159,16 +170,14 @@ class ComponentSketcher:
                 matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
 
 
-            (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
+            (_,_), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
                 coord = [(cn, ln, coord[0][2], coord[0][3])]
             else:
                 coord = [(coord[0][0], coord[0][1], cn, ln)]
-            
 
             model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord,"multipoints":multipoints,
-
-                                               "matrix": matrix1260pts})]
+                                            "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
 
@@ -378,7 +387,7 @@ class ComponentSketcher:
         return nearest_point , insert_point     
 
     def on_wire_body_enter(self,event, wire_id):
-        if  not self.drag_selector:
+        if not self.drag_selector and not self.delete_mode_active:
             x, y = event.x, event.y
             color = current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
@@ -393,24 +402,45 @@ class ComponentSketcher:
             self.canvas.itemconfig("selector_cable", state="hidden")
             
     def on_wire_body_click(self,event, wire_id):
-        self.wire_drag_data["wire_id"] = wire_id
-        self.wire_drag_data["endpoint"] = "selector_cable"
-        endpoint_tag = "selector_cable"
-        x, y = event.x, event.y
+        if self.delete_mode_active:
+            print(f"Deleting wire {wire_id}")
+            self.delete_wire(wire_id)
+        else:
+            self.wire_drag_data["wire_id"] = wire_id
+            self.wire_drag_data["endpoint"] = "selector_cable"
+            endpoint_tag = "selector_cable"
+            x, y = event.x, event.y
 
-        color = current_dict_circuit[wire_id]["color"]
-        encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
-        contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}" 
-        x_o, y_o = id_origins["xyOrigin"]
-        #endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-        self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
-        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
-        if insert_point:
-            multipoints = current_dict_circuit[wire_id]["multipoints"]
-            multipoints.insert(self.nearest_multipoint, x - x_o,)    
-            multipoints.insert(self.nearest_multipoint + 1, y - y_o)  
-            current_dict_circuit[wire_id]["multipoints"] = multipoints
-                
+            color = current_dict_circuit[wire_id]["color"]
+            encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+            contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}" 
+            x_o, y_o = id_origins["xyOrigin"]
+            #endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
+            self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
+            if insert_point:
+                multipoints = current_dict_circuit[wire_id]["multipoints"]
+                multipoints.insert(self.nearest_multipoint, x - x_o,)    
+                multipoints.insert(self.nearest_multipoint + 1, y - y_o)  
+                current_dict_circuit[wire_id]["multipoints"] = multipoints
+
+    def delete_wire(self, wire_id):
+        """
+        Deletes the wire from the canvas and updates the matrix.
+        """
+        wire_params = current_dict_circuit[wire_id]
+        for tag in wire_params["tags"]:
+            self.canvas.delete(tag)
+        endpoints = (f"{wire_params['coord'][0][0]},{wire_params['coord'][0][1]}", f"{wire_params['coord'][0][2]},{wire_params['coord'][0][3]}")
+        # Restore occupied holes
+        for hole_id in endpoints:
+            matrix1260pts[hole_id]["state"] = FREE
+
+        # Delete the wire from the dictionary
+        del current_dict_circuit[wire_id]
+
+        print(f"Wire {wire_id} deleted")
+
     def on_wire_body_drag(self,event, wire_id):
         #self.wire_drag_data["wire_id"] = wire_id
         #self.wire_drag_data["endpoint"] = "selector_cable"
@@ -436,21 +466,16 @@ class ComponentSketcher:
         self.nearest_multipoint = -1
         self.canvas.itemconfig("selector_cable", state="hidden")
 
-    def on_chip_click(self, event, chip_id):
+    def start_chip_drag(self, event, chip_id):
         """
-        Event handler for chip clicks.
-        Initiates drag and stores the initial mouse position.
+        Initiates drag for the clicked chip.
         """
-        print(f"Chip clicked: {chip_id}")
         # Initiate drag by setting drag_chip_data
         self.drag_chip_data["chip_id"] = chip_id
 
         #Convert event coordinates to canvas coordinates
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
-
-
-        
 
         # Adjust for scaling
         adjusted_x = canvas_x #/ self.scale_factor
@@ -473,6 +498,20 @@ class ComponentSketcher:
 
         print(f"Chip {chip_id} clicked at ({adjusted_x}, {adjusted_y})")
 
+    def on_chip_click(self, event, chip_id):
+        """
+        Event handler for chip clicks.
+        Initiates drag and stores the initial mouse position.
+        """
+        print(f"Chip clicked: {chip_id}")
+
+        if self.delete_mode_active:
+            print(f"Deleting chip {chip_id}")
+            self.delete_chip(chip_id)
+        else:
+            print(f"Starting drag for chip {chip_id}")
+            self.start_chip_drag(event, chip_id)
+
         # # Correct tag name
         # tagSouris = "activeArea" + chip_id
 
@@ -480,6 +519,23 @@ class ComponentSketcher:
         # self.canvas.itemconfig(tagSouris, outline="red")
         # self.canvas.tag_raise(tagSouris)
         # print(f"Chip {chip_id} outline changed to red")
+
+    def delete_chip(self, chip_id):
+        """
+        Deletes the chip from the canvas and updates the matrix.
+        """
+        chip_params = current_dict_circuit[chip_id]
+        for tag in chip_params["tags"]:
+            self.canvas.delete(tag)
+
+        # Restore occupied holes
+        for hole_id in chip_params["occupied_holes"]:
+            matrix1260pts[hole_id]["state"] = FREE
+
+        # Delete the chip from the dictionary
+        del current_dict_circuit[chip_id]
+
+        print(f"Chip {chip_id} deleted")
 
     def on_chip_drag(self, event):
         """
@@ -753,32 +809,52 @@ class ComponentSketcher:
         return nearest_point, nearest_point_col_lin
     
 
-    def on_pinIO_click(self, event, pin_id):
+    def on_pin_io_click(self, event, pin_id):
         """
-        Event handler for when a pinIO element is clicked.
+        Event handler for when a pin_io element is clicked.
         """
-        print(f"PinIO clicked: {pin_id}")
-        self.pinIO_drag_data["pin_id"] = pin_id
+        print(f"pin_io clicked: {pin_id}")
+        if self.delete_mode_active:
+            print(f"Deleting pin_io {pin_id}")
+            self.delete_pin_io(pin_id)
+        else:
+            self.pin_io_drag_data["pin_id"] = pin_id
 
-        # Convert event coordinates to canvas coordinates
-        canvas_x = self.canvas.canvasx(event.x)
-        canvas_y = self.canvas.canvasy(event.y)
+            # Convert event coordinates to canvas coordinates
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
 
-        # Store initial positions
-        self.pinIO_drag_data["x"] = canvas_x
-        self.pinIO_drag_data["y"] = canvas_y
+            # Store initial positions
+            self.pin_io_drag_data["x"] = canvas_x
+            self.pin_io_drag_data["y"] = canvas_y
 
-        # Highlight the pinIO to indicate selection using outline_tag
-        outline_tag = current_dict_circuit[pin_id]["outline_tag"]
-        print(f"Highlighting outline_tag: {outline_tag}")
-        self.canvas.itemconfig(outline_tag, outline="red")
+            # Highlight the pin_io to indicate selection using outline_tag
+            outline_tag = current_dict_circuit[pin_id]["outline_tag"]
+            print(f"Highlighting outline_tag: {outline_tag}")
+            self.canvas.itemconfig(outline_tag, outline="red")
 
-
-    def on_pinIO_drag(self, event, pin_id):
+    def delete_pin_io(self, pin_id):
         """
-        Event handler for dragging a pinIO element.
+        Deletes the pin_io element from the canvas and updates the matrix.
         """
-        if self.pinIO_drag_data["pin_id"] == pin_id:
+        pin_io_params = current_dict_circuit[pin_id]
+        for tag in pin_io_params["tags"]:
+            self.canvas.delete(tag)
+        # Restore occupied holes
+        hole_id = f"{pin_io_params['coord'][0][0]},{pin_io_params['coord'][0][1]}"
+        matrix1260pts[hole_id]["state"] = FREE
+
+        # Delete the pin_io from the dictionary
+        del current_dict_circuit[pin_id]
+
+        print(f"Pin_io {pin_id} deleted")
+
+
+    def on_pin_io_drag(self, event, pin_id):
+        """
+        Event handler for dragging a pin_io element.
+        """
+        if self.pin_io_drag_data["pin_id"] == pin_id:
             # Convert event coordinates to canvas coordinates
             canvas_x = self.canvas.canvasx(event.x)
             canvas_y = self.canvas.canvasy(event.y)
@@ -794,19 +870,19 @@ class ComponentSketcher:
             if(matrix1260pts[f"{col},{line}"]["state"] == FREE):
                 
                 matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
-                model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
-                self.circuit(x_o, y_o, model=model_pinIO)
+                model_pin_io = [(self.drawpin_io, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
+                self.circuit(x_o, y_o, model=model_pin_io)
 
-            # print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
+            # print(f"pin_io {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
 
 
-    def on_pinIO_release(self, event, pin_id):
+    def on_pin_io_release(self, event, pin_id):
         """
-        Event handler for when the pinIO element is released.
+        Event handler for when the pin_io element is released.
         """
-        if self.pinIO_drag_data["pin_id"] == pin_id:
+        if self.pin_io_drag_data["pin_id"] == pin_id:
             # Reset drag data
-            self.pinIO_drag_data["pin_id"] = None
+            self.pin_io_drag_data["pin_id"] = None
 
             # Remove highlight using outline_tag
             outline_tag = current_dict_circuit[pin_id]["outline_tag"]
@@ -1066,20 +1142,20 @@ class ComponentSketcher:
         return (xD, yD)
 
 
-    funcHole = {"function": drawSquareHole}
+    hole_func = {"function": drawSquareHole}
 
 
     def drawHole(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-        return self.funcHole["function"](xD, yD, scale, width, direction, **kwargs)
+        return self.hole_func["function"](xD, yD, scale, width, direction, **kwargs)
 
 
-    def setfuncHole(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def sethole_func(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         function = self.drawSquareHole
         for key, value in kwargs.items():
             if key == "function":
                 function = value
 
-        self.funcHole = {"function": function}
+        self.hole_func = {"function": function}
 
         return xD, yD
 
@@ -2475,7 +2551,7 @@ class ComponentSketcher:
         return xD, yD
     
 
-    def drawPinIO(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def drawpin_io(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         global num_id
 
         if width != -1:
@@ -2535,9 +2611,9 @@ class ComponentSketcher:
             params["color"] = color
 
             # tags here
-            pin_tag = f"pinIO_{id}"
-            outline_tag = f"pinIO_outline_{id}"
-            interactive_tag = f"pinIO_interactive_{id}"
+            pin_tag = f"pin_io_{id}"
+            outline_tag = f"pin_io_outline_{id}"
+            interactive_tag = f"pin_io_interactive_{id}"
             params["outline_tag"] = outline_tag
             params["tag"] = pin_tag
 
@@ -2633,10 +2709,10 @@ class ComponentSketcher:
 
             print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
 
-            self.canvas.tag_bind(interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
-            self.canvas.tag_bind(interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
-            self.canvas.tag_bind(interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
-            # print(f"Drawing PinIO with params: {params}")
+            self.canvas.tag_bind(interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pin_io_click(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pin_io_drag(event, pin_id))
+            self.canvas.tag_bind(interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pin_io_release(event, pin_id))
+            # print(f"Drawing pin_io with params: {params}")
 
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
             
