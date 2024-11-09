@@ -1,6 +1,9 @@
 {
     "name": "74HC238",
+    "description": "3-to-8 line decoder/demultiplexer",
     "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
     "functions": [
         {
             "func_type": "DEMUX",

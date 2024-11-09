@@ -1,6 +1,9 @@
 {
     "name": "74HC191",
+    "description": "Presettable synchronous 4-bit binary up/down counter",
     "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
     "functions": [
         {
             "func_type": "BINARY_COUNTER",

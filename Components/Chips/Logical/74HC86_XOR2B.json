@@ -1,6 +1,9 @@
 {
     "name": "74HC86",
+    "description": "Quad 2-input XOR gate",
     "package": "DIP14",
+    "vcc_pin": 14,
+    "gnd_pin": 7,
     "functions": [
         {
             "func_type": "XOR",

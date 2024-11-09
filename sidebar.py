@@ -1,5 +1,10 @@
-# sidebar.py
+"""
+This module defines the Sidebar class, which is responsible for creating and managing a sidebar in a 
+Tkinter GUI application. The sidebar displays available chips as selectable buttons, provides a search 
+bar to filter chips, and includes a button to manage components.
+"""
 
+from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, font
@@ -7,50 +12,53 @@ import os
 from typing import Callable, Tuple
 import subprocess
 import sys
+from idlelib.tooltip import Hovertip  # type: ignore
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, id_origins, FREE, USED, current_dict_circuit
+from dataCDLT import matrix1260pts, FREE, USED, current_dict_circuit
 from object_model.circuit_object_model import Chip, get_all_available_chips
 
 
-class Tooltip:
-    """Simple tooltip implementation doesn't work now, I need to figure out why."""
+@dataclass
+class SidebarGrid:
+    """
+    A class to represent the grid layout of the sidebar.
+    Attributes:
+        - columns (int): The number of columns in the grid.
+        - visible_rows (int): The number of rows visible without scrolling.
+        - grid_capacity (int): The total number of slots visible.
+    """
 
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tooltip_window = None
-        self.widget.bind("<Enter>", self.show_tooltip)
-        self.widget.bind("<Leave>", self.hide_tooltip)
-
-    def show_tooltip(self, event=None):
-        if self.tooltip_window or not self.text:
-            return
-        # Position the tooltip near the widget
-        x = self.widget.winfo_rootx() + 20
-        y = self.widget.winfo_rooty() + 20
-        self.tooltip_window = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)
-        tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(
-            tw, text=self.text, justify="left", background="#ffffff", relief="solid", borderwidth=1, font=("Arial", 10)
-        )
-        label.pack(ipadx=1)
-
-    def hide_tooltip(self, event=None):
-        tw = self.tooltip_window
-        self.tooltip_window = None
-        if tw:
-            tw.destroy()
+    columns: int
+    visible_rows: int
+    grid_capacity: int
 
 
 class Sidebar:
-    def __init__(
-        self, parent, chip_images_path="chips", canvas=None, board=None, sketcher=None, component_data=None
-    ) -> None:
+    """
+    A class to represent a sidebar in a Tkinter GUI application.
+    Attributes:
+        - chip_images_path: The path to the directory containing chip images.
+        - canvas: The canvas where the chips are placed.
+        - sketcher: The component sketcher object.
+        - available_chips_and_imgs: A list of tuples containing available chips and their images.
+        - chip_name_to_index: A dictionary mapping chip names to their index in the available chips list.
+        - search_entry: The search bar entry widget.
+        - chips_inner_frame: The frame inside the canvas for chip buttons.
+        - sidebar_grid: An instance of the SidebarGrid class.
+        - selected_chip_name: The name of the selected chip.
+        - chip_cursor_image: The image of the chip cursor.
+        - saved_bindings: A dictionary of saved event bindings.
+    """
+
+    def __init__(self, parent, chip_images_path="chips", canvas=None, sketcher=None) -> None:
         """
         Initializes the sidebar.
+        Parameters:
+            - parent: The parent widget.
+            - chip_images_path (str): The path to the directory containing chip images.
+            - canvas: The canvas where the chips are placed.
+            - sketcher: The component sketcher object.
         """
-        self.parent = parent
 
         images = self.load_chip_images(chip_images_path)
         self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
@@ -59,30 +67,36 @@ class Sidebar:
         # Sort the chips based on the number after 'HC' in their chip_type
         self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split("HC")[-1]))
 
+        # Create a reverse lookup dictionary for chip names to their index in the list
+        self.chip_name_to_index = {
+            chip.chip_type: index for index, (chip, _) in enumerate(self.available_chips_and_imgs)
+        }
+
         self.canvas: tk.Canvas = canvas
-        self.board = board
         self.sketcher: ComponentSketcher = sketcher
-        self.component_data = component_data
+
         self.selected_chip_name = None
         self.chip_cursor_image = None
         self.saved_bindings: dict[str, Callable] = {}
 
         # Creating the sidebar frame
-        self.sidebar_frame = tk.Frame(self.parent, bg="#333333", width=250, bd=0, highlightthickness=0)
-        self.sidebar_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
-        self.sidebar_frame.grid_propagate(False)  # Preventing frame from resizing
+        sidebar_frame = tk.Frame(parent, bg="#333333", width=250, bd=0, highlightthickness=0)
+        sidebar_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
+        sidebar_frame.grid_propagate(False)  # Preventing frame from resizing
 
         # Configuring grid weights for the sidebar
-        self.sidebar_frame.grid_rowconfigure(0, weight=0)  # Search bar
-        self.sidebar_frame.grid_rowconfigure(1, weight=0)  # Chips label
-        self.sidebar_frame.grid_rowconfigure(2, weight=8)  # Chips area (80%)
-        self.sidebar_frame.grid_rowconfigure(3, weight=0)  # Manage button
-        self.sidebar_frame.grid_columnconfigure(0, weight=1)
+        sidebar_frame.grid_rowconfigure(0, weight=0)  # Search bar
+        sidebar_frame.grid_rowconfigure(1, weight=0)  # Chips label
+        sidebar_frame.grid_rowconfigure(2, weight=8)  # Chips area (80%)
+        sidebar_frame.grid_rowconfigure(3, weight=0)  # Manage button
+        sidebar_frame.grid_columnconfigure(0, weight=1)
+
+        self.sidebar_grid = SidebarGrid(columns=2, visible_rows=12, grid_capacity=24)
 
         # Creating sidebar components
-        self.create_search_bar()
-        self.create_chips_area()
-        self.create_manage_button()
+        self.create_search_bar(sidebar_frame)
+        self.create_chips_area(sidebar_frame)
+        self.create_manage_button(sidebar_frame)
 
     def load_chip_images(self, img_path) -> dict[str, tk.PhotoImage]:
         """
@@ -106,17 +120,17 @@ class Sidebar:
                     img_name = os.path.splitext(filename)[0]
                     images_dict[img_name] = scaled_img
                     print(f"Loaded and scaled chip image: {filename}")
-                except Exception as e:
+                except (tk.TclError, FileNotFoundError) as e:
                     print(f"Error loading image '{filename}': {e}")
                     messagebox.showwarning("Image Load Error", f"Failed to load '{filename}'.")
         return images_dict
 
-    def create_search_bar(self):
+    def create_search_bar(self, sidebar_frame):
         """
         Creates the search bar at the top of the sidebar.
         """
         # Frame for search components
-        search_frame = tk.Frame(self.sidebar_frame, bg="#333333")
+        search_frame = tk.Frame(sidebar_frame, bg="#333333")
         search_frame.grid(row=0, column=0, padx=10, pady=(10, 2), sticky="we")
 
         # Search label
@@ -132,13 +146,13 @@ class Sidebar:
         self.search_entry.pack(fill="x", pady=(2, 0))
         self.search_entry.bind("<KeyRelease>", self.on_search)
 
-    def create_chips_area(self):
+    def create_chips_area(self, sidebar_frame):
         """
         Creates the area where chip images are displayed as selectable buttons.
         Implements a scrollable grid with empty slots.
         """
         # Frame for chips label
-        chips_label_frame = tk.Frame(self.sidebar_frame, bg="#333333")
+        chips_label_frame = tk.Frame(sidebar_frame, bg="#333333")
         chips_label_frame.grid(row=1, column=0, padx=10, pady=(5, 2), sticky="w")
 
         # Chips label
@@ -148,28 +162,30 @@ class Sidebar:
         chips_label.pack(anchor="w")
 
         # Creating a canvas for chips with a vertical scrollbar
-        self.canvas_chips = tk.Canvas(self.sidebar_frame, bg="#333333", highlightthickness=0, bd=0)
-        self.canvas_chips.grid(row=2, column=0, padx=10, pady=5, sticky="nsew")
+        canvas_chips = tk.Canvas(sidebar_frame, bg="#333333", highlightthickness=0, bd=0)
+        canvas_chips.grid(row=2, column=0, padx=10, pady=5, sticky="nsew")
 
         # Adding a scrollbar to the canvas
-        scrollbar = tk.Scrollbar(self.sidebar_frame, orient="vertical", command=self.canvas_chips.yview)
+        scrollbar = tk.Scrollbar(sidebar_frame, orient="vertical", command=canvas_chips.yview)
         scrollbar.grid(row=2, column=0, sticky="nse")
 
-        self.canvas_chips.configure(yscrollcommand=scrollbar.set)
+        canvas_chips.configure(yscrollcommand=scrollbar.set)
 
         # Creating a frame inside the canvas to hold chip buttons
-        self.chips_inner_frame = tk.Frame(self.canvas_chips, bg="#333333")
-        self.canvas_chips.create_window((0, 0), window=self.chips_inner_frame, anchor="nw")
+        self.chips_inner_frame = tk.Frame(canvas_chips, bg="#333333")
+        canvas_chips.create_window((0, 0), window=self.chips_inner_frame, anchor="nw")
 
         # Binding the configure event to update the scrollregion
         self.chips_inner_frame.bind(
-            "<Configure>", lambda event: self.canvas_chips.configure(scrollregion=self.canvas_chips.bbox("all"))
+            "<Configure>", lambda event: canvas_chips.configure(scrollregion=canvas_chips.bbox("all"))
         )
 
         # Defining grid properties
-        self.columns = 2  # Number of columns in the grid
-        self.visible_rows = 12  # Number of rows visible without scrolling
-        self.grid_capacity = self.columns * self.visible_rows  # Total slots visible
+        self.sidebar_grid.columns = 2  # Number of columns in the grid
+        self.sidebar_grid.visible_rows = 12  # Number of rows visible without scrolling
+        self.sidebar_grid.grid_capacity = (
+            self.sidebar_grid.columns * self.sidebar_grid.visible_rows
+        )  # Total slots visible
 
         # Displaying chips
         self.display_chips(self.available_chips_and_imgs)
@@ -182,44 +198,52 @@ class Sidebar:
         for widget in self.chips_inner_frame.winfo_children():
             widget.destroy()
 
-        # Calculating the number of slots based on grid_capacity
-        total_slots = self.grid_capacity
-
-        # Limiting the number of chips displayed to grid_capacity for initial display
-        # display_chips = chips[:total_slots]
         display_chips = chips
-        firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=12)
+        fira_code_font = font.Font(family="FiraCode-Bold.ttf", size=12)
+
         # Displaying existing chips
         for index, (chip, chip_image) in enumerate(display_chips):
-            row = index // self.columns
-            col = index % self.columns
+            row = index // self.sidebar_grid.columns
+            col = index % self.sidebar_grid.columns
             btn = tk.Button(
                 self.chips_inner_frame,
                 image=chip_image,
                 text=chip.chip_type,
                 compound="top",
-                font=firaCodeFont,
+                font=fira_code_font,
                 fg="white",  # Set text color to white
                 bg="#333333",
                 activebackground="#479dff",
                 relief="flat",
-                command=lambda name=chip.chip_type: self.select_chip(name),
+                command=self.create_select_chip_command(chip.chip_type),
                 width=100,  # Fixed width to match image size
                 height=60,  # Fixed height to match image size
             )
             btn.grid(row=row, column=col, padx=1, pady=1)
-            Tooltip(btn, chip.chip_type)  # Adding tooltip with chip name
+            Hovertip(btn, chip.description, 500)  # Adding tooltip with chip name
+
+            def enter_effect(_, b=btn):
+                b.configure(bg="#479dff")
+
+            def leave_effect(_, b=btn):
+                b.configure(bg="#333333")
 
             # Binding hover effects
-            btn.bind("<Enter>", lambda e, b=btn: b.configure(bg="#479dff"))
-            btn.bind("<Leave>", lambda e, b=btn: b.configure(bg="#333333"))
+            btn.bind("<Enter>", enter_effect, add="+")
+            btn.bind("<Leave>", leave_effect, add="+")
 
-    def create_manage_button(self):
+    def create_select_chip_command(self, chip_type: str) -> Callable:
+        """
+        Creates a command for selecting a chip.
+        """
+        return lambda: self.select_chip(chip_type)
+
+    def create_manage_button(self, sidebar_frame):
         """
         Creates the 'Manage Components' button at the bottom of the sidebar without an icon.
         """
         manage_button = tk.Button(
-            self.sidebar_frame,
+            sidebar_frame,
             text="Manage Components",
             bg="#333333",  # Matching the sidebar's background to simulate transparency
             fg="white",
@@ -274,7 +298,7 @@ class Sidebar:
 
         print(f"Started placement for chip: {chip_name}")
 
-    def cancel_chip_placement(self, event=None):
+    def cancel_chip_placement(self, _=None):
         """
         Cancels the current chip placement process.
         """
@@ -343,7 +367,7 @@ class Sidebar:
         # Restore the saved bindings
         for event, handler in self.saved_bindings.items():
             self.canvas.bind(event, handler)
-        
+
         # Reset the selected chip
         print(f"Chip {self.selected_chip_name} placed.")
         self.selected_chip_name = None
@@ -363,7 +387,7 @@ class Sidebar:
 
         # Adjust for scaling and origin
         scale = self.sketcher.scale_factor
-        xO, yO = id_origins["xyOrigin"]
+        # xO, yO = id_origins["xyOrigin"]
 
         # # Use goXY to get the exact position
         # exact_x, exact_y = self.sketcher.goXY(
@@ -375,11 +399,11 @@ class Sidebar:
         #     line=line
         # )
 
-        available_chips = get_all_available_chips()  # FIXME valeur devrait être chargée au démarrage
-
         try:
-            chip_dict = available_chips.get(chip_name).to_generic_dict()
-        except AttributeError as e:
+            chip_dict = self.available_chips_and_imgs[self.chip_name_to_index[chip_name]][0].to_generic_dict()
+            if chip_dict["type"] != chip_name:  # Sanity check
+                raise IndexError()
+        except IndexError as e:
             print(f"Error: {e}")
             messagebox.showerror("Error", f"Unknown chip: {chip_name}")
             return
@@ -441,7 +465,7 @@ class Sidebar:
                 print(f"Chip {chip_name} placed at ({column}, {line}).")
 
                 # Update the current_dict_circuit with the new chip
-                chip_keys = [key for key in current_dict_circuit.keys() if key.startswith("_chip")]
+                chip_keys = [key for key in current_dict_circuit if key.startswith("_chip")]
                 if chip_keys:
                     last_chip_key = chip_keys[-1]  # Get the last key in sorted order
                     added_chip_params = current_dict_circuit[last_chip_key]
@@ -463,7 +487,7 @@ class Sidebar:
         else:
             messagebox.showerror("Error", "Unsupported operating system.")
 
-    def on_search(self, event):
+    def on_search(self, _):
         """
         Filters the displayed chips based on the search query.
         """
@@ -476,6 +500,7 @@ class Sidebar:
                 for chip_data in self.available_chips_and_imgs
                 if query in chip_data[0].chip_type.lower()
                 or query in chip_data[0].package_name.lower()
+                or query in chip_data[0].description.lower()
                 or any(query in func.__class__.__name__.lower() for func in chip_data[0].functions)
             ]
         self.display_chips(filtered_chips)

@@ -94,13 +94,11 @@ def main():
     id_origins["xyOrigin"] = (50, 10)
 
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
-    sidebar = Sidebar(
-        parent=win, 
-        chip_images_path="Assets/chips", 
-        canvas=canvas, 
-        board=board, 
-        sketcher=sketcher, 
-        component_data=component_data
+    _ = Sidebar(
+        parent=win,
+        chip_images_path="Assets/chips",
+        canvas=canvas,
+        sketcher=sketcher,
     )
 
     # Creating the Menus instance with proper references

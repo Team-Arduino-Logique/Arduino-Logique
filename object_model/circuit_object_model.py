@@ -67,6 +67,7 @@ class Chip:
     Attributes:
         element_id (str): The unique identifier of the chip.
         chip_type (str): The type of the chip (e.g., "74HCXX").
+        description (str): A description of the chip.
         package_name (str): The name of the package associated with the chip.
         pin_count (int): The number of pins on the chip.
         chip_width (float): The width of the chip.
@@ -78,6 +79,7 @@ class Chip:
         self,
         element_id: str,
         chip_type: str | None = None,
+        description: str | None = None,
         pkg: Package | None = None,
         functions: list[ChipFunction] | None = None,
         position: ConnectionPointID | None = None,
@@ -88,15 +90,22 @@ class Chip:
         Args:
             element_id (str): The unique identifier of the chip.
             chip_type (str): The chip_type of the chip (74HCXX).
+            description (str): A description of the chip.
             pkg (Package): The package associated with the chip.
             functions (list[ChipFunction]): A list containing the functions of the chip.
             position (ConnectionPointID, optional): The position of the chip on the breadboard (from the top left pin).
                                                     Defaults to None.
         """
         self.element_id = element_id
-        if chip_type is not None and pkg is not None and functions is not None and model is None:
+        if (
+            chip_type is not None
+            and description is not None
+            and pkg is not None
+            and functions is not None
+            and model is None
+        ):
             self.chip_type = chip_type
-
+            self.description = description
             self.package_name: str = pkg.type_name
             self.pin_count: int = pkg.pin_count
             self.chip_width: float = pkg.chip_width
@@ -109,7 +118,7 @@ class Chip:
                 self.set_position(position)
         elif model is not None:
             self.chip_type = model.chip_type
-
+            self.description = model.description
             self.package_name = model.package_name
             self.pin_count = model.pin_count
             self.chip_width = model.chip_width
@@ -222,7 +231,7 @@ class Chip:
                 raise ValueError(f"Unknown function type: {func_type}")
 
         if package_dict is not None and isinstance(json_data["package"], str):
-            return Chip(json_data["name"], json_data["name"], package_dict[json_data["package"]], functions)
+            return Chip(json_data["name"], json_data["name"], json_data["description"], package_dict[json_data["package"]], functions)
 
         raise ValueError("The package does not exist in the Components/Packages directory.")
 
@@ -234,6 +243,7 @@ class Chip:
         """
         attr_dict = {
             "label": self.chip_type,
+            "description": self.description,
             "type": self.chip_type,
             "packageName": self.package_name,
             "pinCount": self.pin_count,
