@@ -250,8 +250,8 @@ class ComponentData:
             (bandeAlim, 1, {"direction": VERTICAL}),
         ]  # ,1,{"direction":VERTICAL})]
 
-        model_pin_IO = [(self.sketcher.drawPinIO, 1, {"coord": [(9, 10)], "type": INPUT , "mode": AUTO, "matrix": matrix1260pts})]
-        model_pin_IO2 = [(self.sketcher.drawPinIO, 1, {"coord": [(9, 10)], "type": OUTPUT , "mode": AUTO, "matrix": matrix1260pts})]
+        # model_pin_IO = [(self.sketcher.drawPinIO, 1, {"coord": [(9, 10)], "type": INPUT , "mode": AUTO, "matrix": matrix1260pts})]
+        # model_pin_IO2 = [(self.sketcher.drawPinIO, 1, {"coord": [(9, 10)], "type": OUTPUT , "mode": AUTO, "matrix": matrix1260pts})]
 
 
         # ,(setFoncTrou,1,{"function":drawRoundHole})
@@ -269,8 +269,8 @@ class ComponentData:
             (chip7432, 1, {"direction": HORIZONTAL}),
             (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
             (wireTest, 1, {"direction": HORIZONTAL}),
-            (model_pin_IO, 1, {"direction": HORIZONTAL}),
-            (model_pin_IO2, 1, {"direction": HORIZONTAL}),
+            # (model_pin_IO, 1, {"direction": HORIZONTAL}),
+            # (model_pin_IO2, 1, {"direction": HORIZONTAL}),
             # (self.sketcher.goXY, 1, {"line": 10, "column": 8, "id_origin": "circTest"}),
             # (model_pin_IO2, 1),
         ]
