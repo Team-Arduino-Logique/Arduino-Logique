@@ -1735,6 +1735,8 @@ class ComponentSketcher:
             if key == "chipWidth":
                 chipWidth = value
         dimColumn = chipWidth * inter_space
+        if logicFunction is None:
+            return
         for pin in io:
             p = pin[1][0]
             orientation = 1 - 2 * ((p - 1) * 2 // pinCount)
