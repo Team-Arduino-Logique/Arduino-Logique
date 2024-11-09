@@ -313,7 +313,7 @@ class Toolbar:
                 self.sketcher.circuit(x_origin, y_origin, model=model_wire)
 
         # Move the cursor indicator
-        self.canvas.coords(self.cursor_indicator_id, x + x_min - 5, y + y_min - 5, x + x_min + 5, y + y_min + 5)
+        self.canvas.coords(self.cursor_indicator_id, x + x_min - 0, y + y_min - 0, x + x_min + 10, y + y_min + 10)
 
     def canvas_click(self, event):
         """
