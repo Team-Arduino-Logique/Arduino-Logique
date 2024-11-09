@@ -449,11 +449,10 @@ class Sidebar:
         if not query:
             filtered_chips = self.available_chips_and_imgs
         else:
-            filtered_chips = {
-                name: chip_data
-                for name, chip_data in self.available_chips_and_imgs.items()
-                if query in name.lower()
+            filtered_chips = [
+                chip_data for chip_data in self.available_chips_and_imgs
+                if query in chip_data[0].chip_type.lower()
                 or query in chip_data[0].package_name.lower()
                 or any(query in func.__class__.__name__.lower() for func in chip_data[0].functions)
-            }
+            ]
         self.display_chips(filtered_chips)
