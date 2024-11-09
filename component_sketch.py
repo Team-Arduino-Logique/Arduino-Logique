@@ -148,24 +148,24 @@ class ComponentSketcher:
             canvas_y = self.canvas.canvasy(event.y)
 
             color = current_dict_circuit[wire_id]["color"] 
-            coords = current_dict_circuit[wire_id]["coord"]
+            coord = current_dict_circuit[wire_id]["coord"]
             
 
             multipoints = current_dict_circuit[wire_id]["multipoints"]
             x_o , y_o = id_origins["xyOrigin"]
             if endpoint == "start":
-                matrix1260pts[f"{coords[0][0]},{coords[0][1]}"]["state"] = FREE
+                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
             else:
-                matrix1260pts[f"{coords[0][2]},{coords[0][3]}"]["state"] = FREE
+                matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
 
 
             (xn,yn), (cn,ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
             if endpoint == "start":
-                coords = [(cn, ln, coords[0][2], coords[0][3])]
+                coord = [(cn, ln, coord[0][2], coord[0][3])]
             else:
-                coords = [(coords[0][0], coords[0][1], cn, ln)]
+                coord = [(coord[0][0], coord[0][1], cn, ln)]
             
-            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords,"multipoints":multipoints,
+            model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord,"multipoints":multipoints,
                                                "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
@@ -234,22 +234,22 @@ class ComponentSketcher:
         x_o , y_o = id_origins["xyOrigin"]
         #nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
         
-        coords = current_dict_circuit[wire_id]["coord"]
+        coord = current_dict_circuit[wire_id]["coord"]
         XY = [current_dict_circuit[wire_id]["XY"] ]
         color = current_dict_circuit[wire_id]["color"] 
         if endpoint == "start":
             x =  canvas_x # pos[0] # + dx
             y =  canvas_y # pos[1] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid_chip(x,y)
-            coords = [(col, line, coords[0][2], coords[0][3])]
+            coord = [(col, line, coord[0][2], coord[0][3])]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - deb - col proche:{col} - ligne p: {line}")
         else:
             x = canvas_x # pos[2] # + dx
             y = canvas_y # pos[3] # + dy
             (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
-            coords = [(coords[0][0], coords[0][1], col, line)]
+            coord = [(coord[0][0], coord[0][1], col, line)]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coords": coords, "XY":XY, "matrix": matrix1260pts})]
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord, "XY":XY, "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
         #dx = nearest_x - x
@@ -414,12 +414,12 @@ class ComponentSketcher:
         x_o, y_o = id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y-y_o
         multipoints = current_dict_circuit[wire_id]["multipoints"]
-        coords = current_dict_circuit[wire_id]["coord"]
+        coord = current_dict_circuit[wire_id]["coord"]
         XY = [current_dict_circuit[wire_id]["XY"] ]
         color = current_dict_circuit[wire_id]["color"] 
         multipoints[self.nearest_multipoint] = x 
         multipoints[self.nearest_multipoint + 1] = y
-        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coords":coords,"color":color, "XY":XY,
+        model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coord":coord,"color":color, "XY":XY,
                                                "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)        
 
@@ -780,18 +780,18 @@ class ComponentSketcher:
             x_o = id_origins["xyOrigin"][0]
             y_o = id_origins["xyOrigin"][1]
 
-            # Find nearest grid point
+            coord = current_dict_circuit[pin_id]["coord"]
+
             (nearest_x, nearest_y), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
 
-            # Update the model with new coordinates
-            params = current_dict_circuit[pin_id]
-            
 
-            # Redraw the pinIO at the new position
-            model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coords": [(col, line)], "matrix": matrix1260pts})]
-            self.circuit(x_o, y_o, model=model_pinIO)
+            if(matrix1260pts[f"{col},{line}"]["state"] == FREE):
+                
+                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
+                model_pinIO = [(self.drawPinIO, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
+                self.circuit(x_o, y_o, model=model_pinIO)
 
-            print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
+            # print(f"PinIO {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
 
 
     def on_pinIO_release(self, event, pin_id):
@@ -1907,8 +1907,8 @@ class ComponentSketcher:
         global xSouris, ySouris
 
         space = 9
-        tagCoords = self.canvas.coords(tag)
-        self.canvas.move(tag, xSouris - tagCoords[0] - space, 0)
+        tagcoord = self.canvas.coords(tag)
+        self.canvas.move(tag, xSouris - tagcoord[0] - space, 0)
         self.canvas.tag_raise(tag)
         self.canvas.itemconfig(tag, state="normal")
 
@@ -2204,8 +2204,8 @@ class ComponentSketcher:
                 color = value
             if key == "mode":
                 mode = value
-            if key == "coords":
-                coords = value
+            if key == "coord":
+                coord = value
             if key == "matrix":
                 matrix = value
             if key == "id":
@@ -2224,9 +2224,9 @@ class ComponentSketcher:
                 params = current_dict_circuit[id]
                 tags = params["tags"]
                 params["mode"] = mode
-                params["coord"] = coords
+                params["coord"] = coord
                 params["multipoints"] = multipoints
-                xO, yO, xF, yF = coords[0]
+                xO, yO, xF, yF = coord[0]
                 if xO != -1:
                     xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
                 else: 
@@ -2257,7 +2257,7 @@ class ComponentSketcher:
                 # p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
                 # p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
                 # p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
-                # flat_coords = [coord for point in [p1, p2, p3, p4] for coord in point]
+                # flat_coord = [coord for point in [p1, p2, p3, p4] for coord in point]
                 multipoints = [xO, yO] + multipoints + [xF, yF]
                 #multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
                 multipoints = [val + 5*scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
@@ -2277,9 +2277,9 @@ class ComponentSketcher:
             num_id += 1
             params["id"] = id
             params["mode"] = mode
-            params["coord"] = coords
+            params["coord"] = coord
             params["multipoints"] = multipoints
-            xO, yO, xF, yF = coords[0]
+            xO, yO, xF, yF = coord[0]
     ############ MODIF KH 25/10/2024 ###############################
             if xO != -1:
                 xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
@@ -2437,8 +2437,8 @@ class ComponentSketcher:
             self.canvas.tag_bind(select_start_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'start'))
             self.canvas.tag_bind(select_end_tag, "<ButtonRelease-1>", lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, 'end'))
 
-        matrix[f"{coords[0][0]},{coords[0][1]}"]["state"] = USED
-        matrix[f"{coords[0][2]},{coords[0][3]}"]["state"] = USED
+        matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
+        matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = USED
 
         current_dict_circuit[id] = params
 
@@ -2458,7 +2458,7 @@ class ComponentSketcher:
         id = None
         multipoints = []
         type = INPUT  # Default type
-        coords = []
+        coord = []
         color = "#479dff"  # Default color
         for key, value in kwargs.items():
             if key == "mode":
@@ -2467,8 +2467,8 @@ class ComponentSketcher:
                 matrix = value
             elif key == "id":
                 id = value
-            elif key == "coords":
-                coords = value
+            elif key == "coord":
+                coord = value
             elif key == "tags":
                 tags = value
             elif key == "type":
@@ -2479,8 +2479,8 @@ class ComponentSketcher:
         if id and current_dict_circuit.get(id):
             params = current_dict_circuit[id]
             old_x, old_y = params["XY"]
-            params["coords"] = coords
-            xO, yO = coords[0]
+            params["coord"] = coord
+            xO, yO = coord[0]
             xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
             dx = xO - old_x
             dy = yO - old_y
@@ -2495,8 +2495,8 @@ class ComponentSketcher:
             params = {}
             params["id"] = id
             params["tags"] = []
-            params["coord"] = coords
-            xO, yO = coords[0]
+            params["coord"] = coord
+            xO, yO = coord[0]
             xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
             params["XY"] = (xO, yO)
             params["controller_pin"] = "IO"
@@ -2598,10 +2598,16 @@ class ComponentSketcher:
 
             current_dict_circuit[id] = params
 
+            
+
+            print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
+
             self.canvas.tag_bind(interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pinIO_click(event, pin_id))
             self.canvas.tag_bind(interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pinIO_drag(event, pin_id))
             self.canvas.tag_bind(interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pinIO_release(event, pin_id))
+            # print(f"Drawing PinIO with params: {params}")
 
-            print(f"Drawing PinIO with params: {params}")
+        matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
+            
 
         return xD, yD

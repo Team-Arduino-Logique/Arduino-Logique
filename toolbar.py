@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
-from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT
+from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE, USED, matrix1260pts
 from component_sketch import ComponentSketcher
 
 class Toolbar:
@@ -277,14 +277,17 @@ class Toolbar:
         if x > x_min and x < x_max and y > y_min and y < y_max:
             nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix1260pts)
             x, y = nearest_point[0], nearest_point[1]
-            if self.wire_placement_active and self.wire_start_point:
-                coords = current_dict_circuit[self.wire_id]["coord"]
+            if self.wire_placement_active and self.wire_start_point and matrix1260pts[f"{col},{line}"]["state"] == FREE:
+                
+                coord = current_dict_circuit[self.wire_id]["coord"]
+                matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
                 color = self.hex_to_rgb(self.selected_color)
-                coords = [(coords[0][0], coords[0][1], col, line)]
-                model_wire = [(self.sketcher.drawWire, 1, {"id": self.wire_id, "color": color, "coords": coords,
+                coord = [(coord[0][0], coord[0][1], col, line)]
+                model_wire = [(self.sketcher.drawWire, 1, {"id": self.wire_id, "color": color, "coord": coord,
                                                            "matrix": matrix1260pts})]
                 xO, yO = id_origins.get("xyOrigin", (0, 0))
                 self.sketcher.circuit(xO, yO, model=model_wire)
+                
         # Move the cursor indicator
         self.canvas.coords(self.cursor_indicator_id, x + x_min - 5, y + y_min - 5, x + x_min + 5, y + y_min + 5)
 
@@ -301,27 +304,32 @@ class Toolbar:
         nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix=matrix1260pts)
         xO, yO = id_origins.get("xyOrigin", (0, 0))
 
-        if self.wire_placement_active:
+        if self.wire_placement_active :
             # Wire placement logic
             adjusted_x, adjusted_y = nearest_point[0], nearest_point[1]
             if self.wire_start_point is None:
-                color = self.hex_to_rgb(self.selected_color)
-                coords = [(col, line, col, line)]
-                model_wire = [(self.sketcher.drawWire, 1, {"color": color, "coords": coords,
-                                                           "matrix": matrix1260pts})]
-                self.sketcher.circuit(xO, yO, model=model_wire)
-                self.wire_id = current_dict_circuit["last_id"]
-                self.wire_start_point = (adjusted_x, adjusted_y)
-                self.wire_start_col_line = (col, line)
+                if  matrix1260pts[f"{col},{line}"]["state"] == FREE:
+                    
+                    color = self.hex_to_rgb(self.selected_color)
+                    coord = [(col, line, col, line)]
+                    model_wire = [(self.sketcher.drawWire, 1, {"color": color, "coord": coord,
+                                                            "matrix": matrix1260pts})]
+                    self.sketcher.circuit(xO, yO, model=model_wire)
+                    self.wire_id = current_dict_circuit["last_id"]
+                    self.wire_start_point = (adjusted_x, adjusted_y)
+                    self.wire_start_col_line = (col, line)
             else:
                 # Finalize the wire
                 self.wire_start_point = None
                 self.wire_start_col_line = None
-        elif self.pinIO_placement_active:
+                print("Wire placement completed.")
+                
+        elif self.pinIO_placement_active and matrix1260pts[f"{col},{line}"]["state"] == FREE:
+
             # PinIO placement logic
             color = self.selected_color
             type_const = INPUT if self.pinIO_type == "Input" else OUTPUT
-            model_pinIO = [(self.sketcher.drawPinIO, 1, {"color": color, "type": type_const, "coords": [(col, line)],
+            model_pinIO = [(self.sketcher.drawPinIO, 1, {"color": color, "type": type_const, "coord": [(col, line)],
                                                          "matrix": matrix1260pts})]
             self.sketcher.circuit(xO, yO, model=model_pinIO)
             # Optionally deactivate after placement
