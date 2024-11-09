@@ -165,7 +165,9 @@ class ComponentSketcher:
             else:
                 coord = [(coord[0][0], coord[0][1], cn, ln)]
             
+
             model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord,"multipoints":multipoints,
+
                                                "matrix": matrix1260pts})]
             self.circuit(x_o , y_o , model = model_wire)
 
@@ -249,7 +251,9 @@ class ComponentSketcher:
             (real_x,real_y),(col,line) = self.find_nearest_grid_wire(x,y)
             coord = [(coord[0][0], coord[0][1], col, line)]
             # print(f"snap ({canvas_x},{canvas_y}) - ({x},{y})({self.wire_drag_data["x"]},{self.wire_drag_data["y"]}) - fin - col proche:{col} - ligne p: {line}")
+
         model_wire = [(self.drawWire, 1, {"id": wire_id,"color":color, "coord": coord, "XY":XY, "matrix": matrix1260pts})]
+
         self.circuit(x_o , y_o , model = model_wire)
         # Calculate movement delta
         #dx = nearest_x - x
@@ -419,7 +423,9 @@ class ComponentSketcher:
         color = current_dict_circuit[wire_id]["color"] 
         multipoints[self.nearest_multipoint] = x 
         multipoints[self.nearest_multipoint + 1] = y
+
         model_wire = [(self.drawWire, 1, {"id": wire_id,"multipoints":multipoints, "coord":coord,"color":color, "XY":XY,
+
                                                "matrix": matrix1260pts})]
         self.circuit(x_o , y_o , model = model_wire)        
 
@@ -1992,6 +1998,7 @@ class ComponentSketcher:
             params["id"] = id
             params["XY"] = (xD, yD)
             params["pinUL_XY"] = (xD + 2*scale, yD - space*scale)  
+            params["chipWidth"] = dim["chipWidth"]
             params["pinCount"] = dim["pinCount"]
             dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
             dimColumn = dim["chipWidth"] * inter_space
@@ -2205,7 +2212,9 @@ class ComponentSketcher:
             if key == "mode":
                 mode = value
             if key == "coord":
+
                 coord = value
+
             if key == "matrix":
                 matrix = value
             if key == "id":
@@ -2476,6 +2485,7 @@ class ComponentSketcher:
             elif key == "color":
                 color = value
 
+
         if id and current_dict_circuit.get(id):
             params = current_dict_circuit[id]
             old_x, old_y = params["XY"]
@@ -2611,3 +2621,16 @@ class ComponentSketcher:
             
 
         return xD, yD
+
+    def clear_board(self):
+        """Clear the board of all drawn components."""
+        for item in current_dict_circuit.values():
+            if "tags" not in item:
+                continue
+            for tag in item["tags"]:
+                self.canvas.delete(tag)
+        for key in id_type:
+            id_type[key] = 0
+        current_dict_circuit.clear()
+        # TODO Khalid update the Circuit instance
+

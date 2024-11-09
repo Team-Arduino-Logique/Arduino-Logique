@@ -61,8 +61,16 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
+        icons_folder = None
+        for item in os.listdir(os.path.dirname(__file__)):
+            if os.path.isdir(item) and item.lower() == "icons":
+                icons_folder = item
+                break
+        if icons_folder is None:
+            messagebox.showerror("Folder Error", "Icons folder not found.")
+            return
         for name in icon_names:
-            path = os.path.join("icons", f"{name}.png")
+            path = os.path.join(icons_folder, f"{name}.png")
             try:
                 image = tk.PhotoImage(file=path)
                 # Calculate the scaling factor based on original image size and desired icon_size
@@ -274,6 +282,7 @@ class Toolbar:
             x, y = nearest_point[0], nearest_point[1]
             if self.wire_placement_active and self.wire_start_point and matrix1260pts[f"{col},{line}"]["state"] == FREE:
                 
+
                 coord = current_dict_circuit[self.wire_id]["coord"]
                 matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
                 color = self.hex_to_rgb(self.selected_color)
@@ -285,6 +294,7 @@ class Toolbar:
                 
         # Move the cursor indicator
         self.canvas.coords(self.cursor_indicator_id, x + x_min - 5, y + y_min - 5, x + x_min + 5, y + y_min + 5)
+
 
     def canvas_click(self, event):
         """
@@ -303,6 +313,7 @@ class Toolbar:
             # Wire placement logic
             adjusted_x, adjusted_y = nearest_point[0], nearest_point[1]
             if self.wire_start_point is None:
+
                 if  matrix1260pts[f"{col},{line}"]["state"] == FREE:
                     
                     color = self.hex_to_rgb(self.selected_color)
@@ -315,6 +326,7 @@ class Toolbar:
                     self.wire_start_col_line = (col, line)
             else:
                 # Finalize the wire
+
                 self.wire_start_point = None
                 self.wire_start_col_line = None
                 print("Wire placement completed.")

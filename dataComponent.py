@@ -185,7 +185,9 @@ class ComponentData:
         chip7408 = [(self.sketcher.drawChip, 1, {**dip7408, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7408})]
         chip7432 = [(self.sketcher.drawChip, 1, {**dip7432, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7432})]
         wireTest = [
+
             (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coord": [(9, 10, 32, 25)],"multipoints":[200,415,200,600,400,500], "matrix": matrix1260pts}),
+
             (self.sketcher.drawWire, 1, {"color": (10, 10, 10, 255), "mode": AUTO, "coord": [(35, 12, 35, 13)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 80, 0, 255), "mode": AUTO, "coord": [(5, 10, 15, 10)], "matrix": matrix1260pts}),
             (self.sketcher.drawWire, 1, {"color": (0, 255, 0, 255), "mode": AUTO, "coord": [(2, 6, 40, 1)], "matrix": matrix1260pts}),
