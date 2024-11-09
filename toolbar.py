@@ -1,14 +1,38 @@
-# toolbar.py
+"""
+toolbar.py
+This module defines the Toolbar class, which provides a graphical toolbar for an application using the Tkinter library.
+The toolbar includes buttons for various actions (e.g., Connection, Power, Input, Output, Delete) and a color chooser
+for selecting connection colors. The Toolbar class manages the state and behavior of these buttons and handles user
+interactions for placing wires and pin_ios on a canvas.
+"""
 
 from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
-from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE, USED, matrix1260pts
-from component_sketch import ComponentSketcher
-
+from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE
 
 class Toolbar:
+    """
+    A class to create and manage a toolbar for an application.
+    Attributes:
+        - parent (tk.Tk or tk.Frame): The parent widget to which the toolbar belongs.
+        - canvas (tk.Canvas): The canvas widget where drawing operations are performed.
+        - board (object): The board object representing the drawing surface.
+        - sketcher (object): The sketcher object responsible for drawing operations.
+        - selected_color (str): The currently selected color for connections.
+        - images (dict): A dictionary to store loaded images for toolbar buttons.
+        - icon_size (int): The size of the icons used in the toolbar.
+        - buttons (dict): A dictionary to store references to toolbar buttons.
+        - active_button (str or None): The currently active button, if any.
+        - wire_placement_active (bool): A flag indicating if wire placement mode is active.
+        - pin_io_placement_active (bool): A flag indicating if pin_io placement mode is active.
+        - pin_io_type (str or None): The type of pin_io being placed ('Input' or 'Output').
+        - wire_start_point (tuple or None): The starting point of the wire being placed.
+        - wire_start_col_line (tuple or None): The starting column and line of the wire being placed.
+        - cursor_indicator_id (int or None): The ID of the cursor-following indicator.
+        - wire_id (int or None): The ID of the current wire being drawn.
+    """
     def __init__(self, parent, canvas, board, sketcher):
         self.parent = parent
         self.canvas = canvas
@@ -20,8 +44,8 @@ class Toolbar:
         self.buttons = {}
         self.active_button = None
         self.wire_placement_active = False
-        self.pinIO_placement_active = False
-        self.pinIO_type = None  # Will be set to 'Input' or 'Output' during placement
+        self.pin_io_placement_active = False
+        self.pin_io_type = None  # Will be set to 'Input' or 'Output' during placement
         self.wire_start_point = None
         self.wire_start_col_line = None
         self.cursor_indicator_id = None
@@ -125,7 +149,7 @@ class Toolbar:
         """
         Creates a color chooser button next to the Delete button.
         """
-        square_size = self.icon_size
+        # square_size = self.icon_size
         self.color_button = tk.Button(
             parent_frame, bg=self.selected_color, width=2, height=1, relief="raised", bd=1, command=self.choose_color
         )
@@ -141,7 +165,7 @@ class Toolbar:
             self.color_button.configure(bg=self.selected_color)
             if self.cursor_indicator_id:
                 self.canvas.itemconfig(self.cursor_indicator_id, fill=self.selected_color)
-            # Here you can add logic to apply the selected color to new connections
+            # Here y_originu can add logic to apply the selected color to new connections
 
     def button_action(self, action_name):
         """
@@ -186,12 +210,12 @@ class Toolbar:
         """
         # Deactivate other modes
         self.deactivate_wire_placement_mode()
-        self.deactivate_pinIO_placement_mode()
+        self.deactivate_pin_io_placement_mode()
 
         if action_name == "Connection":
             self.activate_wire_placement_mode()
         elif action_name in ["Input", "Output"]:
-            self.activate_pinIO_placement_mode(action_name)
+            self.activate_pin_io_placement_mode(action_name)
 
     def deactivate_mode(self, action_name):
         """
@@ -200,7 +224,7 @@ class Toolbar:
         if action_name == "Connection":
             self.deactivate_wire_placement_mode()
         elif action_name in ["Input", "Output"]:
-            self.deactivate_pinIO_placement_mode()
+            self.deactivate_pin_io_placement_mode()
 
     def activate_wire_placement_mode(self):
         """
@@ -224,26 +248,26 @@ class Toolbar:
         self.wire_start_col_line = None
         self.canvas.delete("wire_temp_circle")
 
-    def activate_pinIO_placement_mode(self, pin_type):
+    def activate_pin_io_placement_mode(self, pin_type):
         """
-        Activates PinIO placement mode for the specified pin type (Input or Output).
+        Activates pin_io placement mode for the specified pin type (Input or Output).
         """
-        self.pinIO_placement_active = True
-        self.pinIO_type = pin_type  # Store the type for use during placement
+        self.pin_io_placement_active = True
+        self.pin_io_type = pin_type  # Store the type for use during placement
         self.canvas.config(cursor="none")
         if self.cursor_indicator_id is None:
             self.create_cursor_indicator(pin_type)
 
-    def deactivate_pinIO_placement_mode(self):
+    def deactivate_pin_io_placement_mode(self):
         """
-        Deactivates PinIO placement mode.
+        Deactivates pin_io placement mode.
         """
-        self.pinIO_placement_active = False
-        self.pinIO_type = None
+        self.pin_io_placement_active = False
+        self.pin_io_type = None
         self.canvas.config(cursor="")
         self.remove_cursor_indicator()
 
-    def create_cursor_indicator(self, pin_type=None):
+    def create_cursor_indicator(self, _=None):
         """
         Creates a cursor indicator that follows the mouse position.
         """
@@ -264,12 +288,12 @@ class Toolbar:
         """
         Moves the cursor-following indicator to the mouse position.
         """
-        if not (self.wire_placement_active or self.pinIO_placement_active) or self.cursor_indicator_id is None:
+        if not (self.wire_placement_active or self.pin_io_placement_active) or self.cursor_indicator_id is None:
             return
         x, y = event.x, event.y
         x_min, y_min = id_origins["xyOrigin"]
         x_max, y_max = id_origins["bottomLimit"]
-        if x > x_min and x < x_max and y > y_min and y < y_max:
+        if x_min < x < x_max and y_min < y < y_max:
             nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix1260pts)
             x, y = nearest_point[0], nearest_point[1]
             if self.wire_placement_active and self.wire_start_point and matrix1260pts[f"{col},{line}"]["state"] == FREE:
@@ -285,8 +309,8 @@ class Toolbar:
                         {"id": self.wire_id, "color": color, "coord": coord, "matrix": matrix1260pts},
                     )
                 ]
-                xO, yO = id_origins.get("xyOrigin", (0, 0))
-                self.sketcher.circuit(xO, yO, model=model_wire)
+                x_origin, y_origin = id_origins.get("xyOrigin", (0, 0))
+                self.sketcher.circuit(x_origin, y_origin, model=model_wire)
 
         # Move the cursor indicator
         self.canvas.coords(self.cursor_indicator_id, x + x_min - 5, y + y_min - 5, x + x_min + 5, y + y_min + 5)
@@ -302,7 +326,7 @@ class Toolbar:
             return  # Click is outside valid area
 
         nearest_point, (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix=matrix1260pts)
-        xO, yO = id_origins.get("xyOrigin", (0, 0))
+        x_origin, y_origin = id_origins.get("xyOrigin", (0, 0))
 
         if self.wire_placement_active:
             # Wire placement logic
@@ -316,7 +340,7 @@ class Toolbar:
                     model_wire = [
                         (self.sketcher.drawWire, 1, {"color": color, "coord": coord, "matrix": matrix1260pts})
                     ]
-                    self.sketcher.circuit(xO, yO, model=model_wire)
+                    self.sketcher.circuit(x_origin, y_origin, model=model_wire)
                     self.wire_id = current_dict_circuit["last_id"]
                     self.wire_start_point = (adjusted_x, adjusted_y)
                     self.wire_start_col_line = (col, line)
@@ -327,32 +351,32 @@ class Toolbar:
                 self.wire_start_col_line = None
                 print("Wire placement completed.")
 
-        elif self.pinIO_placement_active and matrix1260pts[f"{col},{line}"]["state"] == FREE:
+        elif self.pin_io_placement_active and matrix1260pts[f"{col},{line}"]["state"] == FREE:
 
-            # PinIO placement logic
+            # pin_io placement logic
             color = self.selected_color
-            type_const = INPUT if self.pinIO_type == "Input" else OUTPUT
-            model_pinIO = [
+            type_const = INPUT if self.pin_io_type == "Input" else OUTPUT
+            model_pin_io = [
                 (
                     self.sketcher.drawPinIO,
                     1,
                     {"color": color, "type": type_const, "coord": [(col, line)], "matrix": matrix1260pts},
                 )
             ]
-            self.sketcher.circuit(xO, yO, model=model_pinIO)
+            self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
             # Optionally deactivate after placement
-            # self.cancel_pinIO_placement()
+            # self.cancel_pin_io_placement()
 
     def cancel_placement(self, event=None):
         """
-        Cancels any active placement mode (wire or pinIO), untoggles the active button, and resets the state.
+        Cancels any active placement mode (wire or pin_io), untoggles the active button, and resets the state.
         """
         if self.wire_placement_active:
             self.cancel_wire_placement(event)
-        elif self.pinIO_placement_active:
-            self.cancel_pinIO_placement(event)
+        elif self.pin_io_placement_active:
+            self.cancel_pin_io_placement(event)
 
-    def cancel_wire_placement(self, event=None):
+    def cancel_wire_placement(self, _=None):
         """
         Cancels the wire placement, untoggles the Connection button, and resets the state.
         """
@@ -365,18 +389,18 @@ class Toolbar:
         self.deactivate_wire_placement_mode()
         print("Wire placement canceled.")
 
-    def cancel_pinIO_placement(self, event=None):
+    def cancel_pin_io_placement(self, _=None):
         """
-        Cancels the PinIO placement, untoggles the Input/Output button, and resets the state.
+        Cancels the pin_io placement, untoggles the Input/Output button, and resets the state.
         """
-        if not self.pinIO_placement_active:
+        if not self.pin_io_placement_active:
             return
         # Deactivate the active button
         self.deactivate_button(self.active_button)
         self.active_button = None
-        # Deactivate pinIO placement mode
-        self.deactivate_pinIO_placement_mode()
-        print(f"{self.pinIO_type} placement canceled.")
+        # Deactivate pin_io placement mode
+        self.deactivate_pin_io_placement_mode()
+        print(f"{self.pin_io_type} placement canceled.")
 
     def hex_to_rgb(self, hex_color):
         """
