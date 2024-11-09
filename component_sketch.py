@@ -2081,7 +2081,8 @@ class ComponentSketcher:
                 outline="#000000",
                 tags=tagBase,
             )
-            if "internalFunc" in dim and dim["internalFunc"] is not None:
+            # FIXME false so it is never called, rework is for the future
+            if False and "internalFunc" in dim and dim["internalFunc"] is not None:
                 dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
 
             self.rounded_rect(
@@ -2150,7 +2151,8 @@ class ComponentSketcher:
             self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
             # Only bind a tag to the menu if it has an internal function
             # FIXME (maybe?)
-            if "internalFunc" in dim and dim["internalFunc"] is not None and "logicFunction" in kwargs and kwargs["logicFunction"] is not None:
+            # FIXME: false so it is never bound, rework is for the future
+            if False and "internalFunc" in dim and dim["internalFunc"] is not None and "logicFunction" in kwargs and kwargs["logicFunction"] is not None:
                 self.canvas.tag_bind(
                     tagSouris, "<Button-3>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
                 )
