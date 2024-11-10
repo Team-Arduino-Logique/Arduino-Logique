@@ -375,20 +375,35 @@ class Menus:
         
     def checkCircuit(self):
         print("Lancer la vérification")
-        func =[]
-        for id, chip in current_dict_circuit.items():
+        func    = []
+        wire    = []
+        pwr     = [(61,1,"-"), (61,2,"+")]  # [(col, line, "+" ou "-"), ...]
+        pwrChip = {"+" : [], "-": []}
+        io      = []
+        for id, component in current_dict_circuit.items():
             if id[:6] == "_chip_":
-                (x, y) = chip["pinUL_XY"]
-                numPinUL = chip["pinCount"] // 2
+                (x, y) = component["pinUL_XY"]
+                numPinUL = component["pinCount"] // 2
                 (real_x,real_y),(col,line) = self.sketcher.find_nearest_grid_chip(x,y)
                 ioIn, ioOut = [], []
-                for io in chip["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
+                for io in component["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
                     #ioIN, ioOut = [], []
                     ioIn = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[0]]
                     ioOut = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[1]]
-                    func += [(ioIn, chip["symbScript"], ioOut)]
-                    print(f"ioIN  = {ioIn}")
-                    print(f"ioOUT = {ioOut}")
-                    print(f"func= {func}")
+                    func += [(id,ioIn, component["symbScript"], ioOut)]
+                    #print(f"ioIN  = {ioIn}")
+                    #print(f"ioOUT = {ioOut}")
+                    #print(f"func= {func}")
                     #print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                for pwr in component["pwr"]:
+                    numPin, polarity = pwr[0], pwr[1]
+                    pwrChip[polarity] += [(id,col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))]
+                    #print(f"pwrChip= {pwrChip}")
+            elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
+                wire += component["coord"]
+        print(f"func= {func}\n")
+        print(f"pwrChip= {pwrChip}\n")
+        print(f"wire = {wire}")
+        
+                
                     
