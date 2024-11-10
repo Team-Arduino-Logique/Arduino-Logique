@@ -7,11 +7,15 @@ on the canvas.
 
 from tkinter import Canvas
 
+from component_sketch import ComponentSketcher
 from dataCDLT import (
     matrix830pts,
     matrix1260pts,
     FREE,
     id_origins,
+    HORIZONTAL,
+    PERSO,
+    VERTICAL,
 )
 
 
@@ -28,8 +32,9 @@ class Breadboard:
         The matrix representing the breadboard.
     """
 
-    def __init__(self, canvas: Canvas):
+    def __init__(self, canvas: Canvas, sketcher: ComponentSketcher):
         self.canvas = canvas
+        self.sketcher = sketcher
         self.selector()
         self.canvas.config(cursor="")
         canvas.bind("<Motion>", self.follow_mouse)
@@ -186,3 +191,71 @@ class Breadboard:
             # Draw a small circle at (x, y) with the specified color
             radius = 2 * scale  # Adjust size as needed
             self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill=color, outline="")
+
+    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10):
+        """
+        Draws a blank breadboard model on the canvas.
+        """
+        line_distribution = [(self.sketcher.draw_hole, 63)]
+        power_block = [(self.sketcher.draw_hole, 5), (self.sketcher.draw_blank, 1)]
+        neg_power_rail = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
+            (self.sketcher.draw_rail, 60),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
+        ]
+        pos_power_rail = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+            (self.sketcher.draw_red_rail, 60),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+        ]
+        power_line = [(self.sketcher.draw_blank, 3), (power_block, 10, {"direction": HORIZONTAL})]
+        power_strip = [
+            (neg_power_rail, 1, {"direction": VERTICAL}),
+            (power_line, 2, {"direction": VERTICAL}),
+            (pos_power_rail, 1, {"direction": VERTICAL}),
+        ]
+        strip_distribution = [(line_distribution, 5, {"direction": VERTICAL})]
+        numbering = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_num_iter, 1, {"beginNum": 1, "endNum": 63, "direction": HORIZONTAL, "deltaY": -1.5}),
+        ]
+
+        board830pts = [
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "bboard830"}),
+            (self.sketcher.draw_board, 1),
+            (self.sketcher.draw_half_blank, 1, {"direction": HORIZONTAL}),
+            (self.sketcher.draw_half_blank, 1, {"direction": VERTICAL}),
+            (power_strip, 1, {"direction": VERTICAL}),
+            (numbering, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "anchor": "center", "deltaY": 0.7}),
+            (strip_distribution, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "deltaY": 0.7}),
+            (strip_distribution, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 18.8, "column": 0.5, "id_origin": "bboard830"}),
+            (numbering, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 18.5, "column": 0.5, "id_origin": "bboard830"}),
+            (power_strip, 1, {"direction": VERTICAL}),
+        ]
+
+        board1260pts = [(board830pts, 2, {"direction": PERSO, "dXY": (0, 1.3)})]
+        blank_board_model = [
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "circTest"}),
+            (board1260pts, 1),
+            (self.sketcher.go_xy, 1, {"line": 10.1, "column": 1.4, "id_origin": "circTest"}),
+            (self.sketcher.go_xy, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
+        ]
+        self.sketcher.circuit(x_origin, y_origin, scale=self.sketcher.scale_factor, model=blank_board_model)

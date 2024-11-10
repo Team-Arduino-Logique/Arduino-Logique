@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
-from dataComponent import ComponentData
 from dataCDLT import current_dict_circuit, id_origins
 from menus import Menus
 from sidebar import Sidebar
@@ -65,28 +64,26 @@ def main():
     canvas = tk.Canvas(win, bg="#626262", highlightthickness=0, bd=0)
     canvas.grid(row=2, column=1, sticky="nsew")
 
-    # Initializing the breadboard and components
-    board = Breadboard(canvas)
-    board.fill_matrix_1260_pts()
-
     # Create a single instance of ComponentSketcher
     sketcher = ComponentSketcher(canvas)
+
+    # Initializing the breadboard and components
+    board = Breadboard(canvas, sketcher)
+    board.fill_matrix_1260_pts()
+
+
 
     # Creating the toolbar instance
     toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
     toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
-    # Initialize component data with the same sketcher
-    component_data = ComponentData(sketcher)
-    model = component_data.circuitTest
-
     # Set initial scale factor
     initial_scale = 1.0  # Equivalent to 10.0 / 10.0
     sketcher.scale_factor = initial_scale
 
     # Draw the circuit
-    sketcher.circuit(50, 10, scale=initial_scale, model=model)
+    board.draw_blank_board_model(50, 10)
     id_origins["xyOrigin"] = (50, 10)
 
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
@@ -102,8 +99,6 @@ def main():
         parent=win,
         canvas=canvas,
         board=board,
-        component_data=component_data,
-        model=model,
         current_dict_circuit=current_dict_circuit,
         zoom_function=zoom,
     )
@@ -113,8 +108,6 @@ def main():
     # Assigning the references to menus
     menus.canvas = canvas
     menus.board = board
-    menus.component_data = component_data
-    menus.model = model
     menus.current_dict_circuit = current_dict_circuit
     menus.zoom_function = zoom
 

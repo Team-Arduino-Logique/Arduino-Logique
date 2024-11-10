@@ -84,7 +84,6 @@ class ComponentSketcher:
             scale = width / 9.0
         inter_space = 15 * scale
 
-        # component_data = ComponentData(self.sketcher)
         model = kwargs.get("model", [(self.draw_hole, 1)])
         _, delta_y = kwargs.get("dXY", (0, 1))
 
