@@ -245,7 +245,7 @@ class Menus:
                         x, y = val["XY"]
                         model_chip = [
                             (
-                                self.board.sketcher.drawChip,
+                                self.board.sketcher.draw_chip,
                                 1,
                                 {
                                     **val,
@@ -258,7 +258,7 @@ class Menus:
                     elif "wire" in key:
                         model_wire = [
                             (
-                                self.board.sketcher.drawWire,
+                                self.board.sketcher.draw_wire,
                                 1,
                                 {
                                     **val,

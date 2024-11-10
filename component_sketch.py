@@ -52,7 +52,7 @@ class ComponentSketcher:
 
     def __init__(self, canvas) -> None:
         self.canvas: tk.Canvas = canvas
-        self.hole_func = {"function": self.drawSquareHole}
+        self.hole_func = self.draw_square_hole
         self.scale_factor = 1.0
         self.drag_selector = False
         self.nearest_multipoint = -1
@@ -89,7 +89,7 @@ class ComponentSketcher:
         inter_space = 15 * scale
 
         # component_data = ComponentData(self.sketcher)
-        model = kwargs.get("model", [(self.drawHole, 1)])
+        model = kwargs.get("model", [(self.draw_hole, 1)])
         _, delta_y = kwargs.get("dXY", (0, 1))
 
         x, y = x_distance, y_distance
@@ -158,7 +158,7 @@ class ComponentSketcher:
 
             model_wire = [
                 (
-                    self.drawWire,
+                    self.draw_wire,
                     1,
                     {
                         "id": wire_id,
@@ -245,7 +245,7 @@ class ComponentSketcher:
             coord = [(coord[0][0], coord[0][1], col, line)]
 
         model_wire = [
-            (self.drawWire, 1, {"id": wire_id, "color": color, "coord": coord, "XY": xy, "matrix": matrix1260pts})
+            (self.draw_wire, 1, {"id": wire_id, "color": color, "coord": coord, "XY": xy, "matrix": matrix1260pts})
         ]
 
         self.circuit(id_origins["xyOrigin"], model=model_wire)
@@ -329,11 +329,14 @@ class ComponentSketcher:
         return nearest_point, nearest_point_col_lin
 
     def find_nearest_multipoint(self, x, y, wire_id):
+        """
+        Find the nearest multipoint to the given x, y coordinates on the wire body.
+        """
         nearest_point = -1
         multipoint = current_dict_circuit[wire_id]["multipoints"]
-        [(xO, yO, xF, yF)] = current_dict_circuit[wire_id]["coord"]
-        xO, yO = self.getXY(xO, yO, matrix=matrix1260pts)
-        xF, yF = self.getXY(xF, yF, matrix=matrix1260pts)
+        [(x_start, y_start, x_end, y_end)] = current_dict_circuit[wire_id]["coord"]
+        x_start, y_start = self.get_xy(x_start, y_start, matrix=matrix1260pts)
+        x_end, y_end = self.get_xy(x_end, y_end, matrix=matrix1260pts)
         i = 0
         while nearest_point == -1 and i < len(multipoint):
             if math.hypot(x - multipoint[i], y - multipoint[i + 1]) <= 15:
@@ -341,7 +344,7 @@ class ComponentSketcher:
             i += 2
         insert_point = False
         if nearest_point == -1:
-            x1, y1 = xO, yO
+            x1, y1 = x_start, y_start
             i = 0
             while nearest_point == -1 and i < len(multipoint):
                 dx, dy = multipoint[i] - x1, multipoint[i + 1] - y1
@@ -371,22 +374,28 @@ class ComponentSketcher:
         current_dict_circuit[wire_id]["multipoints"] = multipoint
         return nearest_point, insert_point
 
-    def on_wire_body_enter(self, event, wire_id):
+    def on_wire_body_enter(self, _, wire_id):
+        """
+        Event handler for when the mouse enters the wire body.
+        """
         if not self.drag_selector and not self.delete_mode_active:
-            x, y = event.x, event.y
             color = current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
             self.canvas.itemconfig("selector_cable", fill=contour, outline=encre)
-            # self.canvas.coords("selector_cable", [x-10,y-10,x,y])
             self.canvas.itemconfig("selector_cable", state="normal")
-            # self.canvas.tag_raise("selector_cable")
 
-    def on_wire_body_leave(self, event, wire_id):
+    def on_wire_body_leave(self, *_):
+        """
+        Event handler for when the mouse leaves the wire body.
+        """
         if not self.drag_selector:
             self.canvas.itemconfig("selector_cable", state="hidden")
 
     def on_wire_body_click(self, event, wire_id):
+        """
+        Event handler for when the wire body is clicked.
+        """
         if self.delete_mode_active:
             print(f"Deleting wire {wire_id}")
             self.delete_wire(wire_id)
@@ -433,35 +442,38 @@ class ComponentSketcher:
         print(f"Wire {wire_id} deleted")
 
     def on_wire_body_drag(self, event, wire_id):
-        # self.wire_drag_data["wire_id"] = wire_id
-        # self.wire_drag_data["endpoint"] = "selector_cable"
-        endpoint_tag = "selector_cable"
+        """
+        Event handler for dragging the wire body.
+        """
         x_o, y_o = id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y - y_o
         multipoints = current_dict_circuit[wire_id]["multipoints"]
         coord = current_dict_circuit[wire_id]["coord"]
-        XY = [current_dict_circuit[wire_id]["XY"]]
+        xy = [current_dict_circuit[wire_id]["XY"]]
         color = current_dict_circuit[wire_id]["color"]
         multipoints[self.nearest_multipoint] = x
         multipoints[self.nearest_multipoint + 1] = y
 
         model_wire = [
             (
-                self.drawWire,
+                self.draw_wire,
                 1,
                 {
                     "id": wire_id,
                     "multipoints": multipoints,
                     "coord": coord,
                     "color": color,
-                    "XY": XY,
+                    "XY": xy,
                     "matrix": matrix1260pts,
                 },
             )
         ]
         self.circuit(x_o, y_o, model=model_wire)
 
-    def on_wire_body_release(self, event, wire_id):
+    def on_wire_body_release(self, *_):
+        """
+        Event handler for when the wire body is released.
+        """
         self.wire_drag_data["wire_id"] = None
         self.wire_drag_data["endpoint"] = None
         self.nearest_multipoint = -1
@@ -568,7 +580,7 @@ class ComponentSketcher:
             current_x, current_y = chip_params["XY"]
             # chip_params["XY"] = (current_x + dx, current_y + dy)
 
-            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (current_x + dx, current_y + dy)})]
+            model_chip = [(self.draw_chip, 1, {"id": chip_id, "XY": (current_x + dx, current_y + dy)})]
             self.circuit(current_x + dx, current_y + dy, model=model_chip)
 
             print(f"Chip {chip_id} moved to new position: ({current_x}, {current_y})")
@@ -582,7 +594,11 @@ class ComponentSketcher:
             #     pin_x, pin_y = pin_info['position']
             #     pin_info['position'] = (pin_x + dx, pin_y + dy)
 
-    def on_stop_chip_drag(self, event):
+    def on_stop_chip_drag(self, _):
+        """
+        Event handler for stopping chip drag.
+        """
+
         chip_id = self.drag_chip_data["chip_id"]
         if chip_id:
             # MODIF KH POUR DRAG-DROP 23/10/2024
@@ -605,7 +621,7 @@ class ComponentSketcher:
                 print("Not enough space to place the chip here.")
                 col = 63 - half_pin_count + 1
                 (x_o, y_o) = id_origins["xyOrigin"]
-                real_x, real_y = self.getXY(col, line, matrix=matrix1260pts)
+                real_x, real_y = self.get_xy(col, line, matrix=matrix1260pts)
                 real_x += x_o
                 real_y += y_o
                 (real_x, real_y), (col, line) = self.find_nearest_grid_chip(real_x, real_y)
@@ -628,8 +644,8 @@ class ComponentSketcher:
                 if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                     holes_available = False
                     break
-                else:
-                    occupied_holes.extend([hole_id_top, hole_id_bottom])
+
+                occupied_holes.extend([hole_id_top, hole_id_bottom])
 
             if not holes_available:
                 print("Holes are occupied. Cannot place the chip here.")
@@ -650,7 +666,7 @@ class ComponentSketcher:
             # AJOUT KH DRAG-DROP 23/10/2024
             pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
             # FIN AJOUT KH
-            model_chip = [(self.drawChip, 1, {"id": chip_id, "XY": (real_x, real_y), "pinUL_XY": (pin_x, pin_y)})]
+            model_chip = [(self.draw_chip, 1, {"id": chip_id, "XY": (real_x, real_y), "pinUL_XY": (pin_x, pin_y)})]
             self.circuit(real_x, real_y, model=model_chip)
             # Reset drag_chip_data
             self.drag_chip_data["chip_id"] = None
@@ -665,9 +681,7 @@ class ComponentSketcher:
         """
         half_pin_count = pin_count // 2
         holes = []
-        # Adjust x and y for the origin
-        (x_o, y_o) = id_origins["xyOrigin"]
-        col, line = self.getColLine(x, y, matrix=matrix1260pts)
+        col, line = self.get_col_line(x, y, matrix=matrix1260pts)
         if line not in [7, 21]:
             return holes  # Chip not on correct lines
         for i in range(half_pin_count):
@@ -676,41 +690,19 @@ class ComponentSketcher:
             holes.extend([hole_id_top, hole_id_bottom])
         return holes
 
-    # def find_nearest_snap_point(self, x, y, matrix):
-    #     """
-    #     Find the nearest snap point to the given x, y coordinates.
-
-    #     Parameters:
-    #         x (float): The x-coordinate.
-    #         y (float): The y-coordinate.
-    #         matrix (dict): The matrix containing snap points.
-
-    #     Returns:
-    #         tuple: (nearest_x, nearest_y) coordinates of the nearest snap point.
-    #     """
-    #     min_distance = float('inf')
-    #     nearest_point = (x, y)
-    #     for id_in_matrix, point in matrix.items():
-    #         if id_in_matrix.startswith("snap,"):
-    #             grid_x, grid_y = point["xy"]
-    #             distance = math.hypot(x - grid_x, y - grid_y)
-    #             print(f"Checking snap point {id_in_matrix} at ({grid_x}, {grid_y}), distance: {distance}")
-    #             if distance < min_distance:
-    #                 min_distance = distance
-    #                 nearest_point = (grid_x, grid_y)
-    #     print(f"Nearest snap point to ({x}, {y}) is at ({nearest_point[0]}, {nearest_point[1]})")
-    #     return nearest_point
-
-    # AJOUT KH POUR DRAG_DROP 23/10/2024
-    def xy_hole2chip(self, xH, yH, scale=1):
+    def xy_hole2chip(self, x_hole, y_hole, scale=1):
+        """
+        Convert hole coordinates to chip coordinates.
+        """
         space = 9 * scale
-        return (xH - 2 * scale, yH + space)
+        return (x_hole - 2 * scale, y_hole + space)
 
-    def xy_chip2pin(self, xC, yC, scale=1):
+    def xy_chip2pin(self, x_chip, y_chip, scale=1):
+        """
+        Convert chip coordinates to pin coordinates.
+        """
         space = 9 * scale
-        return (xC + 2 * scale, yC - space)
-
-    # FIN AJOUT KH DRAG_DROP 23/10/2024
+        return (x_chip + 2 * scale, y_chip - space)
 
     def find_nearest_grid_wire(self, x, y, matrix=None):
         """
@@ -754,7 +746,7 @@ class ComponentSketcher:
 
         return nearest_point, nearest_point_col_lin
 
-    def find_nearest_grid_chip(self, x, y, matrix=matrix1260pts):
+    def find_nearest_grid_chip(self, x, y, matrix=None):
         """
         Find the nearest grid point to the given x, y coordinates on lines 6 or 21 ('f' lines).
 
@@ -778,8 +770,8 @@ class ComponentSketcher:
         for point in matrix.items():
 
             # Consider only lines 7 and 21 ('f' lines)
-            col, line = point[1]["coord"]
-            if line == 7 or line == 21:
+            _, line = point[1]["coord"]
+            if line in (7, 21):
                 # mettre is_XY_free4Chip(x,y)
 
                 grid_x, grid_y = point[1]["xy"]
@@ -853,17 +845,15 @@ class ComponentSketcher:
 
             coord = current_dict_circuit[pin_id]["coord"]
 
-            (nearest_x, nearest_y), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
+            (_, _), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
 
             if matrix1260pts[f"{col},{line}"]["state"] == FREE:
 
                 matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
-                model_pin_io = [(self.drawpin_io, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
+                model_pin_io = [(self.draw_pin_io, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
                 self.circuit(x_o, y_o, model=model_pin_io)
 
-            # print(f"pin_io {pin_id} dragged to new position: ({nearest_x}, {nearest_y})")
-
-    def on_pin_io_release(self, event, pin_id):
+    def on_pin_io_release(self, _, pin_id):
         """
         Event handler for when the pin_io element is released.
         """
@@ -934,24 +924,33 @@ class ComponentSketcher:
         self.canvas.create_line(x2 - radius, y2, x2, y2 - radius, fill=fill, width=thickness, tags=tag)
         self.canvas.create_line(x, y2 - radius, x + radius, y2, fill=fill, width=thickness, tags=tag)
 
-    def setXYOrigin(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-        xO, yO = xD, yD
+    def set_xy_origin(self, x_distance, y_distance, *_, **kwargs):
+        """
+        Set the origin of the XY coordinate system.
+        """
+        x_origin, y_origin = x_distance, y_distance
         id_origin = kwargs.get("id_origin", "xyOrigin")
 
-        id_origins[id_origin] = (xD, yD)
+        id_origins[id_origin] = (x_distance, y_distance)
 
-        return (xO, yO)
+        return (x_origin, y_origin)
 
-    def goXY(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def go_xy(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Move the drawer to the given coordinates. # TODO check doc
+        """
         line = kwargs.get("line", 0)
         column = kwargs.get("column", 0)
         id_origin = kwargs.get("id_origin", "xyOrigin")
 
-        xO, yO = id_origins[id_origin]
+        x_origin, y_origin = id_origins[id_origin]
 
-        return (xO + column * 15 * scale, yO + line * 15 * scale)
+        return (x_origin + column * 15 * scale, y_origin + line * 15 * scale)
 
-    def drawChar(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_char(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a character at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
@@ -960,181 +959,246 @@ class ComponentSketcher:
         angle = kwargs.get("angle", 90)
         color = kwargs.get("color", "#000000")
         text = kwargs.get("text", "-")
-        deltaY = kwargs.get("deltaY", 0)
-        scaleChar = kwargs.get("scaleChar", 1)
+        delta_y = kwargs.get("deltaY", 0)
+        scale_char = kwargs.get("scaleChar", 1)
         anchor = kwargs.get("anchor", "center")
-        size = (int(inter_space * 1), int(inter_space * 1))
+        # size = (int(inter_space * 1), int(inter_space * 1))
         tags = kwargs.get("tags", "")
 
-
-        size = (int(scaleChar * inter_space * len(text)), int(scaleChar * inter_space))
-        firaCodeFont = font.Font(family="FiraCode-Bold.ttf", size=int(15 * scale * scaleChar))
+        # size = (int(scale_char * inter_space * len(text)), int(scale_char * inter_space))
+        fira_code_font = font.Font(family="FiraCode-Bold.ttf", size=int(15 * scale * scale_char))
         if angle != 0:
-            firaCodeFont = font.Font(family="FiraCode-Light", size=int(15 * scaleChar * scale))
+            fira_code_font = font.Font(family="FiraCode-Light", size=int(15 * scale_char * scale))
             self.canvas.create_text(
-                xD, yD + deltaY * space, text=text, font=firaCodeFont, fill=color, anchor=anchor, angle=angle, tags=tags
+                x_distance,
+                y_distance + delta_y * space,
+                text=text,
+                font=fira_code_font,
+                fill=color,
+                anchor=anchor,
+                angle=angle,
+                tags=tags,
             )
         else:
-            self.canvas.create_text(xD, yD, text=text, font=firaCodeFont, fill=color, anchor=anchor, tags=tags)
+            self.canvas.create_text(
+                x_distance, y_distance, text=text, font=fira_code_font, fill=color, anchor=anchor, tags=tags
+            )
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawCharIter(self, xD, yD, scale=1, width=-1, direction=VERTICAL_END_HORIZONTAL, **kwargs):
+    def draw_char_iter(self, x_distance, y_distance, scale=1, width=-1, direction=VERTICAL_END_HORIZONTAL, **kwargs):
+        """
+        Draw a series of characters at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
 
-        beginChar = kwargs.get("beginChar", "A")
-        numChars = kwargs.get("numChars", 26)
+        begin_char = kwargs.get("beginChar", "A")
+        num_chars = kwargs.get("numChars", 26)
 
-        x = xD
-        y = yD
+        x = x_distance
+        y = y_distance
         s = direction
         if direction == VERTICAL_END_HORIZONTAL:
             s = VERTICAL
-        for i in range(numChars):
-            text = chr(ord(beginChar) + numChars - i - 1)
-            (x, y) = self.drawChar(x, y, scale, width, s, text=text, **kwargs)
+        for i in range(num_chars):
+            text = chr(ord(begin_char) + num_chars - i - 1)
+            (x, y) = self.draw_char(x, y, scale, width, s, text=text, **kwargs)
 
         if direction == VERTICAL_END_HORIZONTAL:
             direction = HORIZONTAL
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space * numChars
+            y_distance += inter_space * num_chars
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawNumIter(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_num_iter(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a series of numbers at the given coordinates
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
 
-        beginNum = kwargs.get("beginNum", 0)
-        endNum = kwargs.get("endNum", 9)
+        begin_num = kwargs.get("beginNum", 0)
+        end_num = kwargs.get("endNum", 9)
 
-        x = xD + 3 * scale
-        y = yD
+        x = x_distance + 3 * scale
+        y = y_distance
 
-        for i in range(beginNum, endNum + 1):
+        for i in range(begin_num, end_num + 1):
             text = str(i)
-            (x, y) = self.drawChar(x, y, scale, width, direction=direction, text=text, scaleChar=0.7, **kwargs)
+            (x, y) = self.draw_char(x, y, scale, width, direction=direction, text=text, scaleChar=0.7, **kwargs)
 
         if direction == HORIZONTAL:
-            xD += inter_space * (endNum - beginNum)
+            x_distance += inter_space * (end_num - begin_num)
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawSquareHole(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_square_hole(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a square hole at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         space = 9 * scale
         inter_space = 15 * scale
 
-        darkColor, lightColor, holeColor = kwargs.get("colors", ["#c0c0c0", "#f6f6f6", "#484848"])
+        dark_color, light_color, hole_color = kwargs.get("colors", ["#c0c0c0", "#f6f6f6", "#484848"])
 
-        self.canvas.create_polygon(xD, yD + space, xD, yD, xD + space, yD, fill=darkColor, outline=darkColor)
         self.canvas.create_polygon(
-            xD, yD + space, xD + space, yD + space, xD + space, yD, fill=lightColor, outline=lightColor
+            x_distance,
+            y_distance + space,
+            x_distance,
+            y_distance,
+            x_distance + space,
+            y_distance,
+            fill=dark_color,
+            outline=dark_color,
+        )
+        self.canvas.create_polygon(
+            x_distance,
+            y_distance + space,
+            x_distance + space,
+            y_distance + space,
+            x_distance + space,
+            y_distance,
+            fill=light_color,
+            outline=light_color,
         )
         self.canvas.create_rectangle(
-            xD + space // 3,
-            yD + space // 3,
-            xD + 2 * space // 3,
-            yD + 2 * space // 3,
-            fill=holeColor,
-            outline=holeColor,
+            x_distance + space // 3,
+            y_distance + space // 3,
+            x_distance + 2 * space // 3,
+            y_distance + 2 * space // 3,
+            fill=hole_color,
+            outline=hole_color,
         )
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawRoundHole(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_round_hole(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a round hole at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         space = 9 * scale
         inter_space = 15 * scale
-        darkColor, lightColor, holeColor = kwargs.get("colors", ["#c0c0c0", "#f6f6f6", "#484848"])
+        dark_color, light_color, hole_color = kwargs.get("colors", ["#c0c0c0", "#f6f6f6", "#484848"])
 
         self.canvas.create_arc(
-            xD, yD, xD + space, yD + space, start=45, extent=225, style=tk.PIESLICE, fill=darkColor, outline=darkColor
+            x_distance,
+            y_distance,
+            x_distance + space,
+            y_distance + space,
+            start=45,
+            extent=225,
+            style=tk.PIESLICE,
+            fill=dark_color,
+            outline=dark_color,
         )  # x, y2 - 2*radius, x + 2*radius, y2, start=180, extent=90, style=tk.PIESLICE, **kwargs
         self.canvas.create_arc(
-            xD, yD, xD + space, yD + space, start=225, extent=45, style=tk.PIESLICE, fill=lightColor, outline=lightColor
+            x_distance,
+            y_distance,
+            x_distance + space,
+            y_distance + space,
+            start=225,
+            extent=45,
+            style=tk.PIESLICE,
+            fill=light_color,
+            outline=light_color,
         )
         self.canvas.create_oval(
-            xD + space // 3,
-            yD + space // 3,
-            xD + 2 * space // 3,
-            yD + 2 * space // 3,
-            fill=holeColor,
-            outline=holeColor,
+            x_distance + space // 3,
+            y_distance + space // 3,
+            x_distance + 2 * space // 3,
+            y_distance + 2 * space // 3,
+            fill=hole_color,
+            outline=hole_color,
         )
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    hole_func = {"function": drawSquareHole}
+    def draw_hole(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a hole at the given coordinates with the appropriate hole function.
+        """
+        return self.hole_func(x_distance, y_distance, scale, width, direction, **kwargs)
 
-    def drawHole(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-        return self.hole_func["function"](xD, yD, scale, width, direction, **kwargs)
+    def sethole_func(self, x_distance, y_distance, *_, **kwargs):
+        """
+        Set the hole function to be used for drawing holes.
+        """
+        function = kwargs.get("function", self.draw_square_hole)
 
-    def sethole_func(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
-        function = kwargs.get("function", self.drawSquareHole)
+        self.hole_func = function
 
-        self.hole_func = {"function": function}
+        return x_distance, y_distance
 
-        return xD, yD
-
-    def drawBlank(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_blank(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **_):
+        """
+        Draw a blank space at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         inter_space = 15 * scale
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawHalfBlank(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_half_blank(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **_):
+        """
+        Draw a half blank space at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         inter_space = 15 * scale
 
         if direction == HORIZONTAL:
-            xD += inter_space / 2
+            x_distance += inter_space / 2
         elif direction == VERTICAL:
-            yD += inter_space / 2
+            y_distance += inter_space / 2
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawRail(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_rail(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a rail at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
         color = kwargs.get("color", "black")
@@ -1142,33 +1206,39 @@ class ComponentSketcher:
         inter_space = 15 * scale
         thickness = 2 * scale
         self.canvas.create_line(
-            xD + inter_space // 3,
-            yD + inter_space // 2,
-            xD + inter_space * 1.5,
-            yD + inter_space // 2,
+            x_distance + inter_space // 3,
+            y_distance + inter_space // 2,
+            x_distance + inter_space * 1.5,
+            y_distance + inter_space // 2,
             fill=color,
             width=thickness,
         )
 
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawredRail(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_red_rail(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **_):
+        """
+        Draw a red rail at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         inter_space = 15 * scale
         # thickness = 2*scale
 
-        (x, y) = self.drawRail(xD, yD - inter_space // 2, scale, width, direction, color="red")
+        (x, _) = self.draw_rail(x_distance, y_distance - inter_space // 2, scale, width, direction, color="red")
 
-        return (x, yD)
+        return (x, y_distance)
 
-    def drawBoard(self, xD=0, yD=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+    def draw_board(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
+        """
+        Draw a board at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
         inter_space = 15 * scale
@@ -1178,308 +1248,364 @@ class ComponentSketcher:
         dim["dimLine"] = kwargs.get("dimLine", dim["dimLine"])
         dim["dimColumn"] = kwargs.get("dimColumn", dim["dimColumn"])
         color = kwargs.get("color", "#F5F5DC")
-        sepAlim = kwargs.get("sepAlim", dim["sepAlim"])
-        sepDist = kwargs.get("sepDistribution", dim["sepDistribution"])
+        sep_alim = kwargs.get("sepAlim", dim["sepAlim"])
+        sep_distrib = kwargs.get("sepDistribution", dim["sepDistribution"])
         radius = kwargs.get("radius", 5)
 
         thickness = 1 * scale
-        dimLine = dim["dimLine"] * inter_space
-        dimColumn = dim["dimColumn"] * inter_space
-        id_origins["bottomLimit"] = (dimLine + xD, yD + dimColumn)
+        dim_line = dim["dimLine"] * inter_space
+        dim_column = dim["dimColumn"] * inter_space
+        id_origins["bottomLimit"] = (dim_line + x_distance, y_distance + dim_column)
         # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
-        self.rounded_rect(xD, yD, dimLine, dimColumn, radius, outline=color, fill=color, thickness=thickness)
-        for sepA in sepAlim:
+        self.rounded_rect(
+            x_distance, y_distance, dim_line, dim_column, radius, outline=color, fill=color, thickness=thickness
+        )
+        for sep in sep_alim:
             self.canvas.create_line(
-                xD + inter_space * sepA[0],
-                yD + inter_space * sepA[1],
-                xD - inter_space * sepA[0] + dimLine,
-                yD + inter_space * sepA[1],
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1],
+                x_distance - inter_space * sep[0] + dim_line,
+                y_distance + inter_space * sep[1],
                 fill="#707070",
                 width=thickness,
             )
-        darknessFactor = 0.9
-        r = int(color[1:3], 16) * (darknessFactor + 0.06)
+        darkness_factor = 0.9
+        r = int(color[1:3], 16) * (darkness_factor + 0.06)
         r = int(max(0, min(255, r)))
-        g = int(color[3:5], 16) * (darknessFactor + 0.06)
+        g = int(color[3:5], 16) * (darkness_factor + 0.06)
         g = int(max(0, min(255, g)))
-        b = int(color[5:7], 16) * (darknessFactor + 0.06)
+        b = int(color[5:7], 16) * (darkness_factor + 0.06)
         b = int(max(0, min(255, b)))
-        c = ["#{:02x}{:02x}{:02x}".format(r, g, b)]
-        r = int(color[1:3], 16) * (darknessFactor)
+        c = [f"#{r:02x}{g:02x}{b:02x}"]
+        r = int(color[1:3], 16) * (darkness_factor)
         r = int(max(0, min(255, r)))
-        g = int(color[3:5], 16) * (darknessFactor)
+        g = int(color[3:5], 16) * (darkness_factor)
         g = int(max(0, min(255, g)))
-        b = int(color[5:7], 16) * (darknessFactor)
+        b = int(color[5:7], 16) * (darkness_factor)
         b = int(max(0, min(255, b)))
-        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-        r *= darknessFactor
-        g *= darknessFactor
-        b *= darknessFactor
-        r = int(max(0, min(255, r)))
-        g = int(max(0, min(255, g)))
-        b = int(max(0, min(255, b)))
-        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-        r *= darknessFactor
-        g *= darknessFactor
-        b *= darknessFactor
+        c.append(f"#{r:02x}{g:02x}{b:02x}")
+        r *= darkness_factor
+        g *= darkness_factor
+        b *= darkness_factor
         r = int(max(0, min(255, r)))
         g = int(max(0, min(255, g)))
         b = int(max(0, min(255, b)))
-        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-        r *= darknessFactor
-        g *= darknessFactor
-        b *= darknessFactor
+        c.append(f"#{r:02x}{g:02x}{b:02x}")
+        r *= darkness_factor
+        g *= darkness_factor
+        b *= darkness_factor
         r = int(max(0, min(255, r)))
         g = int(max(0, min(255, g)))
         b = int(max(0, min(255, b)))
-        c.append("#{:02x}{:02x}{:02x}".format(r, g, b))
-        for sepD in sepDist:
+        c.append(f"#{r:02x}{g:02x}{b:02x}")
+        r *= darkness_factor
+        g *= darkness_factor
+        b *= darkness_factor
+        r = int(max(0, min(255, r)))
+        g = int(max(0, min(255, g)))
+        b = int(max(0, min(255, b)))
+        c.append(f"#{r:02x}{g:02x}{b:02x}")
+        for sep in sep_distrib:
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1],
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1],
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1],
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1],
                 fill=c[1],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + thickness,
                 fill=c[2],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + 2 * thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + 2 * thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + 2 * thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + 2 * thickness,
                 fill=c[3],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + 3 * thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + 3 * thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + 3 * thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + 3 * thickness,
                 fill=c[4],
                 width=thickness,
             )
             for dy in range(4, 11):
                 self.canvas.create_line(
-                    xD + inter_space * sepD[0],
-                    yD + inter_space * sepD[1] + dy * thickness,
-                    xD + dimLine - inter_space * sepD[0],
-                    yD + inter_space * sepD[1] + dy * thickness,
+                    x_distance + inter_space * sep[0],
+                    y_distance + inter_space * sep[1] + dy * thickness,
+                    x_distance + dim_line - inter_space * sep[0],
+                    y_distance + inter_space * sep[1] + dy * thickness,
                     fill=c[0],
                     width=thickness,
                 )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 4 * thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 4 * thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 4 * thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 4 * thickness,
                 fill=c[1],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 3 * thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 3 * thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 3 * thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 3 * thickness,
                 fill=c[2],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 2 * thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - 2 * thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 2 * thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - 2 * thickness,
                 fill=c[3],
                 width=thickness,
             )
             self.canvas.create_line(
-                xD + inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - thickness,
-                xD + dimLine - inter_space * sepD[0],
-                yD + inter_space * sepD[1] + inter_space - thickness,
+                x_distance + inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - thickness,
+                x_distance + dim_line - inter_space * sep[0],
+                y_distance + inter_space * sep[1] + inter_space - thickness,
                 fill=c[4],
                 width=thickness,
             )
-        # self.canvas.create_line(xD , yD+inter_space*11+inter_space//3, xD + dimLine, yD + inter_space*11+inter_space//3, fill="#c0c0c0", width=(3*inter_space)//5)
+        # self.canvas.create_line(
+        #     x_distance,
+        #     y_distance + inter_space * 11 + inter_space // 3,
+        #     x_distance + dim_line,
+        #     y_distance + inter_space * 11 + inter_space // 3,
+        #     fill="#c0c0c0",
+        #     width=(3 * inter_space) // 5,
+        # )
         # if direction == HORIZONTAL:
-        #     xD += dimLine
-        # else: yD += dimColumn
+        #     x_distance += dim_line
+        # else:
+        #     y_distance += dim_column
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
     ################ BOITIERS DIP ####################################
 
-    def drawPin(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_pin(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a pin at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
         self.canvas.create_line(
-            xD + 9 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD + 12 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD + 12 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD + 12 * inter_space // 15,
-            yD + orientation * inter_space,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * inter_space,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
 
         self.canvas.create_line(
-            xD - 18 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
+            x_distance - 18 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD - 18 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
-            xD - 18 * inter_space // 15,
-            yD + orientation * inter_space,
+            x_distance - 18 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
+            x_distance - 18 * inter_space // 15,
+            y_distance + orientation * inter_space,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
 
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
-        # self.canvas.create_line(xD - inter_space//2, yD + 8*inter_space//15, xD - inter_space//2, yD + 13*inter_space//15, fill="#ffffff", width=1)
-        # self.canvas.create_line(xD - inter_space//2, yD + 13*inter_space//15, xD , yD + 13*inter_space//15, fill="#ffffff", width=1)
+        # self.canvas.create_line(
+        #     x_distance - inter_space // 2,
+        #     y_distance + 8 * inter_space // 15,
+        #     x_distance - inter_space // 2,
+        #     y_distance + 13 * inter_space // 15,
+        #     fill="#ffffff",
+        #     width=1,
+        # )
+        # self.canvas.create_line(
+        #     x_distance - inter_space // 2,
+        #     y_distance + 13 * inter_space // 15,
+        #     x_distance,
+        #     y_distance + 13 * inter_space // 15,
+        #     fill="#ffffff",
+        #     width=1,
+        # )
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
-            xD - 3 * inter_space // 15,
-            yD + orientation * inter_space,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * inter_space,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
 
-    def drawLabelPin(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_label_pin(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a label pin at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
 
         tag = kwargs.get("tags", "")
         color = kwargs.get("color", "#ffffff")
 
         self.canvas.create_rectangle(
-            xD,
-            yD,
-            xD + 4 * inter_space // 15,
-            yD + orientation * 4 * inter_space // 15,
+            x_distance,
+            y_distance,
+            x_distance + 4 * inter_space // 15,
+            y_distance + orientation * 4 * inter_space // 15,
             fill=color,
             outline=color,
             tags=tag,
         )
         self.canvas.create_polygon(
-            xD,
-            yD + orientation * 4 * inter_space // 15,
-            xD + 4 * inter_space // 15,
-            yD + orientation * 4 * inter_space // 15,
-            xD + 2 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance,
+            y_distance + orientation * 4 * inter_space // 15,
+            x_distance + 4 * inter_space // 15,
+            y_distance + orientation * 4 * inter_space // 15,
+            x_distance + 2 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             fill=color,
             outline=color,
             tags=tag,
         )
 
-    def drawSymb(self, logic_fn_name: str) -> Callable | None:
+    def draw_symb(self, logic_fn_name: str) -> Callable | None:
+        """
+        Return the sketcher function for the given logic function name.
+        """
         logic_func_sketchers = {
-            "NandGate": self.symbNAND,
-            "NorGate": self.symbNOR,
-            "AndGate": self.symbAND,
-            "OrGate": self.symbOR,
-            "NotGate": self.symbNOT,
+            "NandGate": self.symb_nand,
+            "NorGate": self.symb_nor,
+            "AndGate": self.symb_and,
+            "OrGate": self.symb_or,
+            "NotGate": self.symb_not,
         }
         if logic_fn_name in logic_func_sketchers:
             return logic_func_sketchers[logic_fn_name]
         return None
 
-    def drawInv(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_inv(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw an inverter at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
         color = kwargs.get("color", "#ffffff")
         color = "#ffffff"
 
         self.canvas.create_oval(
-            xD + 9 * inter_space // 15,
-            yD + orientation * 2.5 * inter_space // 15,
-            xD + 11 * inter_space // 15,
-            yD + orientation * 4.5 * inter_space // 15,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 2.5 * inter_space // 15,
+            x_distance + 11 * inter_space // 15,
+            y_distance + orientation * 4.5 * inter_space // 15,
             fill=color,
             outline=color,
             tags=tag,
-        )  # canvas.create_polygon(xD, yD+space, xD+space, yD+space, xD+space, yD, fill='#f6f6f6', outline='#f6f6f6')
+        )
+        # canvas.create_polygon(
+        #     x_distance,
+        #     y_distance + space,
+        #     x_distance + space,
+        #     y_distance + space,
+        #     x_distance + space,
+        #     y_distance,
+        #     fill="#f6f6f6",
+        #     outline="#f6f6f6",
+        # )
 
-    def drawOR(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_or(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw an OR gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
         self.canvas.create_rectangle(
-            xD,
-            yD,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance,
+            y_distance,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             fill="#ffffff",
             outline="#ffffff",
             tags=tag,
         )
-        # self.canvas.create_line(xD + 1*inter_space//2, yD, xD + 1*inter_space//2, yD + 2*inter_space//3, fill="#ffffff", width=1)
+        # self.canvas.create_line(
+        #     x_distance + 1 * inter_space // 2,
+        #     y_distance,
+        #     x_distance + 1 * inter_space // 2,
+        #     y_distance + 2 * inter_space // 3,
+        #     fill="#ffffff",
+        #     width=1,
+        # )
         self.canvas.create_line(
-            xD + 9 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD + 12 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
 
         self.canvas.create_arc(
-            xD - 3 * inter_space // 15,
-            yD,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             start=270,
             extent=180,
             fill="#000000",
@@ -1487,10 +1613,10 @@ class ComponentSketcher:
             tags=tag,
         )
         self.canvas.create_arc(
-            xD - 3 * inter_space // 15,
-            yD,
-            xD + 9 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             start=-90,
             extent=180,
             fill="#ffffff",
@@ -1498,157 +1624,188 @@ class ComponentSketcher:
             tags=tag,
         )
 
-    def symbOR(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def symb_or(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw an OR gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
+        inter_space = 15 * scale
+        # tag = kwargs.get("tags", "")
+
+        self.draw_or(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_pin(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        if direction == HORIZONTAL:
+            x_distance += inter_space
+        elif direction == VERTICAL:
+            y_distance += inter_space
+
+        return (x_distance, y_distance)
+
+    def symb_nor(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a NOR gate at the given coordinates.
+        """
+        if width != -1:
+            scale = width / 9.0
+
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
-        self.drawOR(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawPin(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+        self.draw_or(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_inv(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_pin(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def symbNOR(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_aop(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a AOP at the given coordinates. # TODO what is this lol
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
-        inter_space = 15 * scale
-        tag = kwargs.get("tags", "")
-
-        self.drawOR(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawInv(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawPin(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        if direction == HORIZONTAL:
-            xD += inter_space
-        elif direction == VERTICAL:
-            yD += inter_space
-
-        return (xD, yD)
-
-    def drawAOP(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
-        if width != -1:
-            scale = width / 9.0
-
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
         color = kwargs.get("color", "#ffffff")
 
         self.canvas.create_polygon(
-            xD,
-            yD,
-            xD + 9 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance,
+            y_distance,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance,
+            y_distance + orientation * 7 * inter_space // 15,
             fill=color,
             outline=color,
             tags=tag,
         )
         self.canvas.create_line(
-            xD + 9 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD + 12 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
             fill=color,
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
             fill=color,
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
             fill=color,
             width=1,
             tags=tag,
         )
 
-    def symbNOT(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def symb_not(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a NOT gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
-        tag = kwargs.get("tags", "")
+        # tag = kwargs.get("tags", "")
 
-        self.drawAOP(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawInv(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+        self.draw_aop(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_inv(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
 
-        self.drawPin(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+        self.draw_pin(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def drawAND(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def draw_and(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw an AND gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
         self.canvas.create_rectangle(
-            xD,
-            yD,
-            xD + 6 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance,
+            y_distance,
+            x_distance + 6 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             fill="#ffffff",
             outline="#ffffff",
             tags=tag,
         )
         self.canvas.create_line(
-            xD + 9 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
-            xD + 12 * inter_space // 15,
-            yD + orientation * 3.5 * inter_space // 15,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
+            x_distance + 12 * inter_space // 15,
+            y_distance + orientation * 3.5 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 5 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 5 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
         self.canvas.create_line(
-            xD - 3 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
-            xD + 3 * inter_space // 15,
-            yD + orientation * 2 * inter_space // 15,
+            x_distance - 3 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
+            x_distance + 3 * inter_space // 15,
+            y_distance + orientation * 2 * inter_space // 15,
             fill="#ffffff",
             width=1,
             tags=tag,
         )
         self.canvas.create_arc(
-            xD + 6 * inter_space // 15 - 3 * inter_space // 15,
-            yD,
-            xD + 9 * inter_space // 15,
-            yD + orientation * 7 * inter_space // 15,
+            x_distance + 6 * inter_space // 15 - 3 * inter_space // 15,
+            y_distance,
+            x_distance + 9 * inter_space // 15,
+            y_distance + orientation * 7 * inter_space // 15,
             start=270,
             extent=180,
             fill="#ffffff",
@@ -1656,146 +1813,191 @@ class ComponentSketcher:
             tags=tag,
         )
 
-    def symbAND(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def symb_and(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw an AND gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
-        tag = kwargs.get("tags", "")
+        # tag = kwargs.get("tags", "")
 
-        self.drawAND(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawPin(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+        self.draw_and(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_pin(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def symbNAND(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+    def symb_nand(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
+        """
+        Draw a NAND gate at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
-        space = 9 * scale
+        # space = 9 * scale
         inter_space = 15 * scale
-        tag = kwargs.get("tags", "")
+        # tag = kwargs.get("tags", "")
 
-        self.drawAND(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawInv(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
-        self.drawPin(xD, yD, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+        self.draw_and(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_inv(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
+        self.draw_pin(
+            x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
+        )
         if direction == HORIZONTAL:
-            xD += inter_space
+            x_distance += inter_space
         elif direction == VERTICAL:
-            yD += inter_space
+            y_distance += inter_space
 
-        return (xD, yD)
+        return (x_distance, y_distance)
 
-    def internalFunc(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def internal_func(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw an internal function at the given coordinates.
+        """
         if width != -1:
             scale = width / 9.0
 
         space = 9 * scale
         inter_space = 15 * scale
-        logicFunction = kwargs.get("logicFunction", None)
+        logic_function = kwargs.get("logicFunction", None)
         io = kwargs.get("io", [])
-        pinCount = kwargs.get("pinCount", 14)
-        chipWidth = kwargs.get("chipWidth", 2.4)
-        dimColumn = chipWidth * inter_space
+        pin_count = kwargs.get("pinCount", 14)
+        chip_width = kwargs.get("chipWidth", 2.4)
+        dim_column = chip_width * inter_space
 
-        if logicFunction is None:
+        if logic_function is None:
             return
         for pin in io:
             p = pin[1][0]
-            orientation = 1 - 2 * ((p - 1) * 2 // pinCount)
-            if p > pinCount // 2:
+            orientation = 1 - 2 * ((p - 1) * 2 // pin_count)
+            if p > pin_count // 2:
                 p = 15 - p
-            x = xD + 2 * scale + space // 2 + (p - 2) * inter_space + 3 * inter_space // 15
-            y = yD + dimColumn // 2 + orientation * 0.2 * inter_space
-            logicFunction(x, y, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
+            x = x_distance + 2 * scale + space // 2 + (p - 2) * inter_space + 3 * inter_space // 15
+            y = y_distance + dim_column // 2 + orientation * 0.2 * inter_space
+            logic_function(x, y, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs)
 
-    def onSwitch(self, event, tag, id, numBtn):
-        params = current_dict_circuit.get(id)
+    def on_switch(self, _, tag, element_id, num_btn):
+        """
+        Handle the switch in the menu.
+        """
+        params = current_dict_circuit.get(element_id)
         if params:
-            btn = params["btnMenu"][numBtn - 1]
+            btn = params["btnMenu"][num_btn - 1]
             if btn > 0:
                 btn = abs(btn - 2) + 1
-                params["btnMenu"][numBtn - 1] = btn
+                params["btnMenu"][num_btn - 1] = btn
                 if btn == 1:
                     color = "#ff0000"
                     pos = LEFT
-                    if numBtn == 1:
-                        self.canvas.itemconfig("chipCover" + id, state="normal")
+                    if num_btn == 1:
+                        self.canvas.itemconfig("chipCover" + element_id, state="normal")
                 else:
                     color = "#00ff00"
                     pos = RIGHT
-                    if numBtn == 1:
-                        self.canvas.itemconfig("chipCover" + id, state="hidden")
+                    if num_btn == 1:
+                        self.canvas.itemconfig("chipCover" + element_id, state="hidden")
                 self.canvas.move(tag, pos * 40 - 20, 0)
                 self.canvas.itemconfig(tag, fill=color)
 
-    def drawSwitch(
+    def draw_switch(
         self,
         x1,
         y1,
-        fillSupport="#fffffe",
-        fillSwitch="#ff0000",
-        outSwitch="#000000",
-        posSwitch=LEFT,
+        fill_support="#fffffe",
+        fill_switch="#ff0000",
+        out_switch="#000000",
+        pos_switch=LEFT,
         tag=None,
-        numBtn=1,
+        num_btn=1,
     ):
+        """
+        Draw a switch at the given coordinates.
+        """
         self.canvas.create_arc(
-            x1, y1, x1 + 20, y1 + 20, start=90, extent=180, fill=fillSupport, outline=fillSupport, tags=tag
+            x1, y1, x1 + 20, y1 + 20, start=90, extent=180, fill=fill_support, outline=fill_support, tags=tag
         )
         self.canvas.create_arc(
-            x1 + 20, y1, x1 + 40, y1 + 20, start=270, extent=180, fill=fillSupport, outline=fillSupport, tags=tag
+            x1 + 20, y1, x1 + 40, y1 + 20, start=270, extent=180, fill=fill_support, outline=fill_support, tags=tag
         )
-        self.canvas.create_rectangle(x1 + 10, y1, x1 + 30, y1 + 20, fill=fillSupport, outline=fillSupport, tags=tag)
+        self.canvas.create_rectangle(x1 + 10, y1, x1 + 30, y1 + 20, fill=fill_support, outline=fill_support, tags=tag)
         self.canvas.create_oval(
-            x1 + 3 + posSwitch * 20,
+            x1 + 3 + pos_switch * 20,
             y1 + 3,
-            x1 + 17 + posSwitch * 20,
+            x1 + 17 + pos_switch * 20,
             y1 + 17,
-            fill=fillSwitch,
-            outline=outSwitch,
-            tags="btn" + str(numBtn) + "_" + tag,
+            fill=fill_switch,
+            outline=out_switch,
+            tags="btn" + str(num_btn) + "_" + tag,
         )
-        self.canvas.addtag_withtag(tag, "btn" + str(numBtn) + "_" + tag)
+        self.canvas.addtag_withtag(tag, "btn" + str(num_btn) + "_" + tag)
 
-    def onDragMenu(self, event, tag):
-        global xSouris, ySouris, drag_mouse_x, drag_mouse_y
+    def on_drag_menu(self, event, tag):
+        """
+        Handle the drag of the menu.
+        """
+        global drag_mouse_x, drag_mouse_y
 
         self.canvas.move(tag, event.x - drag_mouse_x, event.y - drag_mouse_y)
         drag_mouse_x, drag_mouse_y = event.x, event.y
 
-    def onStartDragMenu(self, event, tag):
+    def on_start_drag_menu(self, event, tag):
+        """
+        Handle the start of the drag of the menu.
+        """
         global drag_mouse_x, drag_mouse_y
 
         drag_mouse_x, drag_mouse_y = event.x, event.y
         self.canvas.itemconfig(tag, fill="red")
 
-    def onStopDragMenu(self, event, tag):
+    def on_stop_drag_menu(self, _, tag):
+        """
+        Handle the stop of the drag of the menu.
+        """
         self.canvas.itemconfig(tag, fill="#ffffff")
 
-    def onCrossOver(self, event, tag):
+    def on_cross_over(self, _, tag):
+        """
+        Handle the cross over the menu.
+        """
         self.canvas.itemconfig("crossBg_" + tag, fill="#008000")
 
-    def onCrossLeave(self, event, tag):
+    def on_cross_leave(self, _, tag):
+        """
+        Handle the leave of the cross over the menu.
+        """
         self.canvas.itemconfig("crossBg_" + tag, fill="")
 
-    def onCrossClick(self, event, tagMenu, tagRef):
-        self.canvas.itemconfig(tagMenu, state="hidden")
-        self.canvas.itemconfig(tagRef, outline="")
+    def on_cross_click(self, _, tag_menu, tag_ref):
+        """
+        Handle the click on the cross over the menu.
+        """
+        self.canvas.itemconfig(tag_menu, state="hidden")
+        self.canvas.itemconfig(tag_ref, outline="")
 
-    def drawMenu(self, xMenu, yMenu, thickness, label, tag, id):
-        global image_ico_pdf
+    def draw_menu(self, x_menu, y_menu, thickness, label, tag, element_id):
+        """
+        Draw a menu at the given coordinates.
+        """
 
-        rgba_color = (0, 0, 0, 255)
-        fillMenu = "#48484c"
-        outMenu = "#909098"
-        colorCross = "#e0e0e0"
-        params = current_dict_circuit.get(id)
+        # rgba_color = (0, 0, 0, 255)
+        fill_menu = "#48484c"
+        out_menu = "#909098"
+        color_cross = "#e0e0e0"
+        params = current_dict_circuit.get(element_id)
         if params:
             [btn1, btn2, btn3] = params["btnMenu"]
             if btn1 == 0:
@@ -1826,33 +2028,39 @@ class ComponentSketcher:
                 color3 = "#00ff00"
                 pos3 = RIGHT
 
-            self.rounded_rect(xMenu, yMenu, 128, 128, 10, outline=outMenu, fill=fillMenu, thickness=thickness, tags=tag)
-            self.canvas.create_rectangle(xMenu, yMenu, xMenu + 114, yMenu + 17, fill="", outline="", tags="drag_" + tag)
-            self.canvas.create_line(xMenu, yMenu + 17, xMenu + 127, yMenu + 17, fill=outMenu, width=thickness, tags=tag)
+            self.rounded_rect(
+                x_menu, y_menu, 128, 128, 10, outline=out_menu, fill=fill_menu, thickness=thickness, tags=tag
+            )
             self.canvas.create_rectangle(
-                xMenu + 110, yMenu + 1, xMenu + 125, yMenu + 16, fill="", outline="", tags="crossBg_" + tag
+                x_menu, y_menu, x_menu + 114, y_menu + 17, fill="", outline="", tags="drag_" + tag
             )
             self.canvas.create_line(
-                xMenu + 115,
-                yMenu + 5,
-                xMenu + 120,
-                yMenu + 12,
-                fill=colorCross,
+                x_menu, y_menu + 17, x_menu + 127, y_menu + 17, fill=out_menu, width=thickness, tags=tag
+            )
+            self.canvas.create_rectangle(
+                x_menu + 110, y_menu + 1, x_menu + 125, y_menu + 16, fill="", outline="", tags="crossBg_" + tag
+            )
+            self.canvas.create_line(
+                x_menu + 115,
+                y_menu + 5,
+                x_menu + 120,
+                y_menu + 12,
+                fill=color_cross,
                 width=thickness * 2,
                 tags="cross_" + tag,
             )
             self.canvas.create_line(
-                xMenu + 115,
-                yMenu + 12,
-                xMenu + 120,
-                yMenu + 5,
-                fill=colorCross,
+                x_menu + 115,
+                y_menu + 12,
+                x_menu + 120,
+                y_menu + 5,
+                fill=color_cross,
                 width=thickness * 2,
                 tags="cross_" + tag,
             )
-            self.drawChar(
-                xMenu + 63,
-                yMenu + 8,
+            self.draw_char(
+                x_menu + 63,
+                y_menu + 8,
                 scaleChar=0.8,
                 angle=0,
                 text=label,
@@ -1860,26 +2068,40 @@ class ComponentSketcher:
                 anchor="center",
                 tags="title_" + tag,
             )
-            self.drawSwitch(xMenu + 10, yMenu + 27, fillSwitch=color1, posSwitch=pos1, tag="switch_" + tag, numBtn=1)
-            self.canvas.tag_bind(
-                "btn1_switch_" + tag, "<Button-1>", lambda event: self.onSwitch(event, "btn1_switch_" + tag, id, 1)
+            self.draw_switch(
+                x_menu + 10, y_menu + 27, fill_switch=color1, pos_switch=pos1, tag="switch_" + tag, num_btn=1
             )
-            self.drawAOP(xMenu + 82, yMenu + 32, scale=2, color="#000000", tags=tag)
-            self.drawAOP(xMenu + 80, yMenu + 30, scale=2, tags=tag)
-            self.drawSwitch(xMenu + 10, yMenu + 60, fillSwitch=color2, posSwitch=pos2, tag="switch_" + tag, numBtn=2)
             self.canvas.tag_bind(
-                "btn2_switch_" + tag, "<Button-1>", lambda event: self.onSwitch(event, "btn2_switch_" + tag, id, 2)
+                "btn1_switch_" + tag,
+                "<Button-1>",
+                lambda event: self.on_switch(event, "btn1_switch_" + tag, element_id, 1),
             )
-            self.drawLabelPin(xMenu + 68, yMenu + 65, scale=2, color="#000000", tags=tag)
-            self.drawLabelPin(xMenu + 65, yMenu + 62, scale=2, color="#faa000", tags=tag)
-            self.drawLabelPin(xMenu + 88, yMenu + 65, scale=2, color="#000000", tags=tag)
-            self.drawLabelPin(xMenu + 85, yMenu + 62, scale=2, color="#faa000", tags=tag)
-            self.drawLabelPin(xMenu + 108, yMenu + 65, scale=2, color="#000000", tags=tag)
-            self.drawLabelPin(xMenu + 105, yMenu + 62, scale=2, color="#faa000", tags=tag)
-            self.drawSwitch(xMenu + 10, yMenu + 93, fillSwitch=color3, posSwitch=pos3, tag="switch_" + tag, numBtn=3)
-            # img_save.append(canvas.create_image(xMenu + 85, yMenu + 105, image=image_ico_pdf, tags=tag, anchor="center"))
+            self.draw_aop(x_menu + 82, y_menu + 32, scale=2, color="#000000", tags=tag)
+            self.draw_aop(x_menu + 80, y_menu + 30, scale=2, tags=tag)
+            self.draw_switch(
+                x_menu + 10, y_menu + 60, fill_switch=color2, pos_switch=pos2, tag="switch_" + tag, num_btn=2
+            )
             self.canvas.tag_bind(
-                "btn3_switch_" + tag, "<Button-1>", lambda event: self.onSwitch(event, "btn3_switch_" + tag, id, 3)
+                "btn2_switch_" + tag,
+                "<Button-1>",
+                lambda event: self.on_switch(event, "btn2_switch_" + tag, element_id, 2),
+            )
+            self.draw_label_pin(x_menu + 68, y_menu + 65, scale=2, color="#000000", tags=tag)
+            self.draw_label_pin(x_menu + 65, y_menu + 62, scale=2, color="#faa000", tags=tag)
+            self.draw_label_pin(x_menu + 88, y_menu + 65, scale=2, color="#000000", tags=tag)
+            self.draw_label_pin(x_menu + 85, y_menu + 62, scale=2, color="#faa000", tags=tag)
+            self.draw_label_pin(x_menu + 108, y_menu + 65, scale=2, color="#000000", tags=tag)
+            self.draw_label_pin(x_menu + 105, y_menu + 62, scale=2, color="#faa000", tags=tag)
+            self.draw_switch(
+                x_menu + 10, y_menu + 93, fill_switch=color3, pos_switch=pos3, tag="switch_" + tag, num_btn=3
+            )
+            # img_save.append(
+            #     canvas.create_image(xMenu + 85, yMenu + 105, image=image_ico_pdf, tags=tag, anchor="center")
+            # )
+            self.canvas.tag_bind(
+                "btn3_switch_" + tag,
+                "<Button-1>",
+                lambda event: self.on_switch(event, "btn3_switch_" + tag, element_id, 3),
             )
             self.canvas.tag_raise("drag_" + tag)
             self.canvas.addtag_withtag(tag, "title_" + tag)
@@ -1889,47 +2111,58 @@ class ComponentSketcher:
             self.canvas.addtag_withtag(tag, "drag_" + tag)
             self.canvas.addtag_withtag(tag, "switch_" + tag)
             self.canvas.addtag_withtag("componentMenu", tag)
-            self.canvas.tag_bind("drag_" + tag, "<B1-Motion>", lambda event: self.onDragMenu(event, tag))
-            self.canvas.tag_bind("drag_" + tag, "<Button-1>", lambda event: self.onStartDragMenu(event, "title_" + tag))
-            self.canvas.tag_bind("cross_" + tag, "<Enter>", lambda event: self.onCrossOver(event, tag))
-            self.canvas.tag_bind("cross_" + tag, "<Leave>", lambda event: self.onCrossLeave(event, tag))
+            self.canvas.tag_bind("drag_" + tag, "<B1-Motion>", lambda event: self.on_drag_menu(event, tag))
             self.canvas.tag_bind(
-                "cross_" + tag, "<Button-1>", lambda event: self.onCrossClick(event, tag, "activeArea" + id)
+                "drag_" + tag, "<Button-1>", lambda event: self.on_start_drag_menu(event, "title_" + tag)
+            )
+            self.canvas.tag_bind("cross_" + tag, "<Enter>", lambda event: self.on_cross_over(event, tag))
+            self.canvas.tag_bind("cross_" + tag, "<Leave>", lambda event: self.on_cross_leave(event, tag))
+            self.canvas.tag_bind(
+                "cross_" + tag, "<Button-1>", lambda event: self.on_cross_click(event, tag, "activeArea" + element_id)
             )
             self.canvas.tag_bind(
-                "drag_" + tag, "<ButtonRelease-1>", lambda event: self.onStopDragMenu(event, "title_" + tag)
+                "drag_" + tag, "<ButtonRelease-1>", lambda event: self.on_stop_drag_menu(event, "title_" + tag)
             )
             self.canvas.itemconfig(tag, state="hidden")
 
-    def onEnter(self, tag):
-        global xSouris, ySouris
+    # def onEnter(self, tag):
+    #     global xSouris, ySouris
 
-        space = 9
-        tagcoord = self.canvas.coords(tag)
-        self.canvas.move(tag, xSouris - tagcoord[0] - space, 0)
-        self.canvas.tag_raise(tag)
-        self.canvas.itemconfig(tag, state="normal")
+    #     space = 9
+    #     tagcoord = self.canvas.coords(tag)
+    #     self.canvas.move(tag, xSouris - tagcoord[0] - space, 0)
+    #     self.canvas.tag_raise(tag)
+    #     self.canvas.itemconfig(tag, state="normal")
 
-    def onMenu(self, event, tagMenu, tagAll, tagRef, colorOut="#60d0ff"):
-        self.canvas.tag_raise(tagMenu)
-        self.canvas.itemconfig(tagAll, state="hidden")
-        self.canvas.itemconfig(tagMenu, state="normal")
+    def on_menu(self, _, tag_menu, tag_all, tag_reg, color_out="#60d0ff"):
+        """
+        Handle the menu.
+        """
+        self.canvas.tag_raise(tag_menu)
+        self.canvas.itemconfig(tag_all, state="hidden")
+        self.canvas.itemconfig(tag_menu, state="normal")
         self.canvas.itemconfig("componentActiveArea", outline="")
-        self.canvas.itemconfig(tagRef, outline=colorOut)
+        self.canvas.itemconfig(tag_reg, outline=color_out)
 
-    # Fonction pour réinitialiser le curseur lorsqu'il sort de la zone
-    def onLeave(self, tag):
-        self.canvas.itemconfig("bg_" + tag, state="hidden")
-        self.canvas.itemconfig("symb_" + tag, state="hidden")
-        self.canvas.itemconfig("pin_" + tag, state="hidden")
-        self.canvas.itemconfig(tag, state="hidden")
+    # # Fonction pour réinitialiser le curseur lorsqu'il sort de la zone
+    # def onLeave(self, tag):
+    #     self.canvas.itemconfig("bg_" + tag, state="hidden")
+    #     self.canvas.itemconfig("symb_" + tag, state="hidden")
+    #     self.canvas.itemconfig("pin_" + tag, state="hidden")
+    #     self.canvas.itemconfig(tag, state="hidden")
 
-    def change_hole_state(self, col, line, pinCount, state):
-        for i in range(pinCount // 2):
+    def change_hole_state(self, col, line, pin_count, state):
+        """
+        Change the state of the holes at (col, line).
+        """
+        for i in range(pin_count // 2):
             matrix1260pts[f"{col+i},{line}"]["state"] = state
             matrix1260pts[f"{col+i},{line+1}"]["state"] = state
 
-    def drawChip(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_chip(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a chip at the given coordinates. Also handles putting it in the dict, among other stuff.
+        """
         global num_id
 
         if width != -1:
@@ -1943,175 +2176,193 @@ class ComponentSketcher:
         dim["chipWidth"] = kwargs.get("chipWidth", dim["chipWidth"])
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
-        open = kwargs.get("open", NO)
-        cursorOver = kwargs.get("cursorOver", "")
-        id = kwargs.get("id", None)
+        cover_open = kwargs.get("open", NO)
+        # cursor_over = kwargs.get("cursorOver", "")
+        chip_id = kwargs.get("id", None)
         tags = kwargs.get("tags", [])
-        type = kwargs.get("type", "chip")
+        chip_type = kwargs.get("type", "chip")
 
-        dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
-        dimColumn = dim["chipWidth"] * inter_space
+        dim_line = (dim["pinCount"] - 0.30) * inter_space / 2
+        dim_column = dim["chipWidth"] * inter_space
 
         params = {}
-        if id:
-            if current_dict_circuit.get(id):
-                params = current_dict_circuit[id]
+        if chip_id:
+            if current_dict_circuit.get(chip_id):
+                params = current_dict_circuit[chip_id]
                 tags = params["tags"]
         else:
-            if type not in id_type:
-                id_type[type] = 0
-            id_type[type] += 1
-            id = "_chip_" + str(num_id)
-            current_dict_circuit["last_id"] = id
+            if chip_type not in id_type:
+                id_type[chip_type] = 0
+            id_type[chip_type] += 1
+            chip_id = "_chip_" + str(num_id)
+            current_dict_circuit["last_id"] = chip_id
             num_id += 1
-            _, (col, line) = self.find_nearest_grid_point(xD, yD)
+            _, (col, line) = self.find_nearest_grid_point(x_distance, y_distance)
             self.change_hole_state(col, line, dim["pinCount"], USED)
             # dim["occupied_holes"] =
 
         if not tags:
-            params["id"] = id
-            params["XY"] = (xD, yD)
-            params["pinUL_XY"] = (xD + 2 * scale, yD - space * scale)
+            params["id"] = chip_id
+            params["XY"] = (x_distance, y_distance)
+            params["pinUL_XY"] = (x_distance + 2 * scale, y_distance - space * scale)
             params["chipWidth"] = dim["chipWidth"]
             params["pinCount"] = dim["pinCount"]
-            dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
-            dimColumn = dim["chipWidth"] * inter_space
-            label = dim["label"] + "-" + str(id_type[type])
+            dim_line = (dim["pinCount"] - 0.30) * inter_space / 2
+            dim_column = dim["chipWidth"] * inter_space
+            label = dim["label"] + "-" + str(id_type[chip_type])
             params["label"] = label
-            params["type"] = type
+            params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
-            nbBrocheParCote = dim["pinCount"] // 2
-            # self.change_hole_state(xD,yD,nbBrocheParCote,USED)
-            tagBase = "base" + id
-            tagMenu = "menu" + id
-            tagCapot = "chipCover" + id
-            tagSouris = "activeArea" + id
+            num_pins_per_side = dim["pinCount"] // 2
+            # self.change_hole_state(x_distance,y_distance,nbBrocheParCote,USED)
+            tag_base = "base" + chip_id
+            tag_menu = "menu" + chip_id
+            tag_cover = "chipCover" + chip_id
+            tag_mouse = "activeArea" + chip_id
 
-            params["tags"] = [tagBase, tagSouris]
+            params["tags"] = [tag_base, tag_mouse]
 
             for i in range(dim["pinCount"]):
                 self.canvas.create_rectangle(
-                    xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (0 - (i // nbBrocheParCote) * (dimColumn + 0)),
-                    xD + 11 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (3 * scale - (i // nbBrocheParCote) * (dimColumn + 6 * scale)),
+                    x_distance + 2 * scale + (i % num_pins_per_side) * inter_space,
+                    y_distance - (0 - (i // num_pins_per_side) * (dim_column + 0)),
+                    x_distance + 11 * scale + (i % num_pins_per_side) * inter_space,
+                    y_distance - (3 * scale - (i // num_pins_per_side) * (dim_column + 6 * scale)),
                     fill="#909090",
                     outline="#000000",
-                    tags=tagBase,
+                    tags=tag_base,
                 )
                 self.canvas.create_polygon(
-                    xD + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
-                    xD + space // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
-                    xD + (2 * space) // 3 + 2 * scale + (i % nbBrocheParCote) * inter_space,
-                    yD - (2 * space) // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + (4 * space) // 3)),
-                    xD + (11 + (i % nbBrocheParCote) * 15) * scale,
-                    yD - space // 3 - (0 - (i // nbBrocheParCote) * (dimColumn + 2 * space // 3)),
+                    x_distance + 2 * scale + (i % num_pins_per_side) * inter_space,
+                    y_distance - space // 3 - (0 - (i // num_pins_per_side) * (dim_column + 2 * space // 3)),
+                    x_distance + space // 3 + 2 * scale + (i % num_pins_per_side) * inter_space,
+                    y_distance - (2 * space) // 3 - (0 - (i // num_pins_per_side) * (dim_column + (4 * space) // 3)),
+                    x_distance + (2 * space) // 3 + 2 * scale + (i % num_pins_per_side) * inter_space,
+                    y_distance - (2 * space) // 3 - (0 - (i // num_pins_per_side) * (dim_column + (4 * space) // 3)),
+                    x_distance + (11 + (i % num_pins_per_side) * 15) * scale,
+                    y_distance - space // 3 - (0 - (i // num_pins_per_side) * (dim_column + 2 * space // 3)),
                     fill="#b0b0b0",
                     outline="#000000",
                     smooth=False,
-                    tags=tagBase,
+                    tags=tag_base,
                 )
-                # AJOUT KH PR DRAG-DROP 23/10/2024
-            params["pinUL_XY"] = (xD + 2 * scale, yD - space)
+
+            params["pinUL_XY"] = (x_distance + 2 * scale, y_distance - space)
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD - space,
-                xD + 3 * scale,
-                yD - space + 1,
+                x_distance + 2 * scale,
+                y_distance - space,
+                x_distance + 3 * scale,
+                y_distance - space + 1,
                 fill="#0000ff",
                 outline="#0000ff",
-                tags=tagBase,
+                tags=tag_base,
             )
-            # FIN AJOUT KH
+
             self.rounded_rect(
-                xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagBase
+                x_distance,
+                y_distance,
+                dim_line,
+                dim_column,
+                5,
+                outline="#343434",
+                fill="#343434",
+                thickness=thickness,
+                tags=tag_base,
             )
 
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD + 2 * scale,
-                xD - 2 * scale + dimLine,
-                yD - 2 * scale + dimColumn,
+                x_distance + 2 * scale,
+                y_distance + 2 * scale,
+                x_distance - 2 * scale + dim_line,
+                y_distance - 2 * scale + dim_column,
                 fill="#000000",
                 outline="#000000",
-                tags=tagBase,
+                tags=tag_base,
             )
             # FIXME false so it is never called, rework is for the future
             if False and "internalFunc" in dim and dim["internalFunc"] is not None:
-                dim["internalFunc"](xD, yD, scale=scale, tags=tagBase, **kwargs)
+                dim["internalFunc"](x_distance, y_distance, scale=scale, tags=tag_base, **kwargs)
 
             self.rounded_rect(
-                xD, yD, dimLine, dimColumn, 5, outline="#343434", fill="#343434", thickness=thickness, tags=tagCapot
+                x_distance,
+                y_distance,
+                dim_line,
+                dim_column,
+                5,
+                outline="#343434",
+                fill="#343434",
+                thickness=thickness,
+                tags=tag_cover,
             )
             self.canvas.create_line(
-                xD,
-                yD + 1 * space // 3,
-                xD + dimLine,
-                yD + 1 * space // 3,
+                x_distance,
+                y_distance + 1 * space // 3,
+                x_distance + dim_line,
+                y_distance + 1 * space // 3,
                 fill="#b0b0b0",
                 width=thickness,
-                tags=tagCapot,
+                tags=tag_cover,
             )
             self.canvas.create_line(
-                xD,
-                yD + dimColumn - 1 * space // 3,
-                xD + dimLine,
-                yD + dimColumn - 1 * space // 3,
+                x_distance,
+                y_distance + dim_column - 1 * space // 3,
+                x_distance + dim_line,
+                y_distance + dim_column - 1 * space // 3,
                 fill="#b0b0b0",
                 width=thickness,
-                tags=tagCapot,
+                tags=tag_cover,
             )
             self.canvas.create_oval(
-                xD + 4 * scale,
-                yD + dimColumn - 1 * space // 3 - 6 * scale,
-                xD + 8 * scale,
-                yD + dimColumn - 1 * space // 3 - 2 * scale,
+                x_distance + 4 * scale,
+                y_distance + dim_column - 1 * space // 3 - 6 * scale,
+                x_distance + 8 * scale,
+                y_distance + dim_column - 1 * space // 3 - 2 * scale,
                 fill="#ffffff",
                 outline="#ffffff",
-                tags=tagCapot,
+                tags=tag_cover,
             )
             self.canvas.create_arc(
-                xD - 5 * scale,
-                yD + dimColumn // 2 - 5 * scale,
-                xD + 5 * scale,
-                yD + dimColumn // 2 + 5 * scale,
+                x_distance - 5 * scale,
+                y_distance + dim_column // 2 - 5 * scale,
+                x_distance + 5 * scale,
+                y_distance + dim_column // 2 + 5 * scale,
                 start=270,
                 extent=180,
                 fill="#000000",
                 outline="#505050",
                 style=tk.PIESLICE,
-                tags=tagCapot,
+                tags=tag_cover,
             )
-            self.drawChar(
-                xD + dimLine // 2,
-                yD + dimColumn // 2,
+            self.draw_char(
+                x_distance + dim_line // 2,
+                y_distance + dim_column // 2,
                 scale=scale,
                 angle=0,
                 text=label,
                 color="#ffffff",
                 anchor="center",
-                tags=tagCapot,
-            )  # xD + 30*scale,yD - 10*scale
+                tags=tag_cover,
+            )  # x_distance + 30*scale,y_distance - 10*scale
             self.canvas.create_rectangle(
-                xD + 2 * scale,
-                yD + 2 * scale,
-                xD - 2 * scale + dimLine,
-                yD - 2 * scale + dimColumn,
+                x_distance + 2 * scale,
+                y_distance + 2 * scale,
+                x_distance - 2 * scale + dim_line,
+                y_distance - 2 * scale + dim_column,
                 fill="",
                 outline="",
-                tags=tagSouris,
+                tags=tag_mouse,
             )
-            self.canvas.tag_raise(tagCapot)
-            self.canvas.tag_raise(tagSouris)
-            self.canvas.addtag_withtag("componentActiveArea", tagSouris)
-            if open:
-                self.canvas.itemconfig(tagCapot, state="hidden")
+            self.canvas.tag_raise(tag_cover)
+            self.canvas.tag_raise(tag_mouse)
+            self.canvas.addtag_withtag("componentActiveArea", tag_mouse)
+            if cover_open:
+                self.canvas.itemconfig(tag_cover, state="hidden")
             else:
-                params["tags"].append(tagCapot)
-            current_dict_circuit[id] = params
-            self.drawMenu(xD + dimLine + 2.3 * scale + space * 0, yD - space, thickness, label, tagMenu, id)
+                params["tags"].append(tag_cover)
+            current_dict_circuit[chip_id] = params
+            self.draw_menu(
+                x_distance + dim_line + 2.3 * scale + space * 0, y_distance - space, thickness, label, tag_menu, chip_id
+            )
             # Only bind a tag to the menu if it has an internal function
             # FIXME (maybe?)
             # FIXME: false so it is never bound, rework is for the future
@@ -2123,31 +2374,35 @@ class ComponentSketcher:
                 and kwargs["logicFunction"] is not None
             ):
                 self.canvas.tag_bind(
-                    tagSouris, "<Button-3>", lambda event: self.onMenu(event, tagMenu, "componentMenu", tagSouris)
+                    tag_mouse, "<Button-3>", lambda event: self.on_menu(event, tag_menu, "componentMenu", tag_mouse)
                 )
             # Bind left-click to initiate drag
-            self.canvas.tag_bind(tagSouris, "<Button-1>", lambda event, chip_id=id: self.on_chip_click(event, chip_id))
+            self.canvas.tag_bind(
+                tag_mouse, "<Button-1>", lambda event, chip_id=chip_id: self.on_chip_click(event, chip_id)
+            )
 
             # Bind drag and release events to the activeArea tag
-            self.canvas.tag_bind(tagSouris, "<B1-Motion>", self.on_chip_drag)
-            self.canvas.tag_bind(tagSouris, "<ButtonRelease-1>", self.on_stop_chip_drag)
+            self.canvas.tag_bind(tag_mouse, "<B1-Motion>", self.on_chip_drag)
+            self.canvas.tag_bind(tag_mouse, "<ButtonRelease-1>", self.on_stop_chip_drag)
         else:
-            X, Y = params["XY"]
-            dX = xD - X
-            dY = yD - Y
-            params["XY"] = (xD, yD)
+            x, y = params["XY"]
+            d_x = x_distance - x
+            d_y = y_distance - y
+            params["XY"] = (x_distance, y_distance)
             # AJOUT KH PR DRAG-DROP 23/10/2024
-            params["pinUL_XY"] = (xD + 2 * scale, yD - space * scale)
+            params["pinUL_XY"] = (x_distance + 2 * scale, y_distance - space * scale)
             for tg in tags:
-                self.canvas.move(tg, dX, dY)
+                self.canvas.move(tg, d_x, d_y)
 
-        return xD + dimLine + 2.3 * scale, yD
+        return x_distance + dim_line + 2.3 * scale, y_distance
 
-    ################## AJOUT KH 25/10/2024 ######################################
-    def getColLine(self, x, y, scale=1, **kwargs):
-        inter_space = 15 * scale
-        space = 9 * scale
-        thickness = 1 * scale
+    def get_col_line(self, x, y, scale=1, **kwargs):
+        """
+        Get the column and line of the given coordinates.
+        """
+        # inter_space = 15 * scale
+        # space = 9 * scale
+        # thickness = 1 * scale
         matrix = kwargs.get("matrix", matrix830pts)
         point_col_lin = (-1, -1)
 
@@ -2159,20 +2414,24 @@ class ComponentSketcher:
 
         return point_col_lin
 
-    ################## FIN AJOUT KH 25/10/2024 ######################################
-
-    def getXY(self, column, line, scale=1, **kwargs):
-        inter_space = 15 * scale
-        space = 9 * scale
-        thickness = 1 * scale
+    def get_xy(self, column, line, scale=1, **kwargs):
+        """
+        Get the x and y coordinates of the given column and line.
+        """
+        # inter_space = 15 * scale
+        # space = 9 * scale
+        # thickness = 1 * scale
         matrix = kwargs.get("matrix", matrix830pts)
 
-        id = str(column) + "," + str(line)
-        x, y = matrix[id]["xy"]
+        element_id = str(column) + "," + str(line)
+        x, y = matrix[element_id]["xy"]
 
         return x * scale, y * scale
 
-    def drawWire(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_wire(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw a wire at the given coordinates. Also handles putting it in the dict, among other stuff.
+        """
         global num_id
 
         if width != -1:
@@ -2182,57 +2441,59 @@ class ComponentSketcher:
         mode = kwargs.get("mode", AUTO)
         coord = kwargs.get("coord", [])
         matrix = kwargs.get("matrix", matrix830pts)
-        id = kwargs.get("id", None)
-        tags = kwargs.get("tags", [])
+        wire_id = kwargs.get("id", None)
+        # tags = kwargs.get("tags", [])
         (xs, ys, xe, ye) = kwargs.get("XY", [(0, 0, 0, 0)])[0]
         multipoints = kwargs.get("multipoints", [])
-        inter_space = 15 * scale
-        space = 9 * scale
+        # inter_space = 15 * scale
+        # space = 9 * scale
         thickness = 1 * scale
 
         params = {}
-        if id:  # If the wire already exists, delete it and redraw
-            if current_dict_circuit.get(id):
-                params = current_dict_circuit[id]
-                tags = params["tags"]
+        if wire_id:  # If the wire already exists, delete it and redraw
+            if current_dict_circuit.get(wire_id):
+                params = current_dict_circuit[wire_id]
+                # tags = params["tags"]
                 params["mode"] = mode
                 params["coord"] = coord
                 params["multipoints"] = multipoints
-                xO, yO, xF, yF = coord[0]
-                if xO != -1:
-                    xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+                x_start, y_start, x_end, y_end = coord[0]
+                if x_start != -1:
+                    x_start, y_start = self.get_xy(x_start, y_start, scale=scale, matrix=matrix)
                 else:
-                    xO, yO = xs, ys
-                    # print(f"({xO+xD},{yO+yD}) - deb - col proche:{cn} - ligne p: {ln}")
-                if xF != -1:
-                    xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+                    x_start, y_start = xs, ys
+                    # print(f"({xO+x_distance},{yO+y_distance}) - deb - col proche:{cn} - ligne p: {ln}")
+                if x_end != -1:
+                    x_end, y_end = self.get_xy(x_end, y_end, scale=scale, matrix=matrix)
                 else:
-                    xF, yF = xe, ye
-                    # print(f"({xF+xD},{yF+yD}) - fin - col proche:{cn} - ligne p: {ln}")
+                    x_end, y_end = xe, ye
+                    # print(f"({xF+x_distance},{yF+y_distance}) - fin - col proche:{cn} - ligne p: {ln}")
                 x1_old, y1_old, x2_old, y2_old = params["XY"]
-                dx1, dy1 = xO - x1_old, yO - y1_old
-                dx2, dy2 = xF - x2_old, yF - y2_old
-                params["XY"] = (xO, yO, xF, yF)
+                dx1, dy1 = x_start - x1_old, y_start - y1_old
+                dx2, dy2 = x_end - x2_old, y_end - y2_old
+                params["XY"] = (x_start, y_start, x_end, y_end)
                 params["color"] = color
                 encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
                 contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-                wire_body_tag = f"{id}_body"
-                wire_body_shadow_tag = f"{id}_body_shadow"
-                start_endpoint_tag = f"{id}_start"
-                end_endpoint_tag = f"{id}_end"
-                select_start_tag = f"{id}_select_start"
-                select_end_tag = f"{id}_select_end"
+                wire_body_tag = f"{wire_id}_body"
+                wire_body_shadow_tag = f"{wire_id}_body_shadow"
+                start_endpoint_tag = f"{wire_id}_start"
+                end_endpoint_tag = f"{wire_id}_end"
+                select_start_tag = f"{wire_id}_select_start"
+                select_end_tag = f"{wire_id}_select_end"
                 # divY  = yF - yO if yF != yO else 0.000001
-                # xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-                # yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-                # p1    = ( xD + (xO + xDiff), yD + (yO + space - yDiff))
-                # p2    = ( xD + (xF + xDiff), yD + (yF + space - yDiff))
-                # p3    = ( xD + (xF + space - xDiff), yD + (yF + yDiff))
-                # p4    = ( xD + (xO+ space - xDiff), yD + (yO + yDiff))
+                # x_distanceiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+                # y_distanceiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+                # p1    = ( x_distance + (xO + x_distanceiff), y_distance + (yO + space - y_distanceiff))
+                # p2    = ( x_distance + (xF + x_distanceiff), y_distance + (yF + space - y_distanceiff))
+                # p3    = ( x_distance + (xF + space - x_distanceiff), y_distance + (yF + y_distanceiff))
+                # p4    = ( x_distance + (xO+ space - x_distanceiff), y_distance + (yO + y_distanceiff))
                 # flat_coord = [coord for point in [p1, p2, p3, p4] for coord in point]
-                multipoints = [xO, yO] + multipoints + [xF, yF]
+                multipoints = [x_start, y_start] + multipoints + [x_end, y_end]
                 # multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
-                multipoints = [val + 5 * scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
+                multipoints = [
+                    val + 5 * scale + (x_distance if i % 2 == 0 else y_distance) for i, val in enumerate(multipoints)
+                ]
                 # self.canvas.create_line(multipoints, fill=contour, width=8*thickness ,
                 #                 tags=(id, wire_body_tag))
                 # self.canvas.create_line(multipoints, fill=encre, width=6*thickness,
@@ -2244,148 +2505,162 @@ class ComponentSketcher:
                 self.canvas.move(select_start_tag, dx1, dy1)
                 self.canvas.move(select_end_tag, dx2, dy2)
         else:
-            id = "_wire_" + str(num_id)
-            current_dict_circuit["last_id"] = id
+            wire_id = "_wire_" + str(num_id)
+            current_dict_circuit["last_id"] = wire_id
             num_id += 1
-            params["id"] = id
+            params["id"] = wire_id
             params["mode"] = mode
             params["coord"] = coord
             params["multipoints"] = multipoints
-            xO, yO, xF, yF = coord[0]
-            ############ MODIF KH 25/10/2024 ###############################
-            if xO != -1:
-                xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
+            x_start, y_start, x_end, y_end = coord[0]
+
+            if x_start != -1:
+                x_start, y_start = self.get_xy(x_start, y_start, scale=scale, matrix=matrix)
             else:
-                xO, yO = xs, ys
-            if xF != -1:
-                xF, yF = self.getXY(xF, yF, scale=scale, matrix=matrix)
+                x_start, y_start = xs, ys
+            if x_end != -1:
+                x_end, y_end = self.get_xy(x_end, y_end, scale=scale, matrix=matrix)
             else:
-                xF, yF = xe, ye
-            ############ FIN MODIF KH 25/10/2024 ###############################
-            params["XY"] = (xO, yO, xF, yF)
+                x_end, y_end = xe, ye
+
+            params["XY"] = (x_start, y_start, x_end, y_end)
             params["color"] = color
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
 
             # Define unique tags for the wire components
-            wire_body_tag = f"{id}_body"
-            wire_body_shadow_tag = f"{id}_body_shadow"
-            start_endpoint_tag = f"{id}_start"
-            end_endpoint_tag = f"{id}_end"
-            select_start_tag = f"{id}_select_start"
-            select_end_tag = f"{id}_select_end"
+            wire_body_tag = f"{wire_id}_body"
+            wire_body_shadow_tag = f"{wire_id}_body_shadow"
+            start_endpoint_tag = f"{wire_id}_start"
+            end_endpoint_tag = f"{wire_id}_end"
+            select_start_tag = f"{wire_id}_select_start"
+            select_end_tag = f"{wire_id}_select_end"
 
             # # Create the wire body as a line
             # self.canvas.create_line(
-            #     xD + xO, yD + yO,
-            #     xD + xF, yD + yF,
+            #     x_distance + xO, y_distance + yO,
+            #     x_distance + xF, y_distance + yF,
             #     fill=encre,
             #     width=6 * thickness,
             #     tags=(id, wire_body_tag),
             # )
 
             # Create endpoints as separate items
-            endpoint_radius = 3 * scale  # Adjust size as needed
+            # endpoint_radius = 3 * scale  # Adjust size as needed
 
             # Starting endpoint
             # MODIF KH DRAG 23/10/2024
             # self.canvas.create_oval(
-            #     xD + xO - endpoint_radius,
-            #     yD + yO - endpoint_radius,
-            #     xD + xO + endpoint_radius,
-            #     yD + yO + endpoint_radius,
+            #     x_distance + xO - endpoint_radius,
+            #     y_distance + yO - endpoint_radius,
+            #     x_distance + xO + endpoint_radius,
+            #     y_distance + yO + endpoint_radius,
             #     fill="#dfdfdf",
             #     outline="#404040",
             #     width=1 * thickness,
             #     tags=(id, start_endpoint_tag),
             # )
             self.canvas.create_oval(
-                xD + xO + 2 * scale,
-                yD + yO + 2 * scale,
-                xD + xO + 7 * scale,
-                yD + yO + 7 * scale,
+                x_distance + x_start + 2 * scale,
+                y_distance + y_start + 2 * scale,
+                x_distance + x_start + 7 * scale,
+                y_distance + y_start + 7 * scale,
                 fill="#dfdfdf",
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, start_endpoint_tag),
+                tags=(wire_id, start_endpoint_tag),
             )
             self.canvas.create_oval(
-                xD + xO - 2 * scale,
-                yD + yO - 2 * scale,
-                xD + xO + 9 * scale,
-                yD + yO + 9 * scale,
+                x_distance + x_start - 2 * scale,
+                y_distance + y_start - 2 * scale,
+                x_distance + x_start + 9 * scale,
+                y_distance + y_start + 9 * scale,
                 fill="",
                 outline="",
                 width=1 * thickness,
-                tags=(id, select_start_tag),
+                tags=(wire_id, select_start_tag),
             )
 
             # Ending endpoint
             # self.canvas.create_oval(
-            #     xD + xF - endpoint_radius,
-            #     yD + yF - endpoint_radius,
-            #     xD + xF + endpoint_radius,
-            #     yD + yF + endpoint_radius,
+            #     x_distance + xF - endpoint_radius,
+            #     y_distance + yF - endpoint_radius,
+            #     x_distance + xF + endpoint_radius,
+            #     y_distance + yF + endpoint_radius,
             #     fill="#dfdfdf",
             #     outline="#404040",
             #     width=1 * thickness,
             #     tags=(id, end_endpoint_tag),
             # )
             self.canvas.create_oval(
-                xD + xF + 2 * scale,
-                yD + yF + 2 * scale,
-                xD + xF + 7 * scale,
-                yD + yF + 7 * scale,
+                x_distance + x_end + 2 * scale,
+                y_distance + y_end + 2 * scale,
+                x_distance + x_end + 7 * scale,
+                y_distance + y_end + 7 * scale,
                 fill="#dfdfdf",
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, end_endpoint_tag),
+                tags=(wire_id, end_endpoint_tag),
             )
             self.canvas.create_oval(
-                xD + xF - 2 * scale,
-                yD + yF - 2 * scale,
-                xD + xF + 9 * scale,
-                yD + yF + 9 * scale,
+                x_distance + x_end - 2 * scale,
+                y_distance + y_end - 2 * scale,
+                x_distance + x_end + 9 * scale,
+                y_distance + y_end + 9 * scale,
                 fill="",
                 outline="",
                 width=1 * thickness,
-                tags=(id, select_end_tag),
+                tags=(wire_id, select_end_tag),
             )
 
             # Create the wire body as a line
             # self.canvas.create_line(
-            #     xD + xO + 5*scale, yD + yO + 5*scale,
-            #     xD + xF + 5*scale, yD + yF + 5*scale,
+            #     x_distance + xO + 5*scale, y_distance + yO + 5*scale,
+            #     x_distance + xF + 5*scale, y_distance + yF + 5*scale,
             #     fill=encre,
             #     width=6 * thickness,
             #     tags=(id, wire_body_tag),
             # )
             ##############   MODIF KH MULTIPOINTS 27/10/2024  #########################
             # divY  = yF - yO if yF != yO else 0.000001
-            # xDiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-            # yDiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-            # p1    = ( (xO + xDiff), (yO + space - yDiff))
-            # p2    = ( (xF + xDiff), (yF + space - yDiff))
-            # p3    = ( (xF + space - xDiff), (yF + yDiff))
-            # p4    = ( (xO+ space - xDiff), (yO + yDiff))
-            # self.canvas.create_polygon(xD + p1[0], yD + p1[1], xD + p2[0], yD + p2[1], \
-            #                     xD + p3[0], yD + p3[1], xD + p4[0], yD + p4[1], \
-            #                     fill=encre, outline=contour, width=1*thickness,
-            #                     tags=(id, wire_body_tag) )
+            # x_distanceiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
+            # y_distanceiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
+            # p1    = ( (xO + x_distanceiff), (yO + space - y_distanceiff))
+            # p2    = ( (xF + x_distanceiff), (yF + space - y_distanceiff))
+            # p3    = ( (xF + space - x_distanceiff), (yF + y_distanceiff))
+            # p4    = ( (xO+ space - x_distanceiff), (yO + y_distanceiff))
+            # self.canvas.create_polygon(
+            #     x_distance + p1[0],
+            #     y_distance + p1[1],
+            #     x_distance + p2[0],
+            #     y_distance + p2[1],
+            #     x_distance + p3[0],
+            #     y_distance + p3[1],
+            #     x_distance + p4[0],
+            #     y_distance + p4[1],
+            #     fill=encre,
+            #     outline=contour,
+            #     width=1 * thickness,
+            #     tags=(id, wire_body_tag),
+            # )
 
             # multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
-            # multipoints = [x + xD + 5*scale, y + yD + 5*scale for (x, y) in multipoints]
-            multipoints = [xO, yO] + multipoints + [xF, yF]
-            multipoints = [val + 5 * scale + (xD if i % 2 == 0 else yD) for i, val in enumerate(multipoints)]
-            self.canvas.create_line(multipoints, fill=contour, width=8 * thickness, tags=(id, wire_body_shadow_tag))
-            self.canvas.create_line(multipoints, fill=encre, width=4 * thickness, tags=(id, wire_body_tag))
+            # multipoints = [x + x_distance + 5*scale, y + y_distance + 5*scale for (x, y) in multipoints]
+            multipoints = [x_start, y_start] + multipoints + [x_end, y_end]
+            multipoints = [
+                val + 5 * scale + (x_distance if i % 2 == 0 else y_distance) for i, val in enumerate(multipoints)
+            ]
+            self.canvas.create_line(
+                multipoints, fill=contour, width=8 * thickness, tags=(wire_id, wire_body_shadow_tag)
+            )
+            self.canvas.create_line(multipoints, fill=encre, width=4 * thickness, tags=(wire_id, wire_body_tag))
             ##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
             # Store tags and positions in params
-            params["tags"] = [id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
+            params["tags"] = [wire_id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
             params["wire_body_tag"] = wire_body_tag
             params["endpoints"] = {
-                "start": {"position": (xD + xO, yD + yO), "tag": start_endpoint_tag},
-                "end": {"position": (xD + xF, yD + yF), "tag": end_endpoint_tag},
+                "start": {"position": (x_distance + x_start, y_distance + y_start), "tag": start_endpoint_tag},
+                "end": {"position": (x_distance + x_end, y_distance + y_end), "tag": end_endpoint_tag},
             }
             self.canvas.tag_raise(select_start_tag)
             self.canvas.tag_raise(select_end_tag)
@@ -2393,225 +2668,230 @@ class ComponentSketcher:
             # Bind events to the endpoints for drag-and-drop
 
             self.canvas.tag_bind(
-                wire_body_tag, "<Enter>", lambda event, wire_id=id: self.on_wire_body_enter(event, wire_id)
+                wire_body_tag, "<Enter>", lambda event, wire_id=wire_id: self.on_wire_body_enter(event, wire_id)
             )
             self.canvas.tag_bind(
-                wire_body_tag, "<Leave>", lambda event, wire_id=id: self.on_wire_body_leave(event, wire_id)
+                wire_body_tag, "<Leave>", lambda event, wire_id=wire_id: self.on_wire_body_leave(event, wire_id)
             )
             self.canvas.tag_bind(
-                wire_body_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_body_click(event, wire_id)
+                wire_body_tag, "<Button-1>", lambda event, wire_id=wire_id: self.on_wire_body_click(event, wire_id)
             )
             self.canvas.tag_bind(
-                wire_body_tag, "<B1-Motion>", lambda event, wire_id=id: self.on_wire_body_drag(event, wire_id)
+                wire_body_tag, "<B1-Motion>", lambda event, wire_id=wire_id: self.on_wire_body_drag(event, wire_id)
             )
 
             self.canvas.tag_bind(
-                wire_body_tag, "<Button-1>", lambda event, wire_id=id: self.on_wire_body_click(event, wire_id)
+                wire_body_tag, "<Button-1>", lambda event, wire_id=wire_id: self.on_wire_body_click(event, wire_id)
             )
             self.canvas.tag_bind(
                 select_start_tag,
                 "<Button-1>",
-                lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, "start"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_click(event, wire_id, "start"),
             )
             self.canvas.tag_bind(
                 select_end_tag,
                 "<Button-1>",
-                lambda event, wire_id=id: self.on_wire_endpoint_click(event, wire_id, "end"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_click(event, wire_id, "end"),
             )
 
             self.canvas.tag_bind(
                 select_start_tag,
                 "<B1-Motion>",
-                lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, "start"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_drag(event, wire_id, "start"),
             )
             self.canvas.tag_bind(
                 select_end_tag,
                 "<B1-Motion>",
-                lambda event, wire_id=id: self.on_wire_endpoint_drag(event, wire_id, "end"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_drag(event, wire_id, "end"),
             )
 
             self.canvas.tag_bind(
                 select_start_tag,
                 "<ButtonRelease-1>",
-                lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, "start"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_release(event, wire_id, "start"),
             )
             self.canvas.tag_bind(
                 select_end_tag,
                 "<ButtonRelease-1>",
-                lambda event, wire_id=id: self.on_wire_endpoint_release(event, wire_id, "end"),
+                lambda event, wire_id=wire_id: self.on_wire_endpoint_release(event, wire_id, "end"),
             )
 
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
         matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = USED
 
-        current_dict_circuit[id] = params
+        current_dict_circuit[wire_id] = params
 
-        return xD, yD
+        return x_distance, y_distance
 
-    def drawpin_io(self, xD, yD, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_pin_io(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+        """
+        Draw an input/output pin at the given coordinates. Also handles putting it in the dict, among other stuff.
+        """
         global num_id
 
         if width != -1:
             scale = width / 9.0
-        mode = kwargs.get("mode", AUTO)
+        # mode = kwargs.get("mode", AUTO)
         matrix = kwargs.get("matrix", matrix830pts)
-        id = kwargs.get("id", None)
+        element_id = kwargs.get("id", None)
         coord = kwargs.get("coord", [])
-        tags = kwargs.get("tags", [])
-        type = kwargs.get("type", INPUT)
-        color = kwargs.get("color", "#479dff") 
-        inter_space = 15 * scale
-        space = 9 * scale
+        # tags = kwargs.get("tags", [])
+        element_type = kwargs.get("type", INPUT)
+        color = kwargs.get("color", "#479dff")
+        # inter_space = 15 * scale
+        # space = 9 * scale
         thickness = 1 * scale
 
-        if id and current_dict_circuit.get(id):
-            params = current_dict_circuit[id]
+        if element_id and current_dict_circuit.get(element_id):
+            params = current_dict_circuit[element_id]
             old_x, old_y = params["XY"]
             params["coord"] = coord
-            xO, yO = coord[0]
-            xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
-            dx = xO - old_x
-            dy = yO - old_y
+            x_origin, y_origin = coord[0]
+            x_origin, y_origin = self.get_xy(x_origin, y_origin, scale=scale, matrix=matrix)
+            dx = x_origin - old_x
+            dy = y_origin - old_y
 
-            self.canvas.move(id, dx, dy)
-            params["XY"] = (xO, yO)
+            self.canvas.move(element_id, dx, dy)
+            params["XY"] = (x_origin, y_origin)
             params["color"] = color
 
         else:
-            id = "_io_" + str(num_id)
+            element_id = "_io_" + str(num_id)
             num_id += 1
             params = {}
-            params["id"] = id
+            params["id"] = element_id
             params["tags"] = []
             params["coord"] = coord
-            xO, yO = coord[0]
-            xO, yO = self.getXY(xO, yO, scale=scale, matrix=matrix)
-            params["XY"] = (xO, yO)
+            x_origin, y_origin = coord[0]
+            x_origin, y_origin = self.get_xy(x_origin, y_origin, scale=scale, matrix=matrix)
+            params["XY"] = (x_origin, y_origin)
             params["controller_pin"] = "IO"
-            params["type"] = type
+            params["type"] = element_type
             params["color"] = color
 
             # tags here
-            pin_tag = f"pin_io_{id}"
-            outline_tag = f"pin_io_outline_{id}"
-            interactive_tag = f"pin_io_interactive_{id}"
+            pin_tag = f"pin_io_{element_id}"
+            outline_tag = f"pin_io_outline_{element_id}"
+            interactive_tag = f"pin_io_interactive_{element_id}"
             params["outline_tag"] = outline_tag
             params["tag"] = pin_tag
 
             # Draw the vertical line
             line_id = self.canvas.create_line(
-                xD + xO + 5 * scale,
-                yD + yO - 3 * scale,
-                xD + xO + 5 * scale,
-                yD + yO + 2 * scale,
+                x_distance + x_origin + 5 * scale,
+                y_distance + y_origin - 3 * scale,
+                x_distance + x_origin + 5 * scale,
+                y_distance + y_origin + 2 * scale,
                 fill=color,
                 width=4 * thickness,
-                tags=(id, pin_tag, interactive_tag),
+                tags=(element_id, pin_tag, interactive_tag),
             )
             params["tags"].append(line_id)
 
             # Draw the circle at the bottom
             oval_id = self.canvas.create_oval(
-                xD + xO + 2 * scale,
-                yD + yO + 2 * scale,
-                xD + xO + 7 * scale,
-                yD + yO + 7 * scale,
+                x_distance + x_origin + 2 * scale,
+                y_distance + y_origin + 2 * scale,
+                x_distance + x_origin + 7 * scale,
+                y_distance + y_origin + 7 * scale,
                 fill="#dfdfdf",
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, pin_tag, interactive_tag, outline_tag),
+                tags=(element_id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(oval_id)
 
             # Draw the larger rhombus on top of the line (supports outline)
             polygon_id = self.canvas.create_polygon(
-                xD + xO - 10 * scale,
-                yD + yO - 18 * scale,
-                xD + xO + 5 * scale,
-                yD + yO - 33 * scale,
-                xD + xO + 20 * scale,
-                yD + yO - 18 * scale,
-                xD + xO + 5 * scale,
-                yD + yO - 3 * scale,
+                x_distance + x_origin - 10 * scale,
+                y_distance + y_origin - 18 * scale,
+                x_distance + x_origin + 5 * scale,
+                y_distance + y_origin - 33 * scale,
+                x_distance + x_origin + 20 * scale,
+                y_distance + y_origin - 18 * scale,
+                x_distance + x_origin + 5 * scale,
+                y_distance + y_origin - 3 * scale,
                 fill=color,
                 outline="#404040",
                 width=1 * thickness,
-                tags=(id, pin_tag, interactive_tag, outline_tag),
+                tags=(element_id, pin_tag, interactive_tag, outline_tag),
             )
             params["tags"].append(polygon_id)
 
             # Bring the rhombus to the front
-            self.canvas.tag_raise(id)
+            self.canvas.tag_raise(element_id)
 
-            if type == INPUT:
+            if element_type == INPUT:
                 # Arrow pointing down
                 arrow_line_id = self.canvas.create_line(
-                    xD + xO + 5 * scale,
-                    yD + yO - 23 * scale,
-                    xD + xO + 5 * scale,
-                    yD + yO - 13 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 23 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 13 * scale,
                     fill="#404040",
                     width=2 * thickness,
-                    tags=(id, interactive_tag),
+                    tags=(element_id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
                 arrow_head_id = self.canvas.create_polygon(
-                    xD + xO + 0 * scale,
-                    yD + yO - 13 * scale,
-                    xD + xO + 10 * scale,
-                    yD + yO - 13 * scale,
-                    xD + xO + 5 * scale,
-                    yD + yO - 8 * scale,
+                    x_distance + x_origin + 0 * scale,
+                    y_distance + y_origin - 13 * scale,
+                    x_distance + x_origin + 10 * scale,
+                    y_distance + y_origin - 13 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 8 * scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, interactive_tag, outline_tag),
+                    tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
-            elif type == OUTPUT:
+            elif element_type == OUTPUT:
                 # Arrow pointing up
                 arrow_line_id = self.canvas.create_line(
-                    xD + xO + 5 * scale,
-                    yD + yO - 23 * scale,
-                    xD + xO + 5 * scale,
-                    yD + yO - 13 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 23 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 13 * scale,
                     fill="#000000",
                     width=2 * thickness,
-                    tags=(id, interactive_tag),
+                    tags=(element_id, interactive_tag),
                 )
                 params["tags"].append(arrow_line_id)
 
                 arrow_head_id = self.canvas.create_polygon(
-                    xD + xO + 0 * scale,
-                    yD + yO - 23 * scale,
-                    xD + xO + 10 * scale,
-                    yD + yO - 23 * scale,
-                    xD + xO + 5 * scale,
-                    yD + yO - 28 * scale,
+                    x_distance + x_origin + 0 * scale,
+                    y_distance + y_origin - 23 * scale,
+                    x_distance + x_origin + 10 * scale,
+                    y_distance + y_origin - 23 * scale,
+                    x_distance + x_origin + 5 * scale,
+                    y_distance + y_origin - 28 * scale,
                     fill="#404040",
                     outline="#404040",
-                    tags=(id, interactive_tag, outline_tag),
+                    tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
 
-            current_dict_circuit[id] = params
+            current_dict_circuit[element_id] = params
 
             print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
 
             self.canvas.tag_bind(
-                interactive_tag, "<Button-1>", lambda event, pin_id=id: self.on_pin_io_click(event, pin_id)
+                interactive_tag, "<Button-1>", lambda event, pin_id=element_id: self.on_pin_io_click(event, pin_id)
             )
             self.canvas.tag_bind(
-                interactive_tag, "<B1-Motion>", lambda event, pin_id=id: self.on_pin_io_drag(event, pin_id)
+                interactive_tag, "<B1-Motion>", lambda event, pin_id=element_id: self.on_pin_io_drag(event, pin_id)
             )
             self.canvas.tag_bind(
-                interactive_tag, "<ButtonRelease-1>", lambda event, pin_id=id: self.on_pin_io_release(event, pin_id)
+                interactive_tag,
+                "<ButtonRelease-1>",
+                lambda event, pin_id=element_id: self.on_pin_io_release(event, pin_id),
             )
             # print(f"Drawing pin_io with params: {params}")
 
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
 
-        return xD, yD
+        return x_distance, y_distance
 
     def clear_board(self):
         """Clear the board of all drawn components."""

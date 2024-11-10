@@ -33,7 +33,7 @@ class ComponentData:
 
 
         pins7400 = {
-            "logicFunction": self.sketcher.symbNAND,
+            "logicFunction": self.sketcher.symb_nand,
             "io": [
                 (
                     [1, 2],
@@ -62,7 +62,7 @@ class ComponentData:
             ],
         }
         pins7402 = {
-            "logicFunction": self.sketcher.symbNOR,
+            "logicFunction": self.sketcher.symb_nor,
             "io": [
                 (
                     [1, 2],
@@ -91,7 +91,7 @@ class ComponentData:
             ],
         }
         pins7404 = {
-            "logicFunction": self.sketcher.symbNOT,
+            "logicFunction": self.sketcher.symb_not,
             "io": [
                 (
                     [1, 2],
@@ -120,7 +120,7 @@ class ComponentData:
             ],
         }
         pins7408 = {
-            "logicFunction": self.sketcher.symbAND,
+            "logicFunction": self.sketcher.symb_and,
             "io": [
                 (
                     [1, 2],
@@ -149,7 +149,7 @@ class ComponentData:
             ],
         }
         pins7432 = {
-            "logicFunction": self.sketcher.symbOR,
+            "logicFunction": self.sketcher.symb_or,
             "io": [
                 (
                     [1, 2],
@@ -178,44 +178,44 @@ class ComponentData:
             ],
         }
 
-        chipDIP14 = [(self.sketcher.drawChip, 1, {**DIP14_PARAMS, **chipCoverClose, "internalFunc": self.sketcher.internalFunc})]  # , **pins7408
-        chip7400 = [(self.sketcher.drawChip, 1, {**dip7400, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7400})]
-        chip7402 = [(self.sketcher.drawChip, 1, {**dip7402, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7402})]
-        chip7404 = [(self.sketcher.drawChip, 1, {**dip7404, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7404})]
-        chip7408 = [(self.sketcher.drawChip, 1, {**dip7408, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7408})]
-        chip7432 = [(self.sketcher.drawChip, 1, {**dip7432, **chipCoverClose, "internalFunc": self.sketcher.internalFunc, **pins7432})]
+        chipDIP14 = [(self.sketcher.draw_chip, 1, {**DIP14_PARAMS, **chipCoverClose, "internalFunc": self.sketcher.internal_func})]  # , **pins7408
+        chip7400 = [(self.sketcher.draw_chip, 1, {**dip7400, **chipCoverClose, "internalFunc": self.sketcher.internal_func, **pins7400})]
+        chip7402 = [(self.sketcher.draw_chip, 1, {**dip7402, **chipCoverClose, "internalFunc": self.sketcher.internal_func, **pins7402})]
+        chip7404 = [(self.sketcher.draw_chip, 1, {**dip7404, **chipCoverClose, "internalFunc": self.sketcher.internal_func, **pins7404})]
+        chip7408 = [(self.sketcher.draw_chip, 1, {**dip7408, **chipCoverClose, "internalFunc": self.sketcher.internal_func, **pins7408})]
+        chip7432 = [(self.sketcher.draw_chip, 1, {**dip7432, **chipCoverClose, "internalFunc": self.sketcher.internal_func, **pins7432})]
         wireTest = [
 
-            (self.sketcher.drawWire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coord": [(9, 10, 32, 25)],"multipoints":[200,415,200,600,400,500], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (255, 0, 0, 255), "mode": AUTO, "coord": [(9, 10, 32, 25)],"multipoints":[200,415,200,600,400,500], "matrix": matrix1260pts}),
 
-            (self.sketcher.drawWire, 1, {"color": (10, 10, 10, 255), "mode": AUTO, "coord": [(35, 12, 35, 13)], "matrix": matrix1260pts}),
-            (self.sketcher.drawWire, 1, {"color": (0, 80, 0, 255), "mode": AUTO, "coord": [(5, 10, 15, 10)], "matrix": matrix1260pts}),
-            (self.sketcher.drawWire, 1, {"color": (0, 255, 0, 255), "mode": AUTO, "coord": [(2, 6, 40, 1)], "matrix": matrix1260pts}),
-            (self.sketcher.drawWire, 1, {"color": (128, 128, 0, 255), "mode": AUTO, "coord": [(51, 1, 48, 13)], "matrix": matrix1260pts}),
-            (self.sketcher.drawWire, 1, {"color": (128, 128, 0, 255), "mode": AUTO, "coord": [(51, 15, 48, 27)], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (10, 10, 10, 255), "mode": AUTO, "coord": [(35, 12, 35, 13)], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (0, 80, 0, 255), "mode": AUTO, "coord": [(5, 10, 15, 10)], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (0, 255, 0, 255), "mode": AUTO, "coord": [(2, 6, 40, 1)], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (128, 128, 0, 255), "mode": AUTO, "coord": [(51, 1, 48, 13)], "matrix": matrix1260pts}),
+            (self.sketcher.draw_wire, 1, {"color": (128, 128, 0, 255), "mode": AUTO, "coord": [(51, 15, 48, 27)], "matrix": matrix1260pts}),
         ]
 
 
-        self.line_distribution = [(self.sketcher.drawHole, 63)]  # , {"colors":("#400010","#c00040","#200008")}  # "multipoints":[(),(),(),()],
-        blocAlim = [(self.sketcher.drawHole, 5), (self.sketcher.drawBlank, 1)]  # , {"colors":("#400010","#c00040","#200008")}
+        self.line_distribution = [(self.sketcher.draw_hole, 63)]  # , {"colors":("#400010","#c00040","#200008")}  # "multipoints":[(),(),(),()],
+        blocAlim = [(self.sketcher.draw_hole, 5), (self.sketcher.draw_blank, 1)]  # , {"colors":("#400010","#c00040","#200008")}
         # railAlimMoins = [(self.sketcher.drawBlank,1),(self.sketcher.drawChar,1),(self.sketcher.drawRail,60)]
         railAlimMoins = [
-            (self.sketcher.drawBlank, 1),
-            (self.sketcher.drawChar, 1, {"deltaY": 1.3, "scaleChar": 2}),
-            (self.sketcher.drawRail, 60),
-            (self.sketcher.drawHalfBlank, 1),
-            (self.sketcher.drawBlank, 1),
-            (self.sketcher.drawChar, 1, {"deltaY": 1.3, "scaleChar": 2}),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
+            (self.sketcher.draw_rail, 60),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
         ]
         railAlimPlus = [
-            (self.sketcher.drawBlank, 1),
-            (self.sketcher.drawChar, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
-            (self.sketcher.drawredRail, 60),
-            (self.sketcher.drawBlank, 1),
-            (self.sketcher.drawHalfBlank, 1),
-            (self.sketcher.drawChar, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+            (self.sketcher.draw_red_rail, 60),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
         ]
-        lineAlim = [(self.sketcher.drawBlank, 3), (blocAlim, 10, {"direction": HORIZONTAL})]
+        lineAlim = [(self.sketcher.draw_blank, 3), (blocAlim, 10, {"direction": HORIZONTAL})]
         bandeAlim = [
             (railAlimMoins, 1, {"direction": VERTICAL}),
             (lineAlim, 2, {"direction": VERTICAL}),
@@ -223,32 +223,32 @@ class ComponentData:
         ]
         bandeDistribution = [(self.line_distribution, 5, {"direction": VERTICAL})]
         numerotation = [
-            (self.sketcher.drawBlank, 1),
-            (self.sketcher.drawNumIter, 1, {"beginNum": 1, "endNum": 63, "direction": HORIZONTAL, "deltaY": -1.5}),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_num_iter, 1, {"beginNum": 1, "endNum": 63, "direction": HORIZONTAL, "deltaY": -1.5}),
         ]
         # board600pts = [(self.sketcher.drawBoard,1),(self.sketcher.drawHalfBlank,1,HORIZONTAL),(self.sketcher.drawHalfBlank,1,VERTICAL),(bandeAlim,1,VERTICAL), (self.sketcher.drawBlank,1,VERTICAL), (bandeDistribution,1,VERTICAL), ([(self.sketcher.drawBlank,1)],2,VERTICAL), (bandeDistribution,1,VERTICAL),(self.sketcher.drawBlank,1,VERTICAL),(bandeAlim,1,VERTICAL)]
         board830pts = [
-            (self.sketcher.setXYOrigin, 1, {"id_origin": "bboard830"}),
-            (self.sketcher.drawBoard, 1),
-            (self.sketcher.drawHalfBlank, 1, {"direction": HORIZONTAL}),
-            (self.sketcher.drawHalfBlank, 1, {"direction": VERTICAL}),
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "bboard830"}),
+            (self.sketcher.draw_board, 1),
+            (self.sketcher.draw_half_blank, 1, {"direction": HORIZONTAL}),
+            (self.sketcher.draw_half_blank, 1, {"direction": VERTICAL}),
             (bandeAlim, 1, {"direction": VERTICAL}),
             (numerotation, 1, {"direction": VERTICAL}),
-            (self.sketcher.goXY, 1, {"line": 5.5, "column": 0.5, "id_origin": "bboard830"}),
-            (self.sketcher.drawCharIter, 1, {"beginChar": "f", "numChars": 5, "anchor": "center", "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "anchor": "center", "deltaY": 0.7}),
             (bandeDistribution, 1, {"direction": VERTICAL}),
-            (self.sketcher.goXY, 1, {"line": 5.5, "column": 64.5, "id_origin": "bboard830"}),
-            (self.sketcher.drawHalfBlank, 1),
-            (self.sketcher.drawCharIter, 1, {"beginChar": "f", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
-            (self.sketcher.goXY, 1, {"line": 12.5, "column": 0.5, "id_origin": "bboard830"}),
-            (self.sketcher.drawCharIter, 1, {"beginChar": "a", "numChars": 5, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "deltaY": 0.7}),
             (bandeDistribution, 1, {"direction": VERTICAL}),
-            (self.sketcher.goXY, 1, {"line": 12.5, "column": 64.5, "id_origin": "bboard830"}),
-            (self.sketcher.drawHalfBlank, 1),
-            (self.sketcher.drawCharIter, 1, {"beginChar": "a", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
-            (self.sketcher.goXY, 1, {"line": 18.8, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 18.8, "column": 0.5, "id_origin": "bboard830"}),
             (numerotation, 1, {"direction": VERTICAL}),
-            (self.sketcher.goXY, 1, {"line": 18.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.go_xy, 1, {"line": 18.5, "column": 0.5, "id_origin": "bboard830"}),
             (bandeAlim, 1, {"direction": VERTICAL}),
         ]  # ,1,{"direction":VERTICAL})]
 
@@ -257,19 +257,19 @@ class ComponentData:
 
 
         # ,(setFoncTrou,1,{"function":drawRoundHole})
-        boardTest = [(self.sketcher.setXYOrigin, 1), (bandeAlim, 1, {"direction": HORIZONTAL})]
-        boardTestMinimal = [(self.sketcher.setXYOrigin, 1), (railAlimPlus, 4, {"direction": VERTICAL})]
+        boardTest = [(self.sketcher.set_xy_origin, 1), (bandeAlim, 1, {"direction": HORIZONTAL})]
+        boardTestMinimal = [(self.sketcher.set_xy_origin, 1), (railAlimPlus, 4, {"direction": VERTICAL})]
         board1260pts = [(board830pts, 2, {"direction": PERSO, "dXY": (0, 1.3)})]
         self.circuitTest = [
-            (self.sketcher.setXYOrigin, 1, {"id_origin": "circTest"}),
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "circTest"}),
             (board1260pts, 1),
-            (self.sketcher.goXY, 1, {"line": 10.1, "column": 1.4, "id_origin": "circTest"}),
+            (self.sketcher.go_xy, 1, {"line": 10.1, "column": 1.4, "id_origin": "circTest"}),
             # (chip7408, 1, {"direction": HORIZONTAL}),
             # (chip7402, 1, {"direction": HORIZONTAL}),
             # (chip7404, 1, {"direction": HORIZONTAL}),
             # (chip7400, 1, {"direction": HORIZONTAL}),
             # (chip7432, 1, {"direction": HORIZONTAL}),
-            (self.sketcher.goXY, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
+            (self.sketcher.go_xy, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
             # (wireTest, 1, {"direction": HORIZONTAL}),
             # (model_pin_IO, 1, {"direction": HORIZONTAL}),
             # (model_pin_IO2, 1, {"direction": HORIZONTAL}),

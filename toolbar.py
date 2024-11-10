@@ -309,7 +309,7 @@ class Toolbar:
                 coord = [(coord[0][0], coord[0][1], col, line)]
                 model_wire = [
                     (
-                        self.sketcher.drawWire,
+                        self.sketcher.draw_wire,
                         1,
                         {"id": self.wire_id, "color": color, "coord": coord, "matrix": matrix1260pts},
                     )
@@ -343,7 +343,7 @@ class Toolbar:
                     color = self.hex_to_rgb(self.selected_color)
                     coord = [(col, line, col, line)]
                     model_wire = [
-                        (self.sketcher.drawWire, 1, {"color": color, "coord": coord, "matrix": matrix1260pts})
+                        (self.sketcher.draw_wire, 1, {"color": color, "coord": coord, "matrix": matrix1260pts})
                     ]
                     self.sketcher.circuit(x_origin, y_origin, model=model_wire)
                     self.wire_id = current_dict_circuit["last_id"]
@@ -363,7 +363,7 @@ class Toolbar:
             type_const = INPUT if self.pin_io_type == "Input" else OUTPUT
             model_pin_io = [
                 (
-                    self.sketcher.drawpin_io,
+                    self.sketcher.draw_pin_io,
                     1,
                     {"color": color, "type": type_const, "coord": [(col, line)], "matrix": matrix1260pts},
                 )

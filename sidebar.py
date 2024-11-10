@@ -408,13 +408,13 @@ class Sidebar:
             messagebox.showerror("Error", f"Unknown chip: {chip_name}")
             return
 
-        chip_dict["internalFunc"] = self.sketcher.internalFunc
+        chip_dict["internalFunc"] = self.sketcher.internal_func
         chip_dict["open"] = 0
-        chip_dict["logicFunction"] = self.sketcher.drawSymb(chip_dict["logicFunctionName"])
+        chip_dict["logicFunction"] = self.sketcher.draw_symb(chip_dict["logicFunctionName"])
 
         chip_model = [
             (
-                self.sketcher.drawChip,
+                self.sketcher.draw_chip,
                 1,
                 chip_dict,
             )
