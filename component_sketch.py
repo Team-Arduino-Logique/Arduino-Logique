@@ -19,7 +19,6 @@ from dataCDLT import (
     PERSO,
     NO,
     AUTO,
-    id_origins,
     FREE,
     USED,
     INPUT,
@@ -59,6 +58,7 @@ class ComponentSketcher:
         self.id_type: dict[str, int] = {}
         self.current_dict_circuit: dict[str, Any] = {}
         self.matrix: dict[str, Any] = {}
+        self.id_origins = {"xyOrigin": (0, 0)}
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -138,7 +138,7 @@ class ComponentSketcher:
             coord = self.current_dict_circuit[wire_id]["coord"]
 
             multipoints = self.current_dict_circuit[wire_id]["multipoints"]
-            x_o, y_o = id_origins["xyOrigin"]
+            x_o, y_o = self.id_origins["xyOrigin"]
             if endpoint == "start":
                 self.matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
             else:
@@ -214,14 +214,14 @@ class ComponentSketcher:
 
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
-        # adjusted_x = canvas_x - id_origins["xyOrigin"][0]
-        # adjusted_y = canvas_y - id_origins["xyOrigin"][1]
+        # adjusted_x = canvas_x - self.id_origins["xyOrigin"][0]
+        # adjusted_y = canvas_y - self.id_origins["xyOrigin"][1]
 
         # dx = adjusted_x - self.wire_drag_data["x"]
         # dy = adjusted_y - self.wire_drag_data["y"]
 
         # Find nearest grid point
-        # x_o, y_o = id_origins["xyOrigin"]
+        # x_o, y_o = self.id_origins["xyOrigin"]
         # nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
 
         coord = self.current_dict_circuit[wire_id]["coord"]
@@ -242,7 +242,7 @@ class ComponentSketcher:
             (self.draw_wire, 1, {"id": wire_id, "color": color, "coord": coord, "XY": xy, "matrix": self.matrix})
         ]
 
-        self.circuit(id_origins["xyOrigin"], model=model_wire)
+        self.circuit(self.id_origins["xyOrigin"], model=model_wire)
         # Calculate movement delta
         # dx = nearest_x - x
         # dy = nearest_y - y
@@ -269,7 +269,7 @@ class ComponentSketcher:
         nearest_point_col_lin = (0, 0)
         for _, point in matrix.items():
             grid_x, grid_y = point["xy"]
-            distance = math.hypot(x - grid_x - id_origins["xyOrigin"][0], y - grid_y - id_origins["xyOrigin"][1])
+            distance = math.hypot(x - grid_x - self.id_origins["xyOrigin"][0], y - grid_y - self.id_origins["xyOrigin"][1])
             if distance < min_distance:
                 min_distance = distance
                 nearest_point = (grid_x, grid_y)
@@ -294,7 +294,7 @@ class ComponentSketcher:
 
         min_distance = float("inf")
 
-        (x_o, y_o) = id_origins["xyOrigin"]
+        (x_o, y_o) = self.id_origins["xyOrigin"]
 
         nearest_point = (0, 0)
         nearest_point_col_lin = (0, 0)
@@ -391,7 +391,7 @@ class ComponentSketcher:
         Event handler for when the wire body is clicked.
         """
         x, y = event.x, event.y
-        x_o, y_o = id_origins["xyOrigin"]
+        x_o, y_o = self.id_origins["xyOrigin"]
         self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
         if self.delete_mode_active:
             print(f"Deleting wire {wire_id}")
@@ -421,7 +421,7 @@ class ComponentSketcher:
         Event handler for when the wire body is left-clicked.
         """
         x, y = event.x, event.y
-        x_o, y_o = id_origins["xyOrigin"]
+        x_o, y_o = self.id_origins["xyOrigin"]
         self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
         if not insert_point:
             print("Deleting multipoint")
@@ -471,7 +471,7 @@ class ComponentSketcher:
         """
         if self.delete_mode_active:
             return
-        x_o, y_o = id_origins["xyOrigin"]
+        x_o, y_o = self.id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y - y_o
         multipoints = self.current_dict_circuit[wire_id]["multipoints"]
         coord = self.current_dict_circuit[wire_id]["coord"]
@@ -646,7 +646,7 @@ class ComponentSketcher:
                 # Not enough space, prevent placement and look for the nearest snap point on the left
                 print("Not enough space to place the chip here.")
                 col = 63 - half_pin_count + 1
-                (x_o, y_o) = id_origins["xyOrigin"]
+                (x_o, y_o) = self.id_origins["xyOrigin"]
                 real_x, real_y = self.get_xy(col, line, matrix=self.matrix)
                 real_x += x_o
                 real_y += y_o
@@ -747,7 +747,7 @@ class ComponentSketcher:
 
         min_distance = float("inf")
 
-        (x_o, y_o) = id_origins["xyOrigin"]
+        (x_o, y_o) = self.id_origins["xyOrigin"]
 
         nearest_point = (0, 0)
         nearest_point_col_lin = (0, 0)
@@ -789,7 +789,7 @@ class ComponentSketcher:
 
         min_distance = float("inf")
 
-        (x_o, y_o) = id_origins["xyOrigin"]
+        (x_o, y_o) = self.id_origins["xyOrigin"]
 
         nearest_point = (0, 0)
         nearest_point_col_lin = (0, 0)
@@ -866,8 +866,8 @@ class ComponentSketcher:
             canvas_x = self.canvas.canvasx(event.x)
             canvas_y = self.canvas.canvasy(event.y)
 
-            x_o = id_origins["xyOrigin"][0]
-            y_o = id_origins["xyOrigin"][1]
+            x_o = self.id_origins["xyOrigin"][0]
+            y_o = self.id_origins["xyOrigin"][1]
 
             coord = self.current_dict_circuit[pin_id]["coord"]
 
@@ -957,7 +957,7 @@ class ComponentSketcher:
         x_origin, y_origin = x_distance, y_distance
         id_origin = kwargs.get("id_origin", "xyOrigin")
 
-        id_origins[id_origin] = (x_distance, y_distance)
+        self.id_origins[id_origin] = (x_distance, y_distance)
 
         return (x_origin, y_origin)
 
@@ -969,7 +969,7 @@ class ComponentSketcher:
         column = kwargs.get("column", 0)
         id_origin = kwargs.get("id_origin", "xyOrigin")
 
-        x_origin, y_origin = id_origins[id_origin]
+        x_origin, y_origin = self.id_origins[id_origin]
 
         return (x_origin + column * 15 * scale, y_origin + line * 15 * scale)
 
@@ -1281,7 +1281,7 @@ class ComponentSketcher:
         thickness = 1 * scale
         dim_line = dim["dimLine"] * inter_space
         dim_column = dim["dimColumn"] * inter_space
-        id_origins["bottomLimit"] = (dim_line + x_distance, y_distance + dim_column)
+        self.id_origins["bottomLimit"] = (dim_line + x_distance, y_distance + dim_column)
         # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
         # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
         self.rounded_rect(

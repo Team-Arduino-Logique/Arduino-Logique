@@ -12,5 +12,3 @@ NO = 0
 YES = 1
 LEFT = 0
 RIGHT = 1
-
-id_origins = {"xyOrigin": (0, 0)}

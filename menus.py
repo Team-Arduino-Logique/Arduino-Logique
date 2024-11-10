@@ -12,7 +12,6 @@ from typing import Callable
 import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
-from dataCDLT import id_origins
 
 
 class Menus:
@@ -223,7 +222,7 @@ class Menus:
                 self.board.sketcher.clear_board()
 
                 self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
-                x_o, y_o = id_origins["xyOrigin"]
+                x_o, y_o = self.board.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
                 for key, val in circuit_data.items():

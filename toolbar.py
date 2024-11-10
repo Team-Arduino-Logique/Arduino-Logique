@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
-from dataCDLT import id_origins, INPUT, OUTPUT, FREE
+from dataCDLT import INPUT, OUTPUT, FREE
 
 
 @dataclass
@@ -261,8 +261,8 @@ class Toolbar:
         if (self.tool_mode is None) or self.cursor_indicator_id is None:
             return
         x, y = event.x, event.y
-        x_min, y_min = id_origins["xyOrigin"]
-        x_max, y_max = id_origins["bottomLimit"]
+        x_min, y_min = self.sketcher.id_origins["xyOrigin"]
+        x_max, y_max = self.sketcher.id_origins["bottomLimit"]
         if x_min < x < x_max and y_min < y < y_max:
             (x, y), (col, line) = self.sketcher.find_nearest_grid_point(x, y, self.sketcher.matrix)
             if (
@@ -282,7 +282,7 @@ class Toolbar:
                         {"id": self.wire_info.wire_id, "color": color, "coord": coord, "matrix": self.sketcher.matrix},
                     )
                 ]
-                x_origin, y_origin = id_origins.get("xyOrigin", (0, 0))
+                x_origin, y_origin = self.sketcher.id_origins.get("xyOrigin", (0, 0))
                 self.sketcher.circuit(x_origin, y_origin, model=model_wire)
 
         # Move the cursor indicator
@@ -293,8 +293,8 @@ class Toolbar:
         Handles mouse clicks during placement modes.
         """
         x, y = event.x, event.y
-        x_origin, y_origin = id_origins.get("xyOrigin", (0, 0))
-        x_max, y_max = id_origins["bottomLimit"]
+        x_origin, y_origin = self.sketcher.id_origins.get("xyOrigin", (0, 0))
+        x_max, y_max = self.sketcher.id_origins["bottomLimit"]
         if x < x_origin or x > x_max or y < y_origin or y > y_max:
             return  # Click is outside valid area
 

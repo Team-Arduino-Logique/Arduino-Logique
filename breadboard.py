@@ -10,7 +10,6 @@ from tkinter import Canvas
 from component_sketch import ComponentSketcher
 from dataCDLT import (
     FREE,
-    id_origins,
     HORIZONTAL,
     PERSO,
     VERTICAL,
@@ -24,10 +23,8 @@ class Breadboard:
     ----------
     canvas : Canvas
         The canvas on which the breadboard is drawn.
-    id_origin : dict
-        A dictionary to store the origin coordinates.
-    matrix : dict
-        The matrix representing the breadboard.
+    sketcher : ComponentSketcher
+        The ComponentSketcher instance used to draw the circuit.
     """
 
     def __init__(self, canvas: Canvas, sketcher: ComponentSketcher):
@@ -171,8 +168,8 @@ class Breadboard:
             x, y = point["xy"]
 
             # Adjust for the origin
-            x += id_origins["xyOrigin"][0]
-            y += id_origins["xyOrigin"][1]
+            x += self.sketcher.id_origins["xyOrigin"][0]
+            y += self.sketcher.id_origins["xyOrigin"][1]
             # Adjust for scaling
             x *= scale
             y *= scale

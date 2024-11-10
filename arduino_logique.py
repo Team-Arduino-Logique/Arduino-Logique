@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
-from dataCDLT import id_origins
 from menus import Menus
 from sidebar import Sidebar
 from toolbar import Toolbar
@@ -66,7 +65,7 @@ def main():
 
     # Create a single instance of ComponentSketcher
     sketcher = ComponentSketcher(canvas)
-
+    sketcher.id_origins["xyOrigin"] = (50, 10)
     # Initializing the breadboard and components
     board = Breadboard(canvas, sketcher)
     board.fill_matrix_1260_pts()
@@ -84,7 +83,7 @@ def main():
 
     # Draw the circuit
     board.draw_blank_board_model(50, 10)
-    id_origins["xyOrigin"] = (50, 10)
+    
 
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
     _ = Sidebar(
