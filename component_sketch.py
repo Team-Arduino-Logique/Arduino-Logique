@@ -21,12 +21,8 @@ from dataCDLT import (
     AUTO,
     id_origins,
     current_dict_circuit,
-    id_type,
-    num_id,
     matrix1260pts,
     matrix830pts,
-    drag_mouse_x,
-    drag_mouse_y,
     FREE,
     USED,
     INPUT,
@@ -48,6 +44,8 @@ class ComponentSketcher:
     wire_drag_data (dict): Data related to the wire being dragged.
     pin_io_drag_data (dict): Data related to the pin_io being dragged.
     delete_mode_active (bool): A flag to indicate if delete mode is active.
+    drag_mouse (list): The current mouse position [x,y].
+    id_type (dict): A dictionary to store the type of each ID.
     """
 
     def __init__(self, canvas) -> None:
@@ -56,14 +54,12 @@ class ComponentSketcher:
         self.scale_factor = 1.0
         self.drag_selector = False
         self.nearest_multipoint = -1
-
         self.drag_chip_data = {"chip_id": None, "x": 0, "y": 0}
-
         self.wire_drag_data: dict[str, str | int | None] = {"wire_id": None, "endpoint": None, "x": 0, "y": 0}
-
         self.pin_io_drag_data = {"pin_id": None, "x": 0, "y": 0}
-
         self.delete_mode_active = False
+        self.drag_mouse = [0,0]
+        self.id_type: dict[str, int] = {}
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -1981,18 +1977,14 @@ class ComponentSketcher:
         """
         Handle the drag of the menu.
         """
-        global drag_mouse_x, drag_mouse_y
-
-        self.canvas.move(tag, event.x - drag_mouse_x, event.y - drag_mouse_y)
-        drag_mouse_x, drag_mouse_y = event.x, event.y
+        self.canvas.move(tag, event.x - self.drag_mouse[0], event.y - self.drag_mouse[1])
+        self.drag_mouse[0], self.drag_mouse[1] = event.x, event.y
 
     def on_start_drag_menu(self, event, tag):
         """
         Handle the start of the drag of the menu.
         """
-        global drag_mouse_x, drag_mouse_y
-
-        drag_mouse_x, drag_mouse_y = event.x, event.y
+        self.drag_mouse[0], self.drag_mouse[1] = event.x, event.y
         self.canvas.itemconfig(tag, fill="red")
 
     def on_stop_drag_menu(self, _, tag):
@@ -2195,8 +2187,6 @@ class ComponentSketcher:
         """
         Draw a chip at the given coordinates. Also handles putting it in the dict, among other stuff.
         """
-        global num_id
-
         if width != -1:
             scale = width / 9.0
         inter_space = 15 * scale
@@ -2223,12 +2213,14 @@ class ComponentSketcher:
                 params = current_dict_circuit[chip_id]
                 tags = params["tags"]
         else:
-            if chip_type not in id_type:
-                id_type[chip_type] = 0
-            id_type[chip_type] += 1
-            chip_id = "_chip_" + str(num_id)
+            if chip_type not in self.id_type:
+                self.id_type[chip_type] = 0
+            if "chip" not in self.id_type:
+                self.id_type["chip"] = 0
+            self.id_type[chip_type] += 1
+            chip_id = "_chip_" + str(self.id_type["chip"])
             current_dict_circuit["last_id"] = chip_id
-            num_id += 1
+            self.id_type["chip"] += 1
             _, (col, line) = self.find_nearest_grid_point(x_distance, y_distance)
             self.change_hole_state(col, line, dim["pinCount"], USED)
             # dim["occupied_holes"] =
@@ -2241,7 +2233,7 @@ class ComponentSketcher:
             params["pinCount"] = dim["pinCount"]
             dim_line = (dim["pinCount"] - 0.30) * inter_space / 2
             dim_column = dim["chipWidth"] * inter_space
-            label = dim["label"] + "-" + str(id_type[chip_type])
+            label = dim["label"] + "-" + str(self.id_type[chip_type])
             params["label"] = label
             params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
@@ -2464,8 +2456,6 @@ class ComponentSketcher:
         """
         Draw a wire at the given coordinates. Also handles putting it in the dict, among other stuff.
         """
-        global num_id
-
         if width != -1:
             scale = width / 9.0
 
@@ -2537,9 +2527,11 @@ class ComponentSketcher:
                 self.canvas.move(select_start_tag, dx1, dy1)
                 self.canvas.move(select_end_tag, dx2, dy2)
         else:
-            wire_id = "_wire_" + str(num_id)
+            if "wire" not in self.id_type:
+                self.id_type["wire"] = 0
+            wire_id = "_wire_" + str(self.id_type["wire"])
             current_dict_circuit["last_id"] = wire_id
-            num_id += 1
+            self.id_type["wire"] += 1
             params["id"] = wire_id
             params["mode"] = mode
             params["coord"] = coord
@@ -2759,8 +2751,6 @@ class ComponentSketcher:
         """
         Draw an input/output pin at the given coordinates. Also handles putting it in the dict, among other stuff.
         """
-        global num_id
-
         if width != -1:
             scale = width / 9.0
         # mode = kwargs.get("mode", AUTO)
@@ -2788,8 +2778,10 @@ class ComponentSketcher:
             params["color"] = color
 
         else:
-            element_id = "_io_" + str(num_id)
-            num_id += 1
+            if "io" not in self.id_type:
+                self.id_type["io"] = 0
+            element_id = "_io_" + str(self.id_type["io"])
+            self.id_type["io"] += 1
             params = {}
             params["id"] = element_id
             params["tags"] = []
@@ -2932,7 +2924,7 @@ class ComponentSketcher:
                 continue
             for tag in item["tags"]:
                 self.canvas.delete(tag)
-        for key in id_type:
-            id_type[key] = 0
+        for key in self.id_type:
+            self.id_type[key] = 0
         current_dict_circuit.clear()
         # TODO Khalid update the Circuit instance

@@ -3,37 +3,16 @@ This module provides a Breadboard class for circuit design using the Tkinter Can
 It includes methods for mouse tracking, and matrix filling 
 for breadboards with 830 and 1260 points. Additionally, it provides a method for generating circuit layouts 
 on the canvas.
-Classes:
-    Breadboard: A class to represent a breadboard for circuit design.
-Attributes:
-    canvas (Canvas): The canvas on which the breadboard is drawn.
-    id_origin (dict): A dictionary to store the origin coordinates.
-    current_cursor (None): The current cursor state.
-    cursor_save (None): The saved cursor state.
-    id_type (dict): A dictionary to store the types of components.
-    current_dict_circuit (dict): The current dictionary for the circuit.
-    num_id (int): The current ID number.
-    mouse_x (int): The current x-coordinate of the mouse.
-    mouse_y (int): The current y-coordinate of the mouse.
-    drag_mouse_x (int): The x-coordinate of the mouse during drag.
-    drag_mouse_y (int): The y-coordinate of the mouse during drag.
-    matrix (dict): The matrix representing the breadboard.
-Methods:
-    follow_mouse(event): Updates the mouse coordinates based on the event.
-    fill_matrix_830_pts(col_distance=1, line_distance=1, **kwargs): Fills the breadboard matrix with 830 points.
-    fill_matrix_1260_pts(): Fills the breadboard matrix with 1260 points.
-    circuit(x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
 """
 
 from tkinter import Canvas
 
-
-from component_sketch import ComponentSketcher
-
-from dataCDLT import  matrix830pts,matrix1260pts, VERTICAL, HORIZONTAL,FREE, id_origins, selector_dx_ul, selector_dy_ul, selector_dx_br, selector_dy_br
-
-
-from dataComponent import ComponentData
+from dataCDLT import (
+    matrix830pts,
+    matrix1260pts,
+    FREE,
+    id_origins,
+)
 
 
 class Breadboard:
@@ -45,56 +24,15 @@ class Breadboard:
         The canvas on which the breadboard is drawn.
     id_origin : dict
         A dictionary to store the origin coordinates.
-    current_cursor : None
-        The current cursor state.
-    cursor_save : None
-        The saved cursor state.
-    id_type : dict
-        A dictionary to store the types of components.
-    current_dict_circuit : dict
-        The current dictionary for the circuit.
-    num_id : int
-        The current ID number.
-    mouse_x : int
-        The current x-coordinate of the mouse.
-    mouse_y : int
-        The current y-coordinate of the mouse.
-    drag_mouse_x : int
-        The x-coordinate of the mouse during drag.
-    drag_mouse_y : int
-        The y-coordinate of the mouse during drag.
     matrix : dict
         The matrix representing the breadboard.
-    Methods
-    -------
-    follow_mouse(event):
-        Updates the mouse coordinates based on the event.
-    fill_matrix_830_pts(colD=1, lineD=1, **kwargs):
-        Fills the breadboard matrix with 830 points.
-    fill_matrix_1260_pts(colD=1, lineD=1, **kwargs):
-        Fills the breadboard matrix with 1260 points.
-    circuit(xD=0, yD=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
-        Draws a circuit on the breadboard based on the given model.
     """
 
     def __init__(self, canvas: Canvas):
         self.canvas = canvas
-        self.current_cursor = None
-        self.cursor_save = None
-        self.id_type = {}
-        self.current_dict_circuit = {}
-        self.num_id = 1
-        self.mouse_x, self.mouse_y = 0, 0
-        self.drag_mouse_x, self.drag_mouse_y = 0, 0
-        self.id_type.update(
-            {"DIP14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0, "id_circuit": 0}
-        )
         self.selector()
-
         self.canvas.config(cursor="")
-
         canvas.bind("<Motion>", self.follow_mouse)
-        self.sketcher = ComponentSketcher(canvas)
 
     def follow_mouse(self, event):
         """
@@ -102,11 +40,13 @@ class Breadboard:
         Args:
             event: An event object that contains the current mouse position.
         """
-        self.mouse_x, self.mouse_y = event.x, event.y
-        self.canvas.coords("selector_cable", [ event.x + selector_dx_ul, event.y+selector_dy_ul, event.x + selector_dx_br, event.y + selector_dy_br])
-        
-    def selector(self):
+        # FIXME fixing the coords crashes the app
+        self.canvas.coords("selector_cable", [event.x - 10, event.y - 10, event.x + 0, event.y + 0])
 
+    def selector(self):
+        """
+        Create the round selector cable movement
+        """
         self.canvas.create_oval(
             100,
             100,
@@ -114,11 +54,11 @@ class Breadboard:
             110,
             fill="#dfdfdf",
             outline="#404040",
-            width=1 ,
-            tags=("selector_cable"), 
+            width=1,
+            tags=("selector_cable"),
         )
         self.canvas.itemconfig("selector_cable", state="hidden")
-        
+
     def fill_matrix_830_pts(self, col_distance=1, line_distance=1, **kwargs):
         """
         Fills a matrix representing an 830-point breadboard with initial values.
@@ -139,10 +79,7 @@ class Breadboard:
 
         inter_space = 15
 
-        matrix = matrix830pts
-        for key, value in kwargs.items():
-            if key == "matrix":
-                matrix = value
+        matrix = kwargs.get("matrix", matrix830pts)
 
         for i in range(50):
             id_top_plus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(1 + line_distance)
@@ -155,10 +92,9 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (1.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6,  line_distance),
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, line_distance),
                 "state": FREE,
                 "lien": None,
-                
             }
             matrix[id_top_plus] = {
                 "id": ["mh", "moins haut", "2"],
@@ -229,21 +165,13 @@ class Breadboard:
         self.fill_matrix_830_pts(matrix=matrix1260pts)
         self.fill_matrix_830_pts(line_distance=15, matrix=matrix1260pts)
 
-    def calculate_center_y(self, line_distance, inter_space):
-        # The center line between 'e' and 'f' is at line 7.5
-        
-        center_line = line_distance + 10.5
-        center_y = center_line * inter_space
-        return center_y
-
-    
-    def draw_matrix_points(self, scale=1): # used to debug the matrix
+    def draw_matrix_points(self, scale=1):  # used to debug the matrix
         """
         Draw all points in the matrix on the canvas, center snap points in yellow, others in orange.
         """
         for id_in_matrix, point in matrix1260pts.items():
             x, y = point["xy"]
-            
+
             # Adjust for the origin
             x += id_origins["xyOrigin"][0]
             y += id_origins["xyOrigin"][1]
@@ -251,12 +179,10 @@ class Breadboard:
             x *= scale
             y *= scale
             # Determine color
-            if id_in_matrix.startswith('snap,'):
-                color = 'yellow'
+            if id_in_matrix.startswith("snap,"):
+                color = "yellow"
             else:
-                color = 'orange'
+                color = "orange"
             # Draw a small circle at (x, y) with the specified color
             radius = 2 * scale  # Adjust size as needed
-            self.canvas.create_oval(
-                x - radius, y - radius, x + radius, y + radius,
-                fill=color, outline='')
+            self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill=color, outline="")

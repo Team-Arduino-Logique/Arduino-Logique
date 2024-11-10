@@ -16,30 +16,30 @@ from sidebar import Sidebar
 from toolbar import Toolbar
 
 
-def zoom(p_canvas: tk.Canvas, p_scale: float, p_board: Breadboard) -> None:
+def zoom(canvas: tk.Canvas, scale: float, sketcher: ComponentSketcher) -> None:
     """
     Adjusts the zoom level of the given canvas by scaling the board and updating the scale factor.
 
     Parameters:
-    - p_canvas (tk.Canvas): The canvas on which the board is drawn.
-    - p_scale (float): The scale factor to apply to the board.
-    - p_board (Breadboard): The existing Breadboard instance.
+    - canvas (tk.Canvas): The canvas on which the board is drawn.
+    - scale (float): The scale factor to apply to the board.
+    - sketcher (ComponentSketcher): The ComponentSketcher instance used to draw the circuit.
 
     Returns:
     - None
     """
     # Calculate the scaling factor
-    new_scale_factor = p_scale / 10.0
-    scale_ratio = new_scale_factor / p_board.sketcher.scale_factor
+    new_scale_factor = scale / 10.0
+    scale_ratio = new_scale_factor / sketcher.scale_factor
 
     # Update the scale factor in the existing ComponentSketcher instance
-    p_board.sketcher.scale_factor = new_scale_factor
+    sketcher.scale_factor = new_scale_factor
 
     # Scale all items on the canvas
-    p_canvas.scale("all", 0, 0, scale_ratio, scale_ratio)
+    canvas.scale("all", 0, 0, scale_ratio, scale_ratio)
 
     # Optionally, you may need to adjust the canvas scroll region or other properties
-    p_canvas.configure(scrollregion=p_canvas.bbox("all"))
+    canvas.configure(scrollregion=canvas.bbox("all"))
 
 
 def main():
@@ -71,7 +71,6 @@ def main():
 
     # Create a single instance of ComponentSketcher
     sketcher = ComponentSketcher(canvas)
-    board.sketcher = sketcher  # Use the same sketcher instance in the board
 
     # Creating the toolbar instance
     toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher)
@@ -125,7 +124,7 @@ def main():
         from_=10,
         to=30,
         orient="horizontal",
-        command=lambda scale: zoom(canvas, float(scale), board),
+        command=lambda scale: zoom(canvas, float(scale), sketcher),
         bg="#333333",
         fg="white",
         activebackground="#444444",
