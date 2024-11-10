@@ -59,7 +59,7 @@ class ComponentSketcher:
 
         self.drag_chip_data = {"chip_id": None, "x": 0, "y": 0}
 
-        self.wire_drag_data = {"wire_id": None, "endpoint": None, "x": 0, "y": 0}
+        self.wire_drag_data: dict[str, str | int | None] = {"wire_id": None, "endpoint": None, "x": 0, "y": 0}
 
         self.pin_io_drag_data = {"pin_id": None, "x": 0, "y": 0}
 
@@ -392,26 +392,27 @@ class ComponentSketcher:
         if not self.drag_selector:
             self.canvas.itemconfig("selector_cable", state="hidden")
 
-    def on_wire_body_click(self, event, wire_id):
+    def on_wire_body_click(self, event, wire_id) -> None:
         """
         Event handler for when the wire body is clicked.
         """
+        x, y = event.x, event.y
+        x_o, y_o = id_origins["xyOrigin"]
+        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
         if self.delete_mode_active:
             print(f"Deleting wire {wire_id}")
             self.delete_wire(wire_id)
+
         else:
             self.wire_drag_data["wire_id"] = wire_id
             self.wire_drag_data["endpoint"] = "selector_cable"
             endpoint_tag = "selector_cable"
-            x, y = event.x, event.y
 
             color = current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-            x_o, y_o = id_origins["xyOrigin"]
             # endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
-            self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
             if insert_point:
                 multipoints = current_dict_circuit[wire_id]["multipoints"]
                 multipoints.insert(
@@ -420,6 +421,35 @@ class ComponentSketcher:
                 )
                 multipoints.insert(self.nearest_multipoint + 1, y - y_o)
                 current_dict_circuit[wire_id]["multipoints"] = multipoints
+
+    def on_wire_body_left_click(self, event, wire_id) -> None:
+        """
+        Event handler for when the wire body is left-clicked.
+        """
+        x, y = event.x, event.y
+        x_o, y_o = id_origins["xyOrigin"]
+        self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
+        if not insert_point:
+            print("Deleting multipoint")
+            multipoints: list[int] = current_dict_circuit[wire_id]["multipoints"]
+            multipoints.pop(self.nearest_multipoint)
+            multipoints.pop(self.nearest_multipoint)
+            current_dict_circuit[wire_id]["multipoints"] = multipoints
+            model_wire = [
+                (
+                    self.draw_wire,
+                    1,
+                    {
+                        "id": wire_id,
+                        "multipoints": multipoints,
+                        "coord": current_dict_circuit[wire_id]["coord"],
+                        "color": current_dict_circuit[wire_id]["color"],
+                        "XY": [current_dict_circuit[wire_id]["XY"]],
+                        "matrix": matrix1260pts,
+                    },
+                )
+            ]
+            self.circuit(x_o, y_o, model=model_wire)
 
     def delete_wire(self, wire_id):
         """
@@ -445,6 +475,8 @@ class ComponentSketcher:
         """
         Event handler for dragging the wire body.
         """
+        if self.delete_mode_active:
+            return
         x_o, y_o = id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y - y_o
         multipoints = current_dict_circuit[wire_id]["multipoints"]
@@ -2677,12 +2709,12 @@ class ComponentSketcher:
                 wire_body_tag, "<Button-1>", lambda event, wire_id=wire_id: self.on_wire_body_click(event, wire_id)
             )
             self.canvas.tag_bind(
+                wire_body_tag, "<Button-3>", lambda event, wire_id=wire_id: self.on_wire_body_left_click(event, wire_id)
+            )
+            self.canvas.tag_bind(
                 wire_body_tag, "<B1-Motion>", lambda event, wire_id=wire_id: self.on_wire_body_drag(event, wire_id)
             )
 
-            self.canvas.tag_bind(
-                wire_body_tag, "<Button-1>", lambda event, wire_id=wire_id: self.on_wire_body_click(event, wire_id)
-            )
             self.canvas.tag_bind(
                 select_start_tag,
                 "<Button-1>",
