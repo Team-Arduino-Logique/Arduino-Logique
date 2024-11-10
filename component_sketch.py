@@ -54,7 +54,7 @@ class ComponentSketcher:
         self.wire_drag_data: dict[str, str | int | None] = {"wire_id": None, "endpoint": None, "x": 0, "y": 0}
         self.pin_io_drag_data = {"pin_id": None, "x": 0, "y": 0}
         self.delete_mode_active = False
-        self.drag_mouse = [0,0]
+        self.drag_mouse = [0, 0]
         self.id_type: dict[str, int] = {}
         self.current_dict_circuit: dict[str, Any] = {}
         self.matrix: dict[str, Any] = {}
@@ -174,11 +174,6 @@ class ComponentSketcher:
             self.wire_drag_data["wire_id"] = None
             self.wire_drag_data["endpoint"] = None
 
-            # Snap to nearest grid point
-            ####################    MODIF KH 25/10/2024  ##################################
-            # self.snap_wire_endpoint_to_grid(event, wire_id, endpoint)
-            ####################    FIN MODIF KH 25/10/2024  ##################################
-
             # Remove highlight
             endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline="#404040", fill="#dfdfdf")
@@ -205,24 +200,9 @@ class ComponentSketcher:
         """
         Snaps the wire endpoint to the nearest grid point, excluding central points.
         """
-        # Get current position of the endpoint
-        ############## MODIF KH 25/10/2024 #######################
-        # endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
-        # pos = self.canvas.coords(endpoint_tag)
-        # x = (pos[0] + pos[2]) / 2
-        # y = (pos[1] + pos[3]) / 2
 
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
-        # adjusted_x = canvas_x - self.id_origins["xyOrigin"][0]
-        # adjusted_y = canvas_y - self.id_origins["xyOrigin"][1]
-
-        # dx = adjusted_x - self.wire_drag_data["x"]
-        # dy = adjusted_y - self.wire_drag_data["y"]
-
-        # Find nearest grid point
-        # x_o, y_o = self.id_origins["xyOrigin"]
-        # nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
 
         coord = self.current_dict_circuit[wire_id]["coord"]
         xy = [self.current_dict_circuit[wire_id]["XY"]]
@@ -243,19 +223,6 @@ class ComponentSketcher:
         ]
 
         self.circuit(self.id_origins["xyOrigin"], model=model_wire)
-        # Calculate movement delta
-        # dx = nearest_x - x
-        # dy = nearest_y - y
-
-        # Move endpoint to the nearest grid point
-        # self.canvas.move(endpoint_tag, dx, dy)
-
-        # Update endpoint position in params
-        # self.current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
-
-        # Update the wire body
-        # self.update_wire_body(wire_id)
-        ############## FIN MODIF KH 25/10/2024 #######################
 
     def find_nearest_grid_point(self, x, y, matrix=None):
         """
@@ -269,7 +236,9 @@ class ComponentSketcher:
         nearest_point_col_lin = (0, 0)
         for _, point in matrix.items():
             grid_x, grid_y = point["xy"]
-            distance = math.hypot(x - grid_x - self.id_origins["xyOrigin"][0], y - grid_y - self.id_origins["xyOrigin"][1])
+            distance = math.hypot(
+                x - grid_x - self.id_origins["xyOrigin"][0], y - grid_y - self.id_origins["xyOrigin"][1]
+            )
             if distance < min_distance:
                 min_distance = distance
                 nearest_point = (grid_x, grid_y)
@@ -307,17 +276,10 @@ class ComponentSketcher:
 
             grid_x, grid_y = point[1]["xy"]
 
-            # MODIF KH DRAG-DROP 23/10/2024
-            # distance = math.hypot(x - grid_x , y - grid_y)
             distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
-            # FIN MODIF KH
             if distance < min_distance:
-
                 min_distance = distance
-                # MODIF KH DRAG_DROP 23/10/2024
-                # nearest_point = (grid_x, grid_y)
                 nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
-                # FIN MODIF KH
                 nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
@@ -348,23 +310,11 @@ class ComponentSketcher:
                 dist_segment = math.hypot(x - proj_x, y - proj_y)
                 if dist_segment <= 10:
                     nearest_point = i
-                # if x > min(x1-5,multipoint[i] - 5)  and x < max(multipoint[i]+5, x1 + 5):
-                #     if y > min(y1-5, multipoint[i + 1] - 5) and y < max(multipoint[i + 1]+5, y1 + 5):
-
-                #         dx, dy = multipoint[i] - x1, multipoint[i+1] - y1
-                #         if dx ==0 or dy == 0:
-                #             nearest_point = i
-                #         else:
-                #              deltay = math.fabs( y - (y1 + (x - x1)*(dy/dx)) )
-                #              if deltay <=5:
-                #                 nearest_point = i
                 x1, y1 = multipoint[i], multipoint[i + 1]
                 i += 2
             if nearest_point == -1:
                 nearest_point = len(multipoint)
             insert_point = True
-        # multipoint.insert(nearest_point, x)
-        # multipoint.insert(nearest_point + 1, y)
         self.current_dict_circuit[wire_id]["multipoints"] = multipoint
         return nearest_point, insert_point
 
@@ -405,7 +355,6 @@ class ComponentSketcher:
             color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-            # endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
             if insert_point:
                 multipoints = self.current_dict_circuit[wire_id]["multipoints"]
@@ -549,14 +498,6 @@ class ComponentSketcher:
             print(f"Starting drag for chip {chip_id}")
             self.start_chip_drag(event, chip_id)
 
-        # # Correct tag name
-        # tagSouris = "activeArea" + chip_id
-
-        # # Change outline to indicate selection
-        # self.canvas.itemconfig(tagSouris, outline="red")
-        # self.canvas.tag_raise(tagSouris)
-        # print(f"Chip {chip_id} outline changed to red")
-
     def delete_chip(self, chip_id):
         """
         Deletes the chip from the canvas and updates the matrix.
@@ -595,8 +536,6 @@ class ComponentSketcher:
 
             # Move all items associated with the chip
             chip_params = self.current_dict_circuit[chip_id]
-            # for tag in chip_params["tags"]:
-            #     self.canvas.move(tag, dx, dy)
 
             # Update drag_chip_data
             self.drag_chip_data["x"] = adjusted_x
@@ -611,15 +550,6 @@ class ComponentSketcher:
 
             print(f"Chip {chip_id} moved to new position: ({current_x}, {current_y})")
 
-            # **Update chip's center position**
-            # center_x, center_y = chip_params["center"]
-            # chip_params["center"] = (center_x + dx, center_y + dy)
-
-            # Update pin positions
-            # for pin_info in chip_params["pins"]:
-            #     pin_x, pin_y = pin_info['position']
-            #     pin_info['position'] = (pin_x + dx, pin_y + dy)
-
     def on_stop_chip_drag(self, _):
         """
         Event handler for stopping chip drag.
@@ -627,10 +557,7 @@ class ComponentSketcher:
 
         chip_id = self.drag_chip_data["chip_id"]
         if chip_id:
-            # MODIF KH POUR DRAG-DROP 23/10/2024
-            # (x, y) = self.current_dict_circuit[chip_id]["XY"]
             (x, y) = self.current_dict_circuit[chip_id]["pinUL_XY"]
-            # FIN MODIF KH
             (real_x, real_y), (col, line) = self.find_nearest_grid_chip(x, y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
@@ -689,9 +616,7 @@ class ComponentSketcher:
                     self.matrix[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = occupied_holes
 
-            # AJOUT KH DRAG-DROP 23/10/2024
             pin_x, pin_y = self.xy_chip2pin(real_x, real_y)
-            # FIN AJOUT KH
             model_chip = [(self.draw_chip, 1, {"id": chip_id, "XY": (real_x, real_y), "pinUL_XY": (pin_x, pin_y)})]
             self.circuit(real_x, real_y, model=model_chip)
             # Reset drag_chip_data
@@ -753,21 +678,13 @@ class ComponentSketcher:
         nearest_point_col_lin = (0, 0)
         for point in matrix.items():
 
-            # Consider only lines 6 and 21 ('f' lines)
-            # if line_num == 7 or line_num == 22:
             if point[1]["state"] == FREE:
                 grid_x, grid_y = point[1]["xy"]
-                # MODIF KH DRAG-DROP 23/10/2024
-                # distance = math.hypot(x - grid_x , y - grid_y)
                 distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
-                # FIN MODIF KH
                 if distance < min_distance:
 
                     min_distance = distance
-                    # MODIF KH DRAG_DROP 23/10/2024
-                    # nearest_point = (grid_x, grid_y)
                     nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
-                    # FIN MODIF KH
                     nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
@@ -795,24 +712,13 @@ class ComponentSketcher:
         nearest_point_col_lin = (0, 0)
         for point in matrix.items():
 
-            # Consider only lines 7 and 21 ('f' lines)
             _, line = point[1]["coord"]
             if line in (7, 21):
-                # mettre is_XY_free4Chip(x,y)
-
                 grid_x, grid_y = point[1]["xy"]
-
-                # MODIF KH DRAG-DROP 23/10/2024
-                # distance = math.hypot(x - grid_x , y - grid_y)
                 distance = math.hypot(x - grid_x - x_o, y - grid_y - y_o)
-                # FIN MODIF KH
                 if distance < min_distance:
-
                     min_distance = distance
-                    # MODIF KH DRAG_DROP 23/10/2024
-                    # nearest_point = (grid_x, grid_y)
                     nearest_point = self.xy_hole2chip(grid_x + x_o, grid_y + y_o)
-                    # FIN MODIF KH
                     nearest_point_col_lin = point[1]["coord"]
 
         return nearest_point, nearest_point_col_lin
@@ -988,11 +894,9 @@ class ComponentSketcher:
         delta_y = kwargs.get("deltaY", 0)
         scale_char = kwargs.get("scaleChar", 1)
         anchor = kwargs.get("anchor", "center")
-        # size = (int(inter_space * 1), int(inter_space * 1))
         tags = kwargs.get("tags", "")
-
-        # size = (int(scale_char * inter_space * len(text)), int(scale_char * inter_space))
         fira_code_font = font.Font(family="FiraCode-Bold.ttf", size=int(15 * scale * scale_char))
+
         if angle != 0:
             fira_code_font = font.Font(family="FiraCode-Light", size=int(15 * scale_char * scale))
             self.canvas.create_text(
@@ -1024,7 +928,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
 
         begin_char = kwargs.get("beginChar", "A")
@@ -1056,7 +959,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
 
         begin_num = kwargs.get("beginNum", 0)
@@ -1145,7 +1047,7 @@ class ComponentSketcher:
             style=tk.PIESLICE,
             fill=dark_color,
             outline=dark_color,
-        )  # x, y2 - 2*radius, x + 2*radius, y2, start=180, extent=90, style=tk.PIESLICE, **kwargs
+        )
         self.canvas.create_arc(
             x_distance,
             y_distance,
@@ -1255,7 +1157,6 @@ class ComponentSketcher:
             scale = width / 9.0
 
         inter_space = 15 * scale
-        # thickness = 2*scale
 
         (x, _) = self.draw_rail(x_distance, y_distance - inter_space // 2, scale, width, direction, color="red")
 
@@ -1282,8 +1183,6 @@ class ComponentSketcher:
         dim_line = dim["dimLine"] * inter_space
         dim_column = dim["dimColumn"] * inter_space
         self.id_origins["bottomLimit"] = (dim_line + x_distance, y_distance + dim_column)
-        # sepAlim =  [] if not dim.get("sepAlim") else dim.get("sepAlim")
-        # sepDistribution =  [] if not dim.get("sepDistribution") else dim.get("sepDistribution")
         self.rounded_rect(
             x_distance, y_distance, dim_line, dim_column, radius, outline=color, fill=color, thickness=thickness
         )
@@ -1406,18 +1305,6 @@ class ComponentSketcher:
                 fill=c[4],
                 width=thickness,
             )
-        # self.canvas.create_line(
-        #     x_distance,
-        #     y_distance + inter_space * 11 + inter_space // 3,
-        #     x_distance + dim_line,
-        #     y_distance + inter_space * 11 + inter_space // 3,
-        #     fill="#c0c0c0",
-        #     width=(3 * inter_space) // 5,
-        # )
-        # if direction == HORIZONTAL:
-        #     x_distance += dim_line
-        # else:
-        #     y_distance += dim_column
 
         return (x_distance, y_distance)
 
@@ -1430,7 +1317,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
@@ -1481,22 +1367,6 @@ class ComponentSketcher:
             width=1,
             tags=tag,
         )
-        # self.canvas.create_line(
-        #     x_distance - inter_space // 2,
-        #     y_distance + 8 * inter_space // 15,
-        #     x_distance - inter_space // 2,
-        #     y_distance + 13 * inter_space // 15,
-        #     fill="#ffffff",
-        #     width=1,
-        # )
-        # self.canvas.create_line(
-        #     x_distance - inter_space // 2,
-        #     y_distance + 13 * inter_space // 15,
-        #     x_distance,
-        #     y_distance + 13 * inter_space // 15,
-        #     fill="#ffffff",
-        #     width=1,
-        # )
         self.canvas.create_line(
             x_distance - 3 * inter_space // 15,
             y_distance + orientation * 5 * inter_space // 15,
@@ -1514,7 +1384,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
 
         tag = kwargs.get("tags", "")
@@ -1563,7 +1432,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
         color = kwargs.get("color", "#ffffff")
@@ -1578,16 +1446,6 @@ class ComponentSketcher:
             outline=color,
             tags=tag,
         )
-        # canvas.create_polygon(
-        #     x_distance,
-        #     y_distance + space,
-        #     x_distance + space,
-        #     y_distance + space,
-        #     x_distance + space,
-        #     y_distance,
-        #     fill="#f6f6f6",
-        #     outline="#f6f6f6",
-        # )
 
     def draw_or(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, orientation=1, **kwargs):
         """
@@ -1596,7 +1454,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
@@ -1609,14 +1466,7 @@ class ComponentSketcher:
             outline="#ffffff",
             tags=tag,
         )
-        # self.canvas.create_line(
-        #     x_distance + 1 * inter_space // 2,
-        #     y_distance,
-        #     x_distance + 1 * inter_space // 2,
-        #     y_distance + 2 * inter_space // 3,
-        #     fill="#ffffff",
-        #     width=1,
-        # )
+
         self.canvas.create_line(
             x_distance + 9 * inter_space // 15,
             y_distance + orientation * 3.5 * inter_space // 15,
@@ -1657,9 +1507,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
-        # tag = kwargs.get("tags", "")
 
         self.draw_or(
             x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
@@ -1681,9 +1529,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
-        tag = kwargs.get("tags", "")
 
         self.draw_or(
             x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
@@ -1708,7 +1554,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
         color = kwargs.get("color", "#ffffff")
@@ -1759,9 +1604,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
-        # tag = kwargs.get("tags", "")
 
         self.draw_aop(
             x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
@@ -1787,7 +1630,6 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
         tag = kwargs.get("tags", "")
 
@@ -1846,9 +1688,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
-        # tag = kwargs.get("tags", "")
 
         self.draw_and(
             x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
@@ -1870,9 +1710,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
 
-        # space = 9 * scale
         inter_space = 15 * scale
-        # tag = kwargs.get("tags", "")
 
         self.draw_and(
             x_distance, y_distance, scale=scale, width=width, direction=direction, orientation=orientation, **kwargs
@@ -2014,8 +1852,6 @@ class ComponentSketcher:
         """
         Draw a menu at the given coordinates.
         """
-
-        # rgba_color = (0, 0, 0, 255)
         fill_menu = "#48484c"
         out_menu = "#909098"
         color_cross = "#e0e0e0"
@@ -2145,15 +1981,6 @@ class ComponentSketcher:
             )
             self.canvas.itemconfig(tag, state="hidden")
 
-    # def onEnter(self, tag):
-    #     global xSouris, ySouris
-
-    #     space = 9
-    #     tagcoord = self.canvas.coords(tag)
-    #     self.canvas.move(tag, xSouris - tagcoord[0] - space, 0)
-    #     self.canvas.tag_raise(tag)
-    #     self.canvas.itemconfig(tag, state="normal")
-
     def on_menu(self, _, tag_menu, tag_all, tag_reg, color_out="#60d0ff"):
         """
         Handle the menu.
@@ -2163,13 +1990,6 @@ class ComponentSketcher:
         self.canvas.itemconfig(tag_menu, state="normal")
         self.canvas.itemconfig("componentActiveArea", outline="")
         self.canvas.itemconfig(tag_reg, outline=color_out)
-
-    # # Fonction pour réinitialiser le curseur lorsqu'il sort de la zone
-    # def onLeave(self, tag):
-    #     self.canvas.itemconfig("bg_" + tag, state="hidden")
-    #     self.canvas.itemconfig("symb_" + tag, state="hidden")
-    #     self.canvas.itemconfig("pin_" + tag, state="hidden")
-    #     self.canvas.itemconfig(tag, state="hidden")
 
     def change_hole_state(self, col, line, pin_count, state):
         """
@@ -2195,7 +2015,6 @@ class ComponentSketcher:
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
         cover_open = kwargs.get("open", NO)
-        # cursor_over = kwargs.get("cursorOver", "")
         chip_id = kwargs.get("id", None)
         tags = kwargs.get("tags", [])
         chip_type = kwargs.get("type", "chip")
@@ -2219,7 +2038,6 @@ class ComponentSketcher:
             self.id_type["chip"] += 1
             _, (col, line) = self.find_nearest_grid_point(x_distance, y_distance)
             self.change_hole_state(col, line, dim["pinCount"], USED)
-            # dim["occupied_holes"] =
 
         if not tags:
             params["id"] = chip_id
@@ -2234,7 +2052,6 @@ class ComponentSketcher:
             params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
             num_pins_per_side = dim["pinCount"] // 2
-            # self.change_hole_state(x_distance,y_distance,nbBrocheParCote,USED)
             tag_base = "base" + chip_id
             tag_menu = "menu" + chip_id
             tag_cover = "chipCover" + chip_id
@@ -2362,7 +2179,7 @@ class ComponentSketcher:
                 color="#ffffff",
                 anchor="center",
                 tags=tag_cover,
-            )  # x_distance + 30*scale,y_distance - 10*scale
+            )
             self.canvas.create_rectangle(
                 x_distance + 2 * scale,
                 y_distance + 2 * scale,
@@ -2409,7 +2226,6 @@ class ComponentSketcher:
             d_x = x_distance - x
             d_y = y_distance - y
             params["XY"] = (x_distance, y_distance)
-            # AJOUT KH PR DRAG-DROP 23/10/2024
             params["pinUL_XY"] = (x_distance + 2 * scale, y_distance - space * scale)
             for tg in tags:
                 self.canvas.move(tg, d_x, d_y)
@@ -2420,9 +2236,6 @@ class ComponentSketcher:
         """
         Get the column and line of the given coordinates.
         """
-        # inter_space = 15 * scale
-        # space = 9 * scale
-        # thickness = 1 * scale
         matrix = self.matrix
         point_col_lin = (-1, -1)
 
@@ -2438,9 +2251,6 @@ class ComponentSketcher:
         """
         Get the x and y coordinates of the given column and line.
         """
-        # inter_space = 15 * scale
-        # space = 9 * scale
-        # thickness = 1 * scale
         matrix = self.matrix
 
         element_id = str(column) + "," + str(line)
@@ -2460,18 +2270,14 @@ class ComponentSketcher:
         coord = kwargs.get("coord", [])
         matrix = self.matrix
         wire_id = kwargs.get("id", None)
-        # tags = kwargs.get("tags", [])
         (xs, ys, xe, ye) = kwargs.get("XY", [(0, 0, 0, 0)])[0]
         multipoints = kwargs.get("multipoints", [])
-        # inter_space = 15 * scale
-        # space = 9 * scale
         thickness = 1 * scale
 
         params = {}
         if wire_id:  # If the wire already exists, delete it and redraw
             if self.current_dict_circuit.get(wire_id):
                 params = self.current_dict_circuit[wire_id]
-                # tags = params["tags"]
                 params["mode"] = mode
                 params["coord"] = coord
                 params["multipoints"] = multipoints
@@ -2480,12 +2286,10 @@ class ComponentSketcher:
                     x_start, y_start = self.get_xy(x_start, y_start, scale=scale, matrix=matrix)
                 else:
                     x_start, y_start = xs, ys
-                    # print(f"({xO+x_distance},{yO+y_distance}) - deb - col proche:{cn} - ligne p: {ln}")
                 if x_end != -1:
                     x_end, y_end = self.get_xy(x_end, y_end, scale=scale, matrix=matrix)
                 else:
                     x_end, y_end = xe, ye
-                    # print(f"({xF+x_distance},{yF+y_distance}) - fin - col proche:{cn} - ligne p: {ln}")
                 x1_old, y1_old, x2_old, y2_old = params["XY"]
                 dx1, dy1 = x_start - x1_old, y_start - y1_old
                 dx2, dy2 = x_end - x2_old, y_end - y2_old
@@ -2499,23 +2303,10 @@ class ComponentSketcher:
                 end_endpoint_tag = f"{wire_id}_end"
                 select_start_tag = f"{wire_id}_select_start"
                 select_end_tag = f"{wire_id}_select_end"
-                # divY  = yF - yO if yF != yO else 0.000001
-                # x_distanceiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-                # y_distanceiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-                # p1    = ( x_distance + (xO + x_distanceiff), y_distance + (yO + space - y_distanceiff))
-                # p2    = ( x_distance + (xF + x_distanceiff), y_distance + (yF + space - y_distanceiff))
-                # p3    = ( x_distance + (xF + space - x_distanceiff), y_distance + (yF + y_distanceiff))
-                # p4    = ( x_distance + (xO+ space - x_distanceiff), y_distance + (yO + y_distanceiff))
-                # flat_coord = [coord for point in [p1, p2, p3, p4] for coord in point]
                 multipoints = [x_start, y_start] + multipoints + [x_end, y_end]
-                # multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
                 multipoints = [
                     val + 5 * scale + (x_distance if i % 2 == 0 else y_distance) for i, val in enumerate(multipoints)
                 ]
-                # self.canvas.create_line(multipoints, fill=contour, width=8*thickness ,
-                #                 tags=(id, wire_body_tag))
-                # self.canvas.create_line(multipoints, fill=encre, width=6*thickness,
-                #                 tags=(id, wire_body_tag))
                 self.canvas.coords(wire_body_tag, multipoints)
                 self.canvas.coords(wire_body_shadow_tag, multipoints)
                 self.canvas.move(start_endpoint_tag, dx1, dy1)
@@ -2555,31 +2346,6 @@ class ComponentSketcher:
             end_endpoint_tag = f"{wire_id}_end"
             select_start_tag = f"{wire_id}_select_start"
             select_end_tag = f"{wire_id}_select_end"
-
-            # # Create the wire body as a line
-            # self.canvas.create_line(
-            #     x_distance + xO, y_distance + yO,
-            #     x_distance + xF, y_distance + yF,
-            #     fill=encre,
-            #     width=6 * thickness,
-            #     tags=(id, wire_body_tag),
-            # )
-
-            # Create endpoints as separate items
-            # endpoint_radius = 3 * scale  # Adjust size as needed
-
-            # Starting endpoint
-            # MODIF KH DRAG 23/10/2024
-            # self.canvas.create_oval(
-            #     x_distance + xO - endpoint_radius,
-            #     y_distance + yO - endpoint_radius,
-            #     x_distance + xO + endpoint_radius,
-            #     y_distance + yO + endpoint_radius,
-            #     fill="#dfdfdf",
-            #     outline="#404040",
-            #     width=1 * thickness,
-            #     tags=(id, start_endpoint_tag),
-            # )
             self.canvas.create_oval(
                 x_distance + x_start + 2 * scale,
                 y_distance + y_start + 2 * scale,
@@ -2600,18 +2366,6 @@ class ComponentSketcher:
                 width=1 * thickness,
                 tags=(wire_id, select_start_tag),
             )
-
-            # Ending endpoint
-            # self.canvas.create_oval(
-            #     x_distance + xF - endpoint_radius,
-            #     y_distance + yF - endpoint_radius,
-            #     x_distance + xF + endpoint_radius,
-            #     y_distance + yF + endpoint_radius,
-            #     fill="#dfdfdf",
-            #     outline="#404040",
-            #     width=1 * thickness,
-            #     tags=(id, end_endpoint_tag),
-            # )
             self.canvas.create_oval(
                 x_distance + x_end + 2 * scale,
                 y_distance + y_end + 2 * scale,
@@ -2633,39 +2387,6 @@ class ComponentSketcher:
                 tags=(wire_id, select_end_tag),
             )
 
-            # Create the wire body as a line
-            # self.canvas.create_line(
-            #     x_distance + xO + 5*scale, y_distance + yO + 5*scale,
-            #     x_distance + xF + 5*scale, y_distance + yF + 5*scale,
-            #     fill=encre,
-            #     width=6 * thickness,
-            #     tags=(id, wire_body_tag),
-            # )
-            ##############   MODIF KH MULTIPOINTS 27/10/2024  #########################
-            # divY  = yF - yO if yF != yO else 0.000001
-            # x_distanceiff = (space/2)*(1 - math.cos(math.atan((xF-xO)/divY)))
-            # y_distanceiff = (space/2)*(1 - math.sin(math.atan((xF-xO)/divY)))
-            # p1    = ( (xO + x_distanceiff), (yO + space - y_distanceiff))
-            # p2    = ( (xF + x_distanceiff), (yF + space - y_distanceiff))
-            # p3    = ( (xF + space - x_distanceiff), (yF + y_distanceiff))
-            # p4    = ( (xO+ space - x_distanceiff), (yO + y_distanceiff))
-            # self.canvas.create_polygon(
-            #     x_distance + p1[0],
-            #     y_distance + p1[1],
-            #     x_distance + p2[0],
-            #     y_distance + p2[1],
-            #     x_distance + p3[0],
-            #     y_distance + p3[1],
-            #     x_distance + p4[0],
-            #     y_distance + p4[1],
-            #     fill=encre,
-            #     outline=contour,
-            #     width=1 * thickness,
-            #     tags=(id, wire_body_tag),
-            # )
-
-            # multipoints = [xO + 1*scale, yO + 1*scale] + multipoints + [xF - 1*scale, yF- 1*scale]
-            # multipoints = [x + x_distance + 5*scale, y + y_distance + 5*scale for (x, y) in multipoints]
             multipoints = [x_start, y_start] + multipoints + [x_end, y_end]
             multipoints = [
                 val + 5 * scale + (x_distance if i % 2 == 0 else y_distance) for i, val in enumerate(multipoints)
@@ -2674,7 +2395,6 @@ class ComponentSketcher:
                 multipoints, fill=contour, width=8 * thickness, tags=(wire_id, wire_body_shadow_tag)
             )
             self.canvas.create_line(multipoints, fill=encre, width=4 * thickness, tags=(wire_id, wire_body_tag))
-            ##############  FIN MODIF KH MULTIPOINTS 27/10/2024  #########################
             # Store tags and positions in params
             params["tags"] = [wire_id, wire_body_tag, start_endpoint_tag, end_endpoint_tag]
             params["wire_body_tag"] = wire_body_tag
@@ -2749,15 +2469,11 @@ class ComponentSketcher:
         """
         if width != -1:
             scale = width / 9.0
-        # mode = kwargs.get("mode", AUTO)
         matrix = self.matrix
         element_id = kwargs.get("id", None)
         coord = kwargs.get("coord", [])
-        # tags = kwargs.get("tags", [])
         element_type = kwargs.get("type", INPUT)
         color = kwargs.get("color", "#479dff")
-        # inter_space = 15 * scale
-        # space = 9 * scale
         thickness = 1 * scale
 
         if element_id and self.current_dict_circuit.get(element_id):
@@ -2907,7 +2623,6 @@ class ComponentSketcher:
                 "<ButtonRelease-1>",
                 lambda event, pin_id=element_id: self.on_pin_io_release(event, pin_id),
             )
-            # print(f"Drawing pin_io with params: {params}")
 
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
 
