@@ -210,7 +210,7 @@ class Toolbar:
         # Deactivate other modes
         self.deactivate_mode("all")
         self.tool_mode = action_name
-        if self.cursor_indicator_id is None and action_name != "Delete":
+        if self.cursor_indicator_id is None:
             self.create_cursor_indicator(action_name)
 
         if action_name == "Connection":
@@ -234,11 +234,13 @@ class Toolbar:
         elif action_name in ("Delete", "all"):
             self.sketcher.delete_mode_active = False
 
-    def create_cursor_indicator(self, _=None):
+    def create_cursor_indicator(self, action_name=None):
         """
         Creates a cursor indicator that follows the mouse position.
         """
-        if self.cursor_indicator_id is None:
+        if action_name == "Delete":
+            self.canvas.config(cursor="X_cursor")
+        elif self.cursor_indicator_id is None:
             color = self.selected_color
             self.cursor_indicator_id = self.canvas.create_oval(0, 0, 10, 10, fill=color, outline="#000000")
             self.canvas.tag_raise(self.cursor_indicator_id)
