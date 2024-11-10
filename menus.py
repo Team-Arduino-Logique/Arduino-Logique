@@ -13,10 +13,6 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
-from dataComponent import ComponentData
-from dataCDLT import id_origins, matrix1260pts
-
-from dataCDLT import current_dict_circuit
 
 
 class Menus:
@@ -26,7 +22,6 @@ class Menus:
         parent (tk.Tk | tk.Frame): The main window or parent frame.
         canvas (tk.Canvas): The canvas widget for drawing circuits.
         board (Breadboard): The Breadboard instance.
-        component_data (ComponentData): The ComponentData instance.
         model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
         zoom (Callable): The zoom function to adjust the canvas.
@@ -38,11 +33,9 @@ class Menus:
         parent: tk.Tk | tk.Frame,
         canvas: tk.Canvas,
         board: Breadboard,
-        component_data: ComponentData,
-        model: list,
         current_dict_circuit: dict,
-        zoom_function:Callable,
-        sketcher=None
+        zoom_function: Callable,
+        sketcher: ComponentSketcher,
     ):
         """
         Initializes the custom menu bar.
@@ -51,8 +44,6 @@ class Menus:
         - parent (tk.Tk or tk.Frame): The main window or parent frame.
         - canvas (tk.Canvas): The canvas widget for drawing circuits.
         - board (Breadboard): The Breadboard instance.
-        - component_data (ComponentData): The ComponentData instance.
-        - model (list): The model data for the circuit.
         - current_dict_circuit (dict): The current circuit data.
         - zoom_function (callable): The zoom function to adjust the canvas.
         """
@@ -62,10 +53,6 @@ class Menus:
         """The canvas widget for drawing circuits."""
         self.board: Breadboard = board
         """The Breadboard instance."""
-        self.component_data: ComponentData = component_data
-        """The ComponentData instance."""
-        self.model: list = model
-        """The model data for the circuit."""
         self.current_dict_circuit: dict = current_dict_circuit
         """The current circuit data."""
         self.zoom: Callable = zoom_function
@@ -81,8 +68,8 @@ class Menus:
         # Define menu items and their corresponding dropdown options
         menus = {
             "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
-            "Circuit": ["Vérification","Téléverser"],
-            "Controllers": ["Arduino", "ESP32","STM32"],
+            "Circuit": ["Vérification", "Téléverser"],
+            "Controllers": ["Arduino", "ESP32", "STM32"],
             "Ports": ["Configurer le port série"],
             "Help": ["Documentation", "A propos"],
         }
@@ -98,7 +85,7 @@ class Menus:
             "ESP32": self.ESP32,
             "Configurer le port série": self.configure_ports,
             "Documentation": self.open_documentation,
-            "A propos": self.about
+            "A propos": self.about,
         }
 
         # Create each menu button and its dropdown
@@ -125,7 +112,7 @@ class Menus:
             activebackground="#444444",
             activeforeground="blue",
             highlightbackground="#333333",  # Border color when inactive
-            highlightcolor="#444444",       # Border color when active
+            highlightcolor="#444444",  # Border color when active
             bd=0,
             padx=10,
             pady=5,
@@ -153,7 +140,7 @@ class Menus:
                 activebackground="#444444",
                 activeforeground="blue",
                 highlightbackground="#333333",  # Border color when inactive
-                highlightcolor="#444444",       # Border color when active
+                highlightcolor="#444444",  # Border color when active
                 bd=0,
                 anchor="w",
                 padx=20,
@@ -228,9 +215,6 @@ class Menus:
         # Clear the canvas and reset the circuit
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
-        self.component_data = ComponentData(ComponentSketcher(self.canvas))
-        self.model = self.component_data.circuitTest
-        self.zoom(self.canvas, 10.0, self.board, 50, 10, self.model)
         print("New file created.")
         messagebox.showinfo("New File", "A new circuit has been created.")
 
@@ -246,8 +230,8 @@ class Menus:
                 # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
-                self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
-                x_o, y_o = id_origins["xyOrigin"]
+                # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
+                x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
                 for key, val in circuit_data.items():
@@ -255,11 +239,11 @@ class Menus:
                         x, y = val["XY"]
                         model_chip = [
                             (
-                                self.board.sketcher.drawChip,
+                                self.board.sketcher.draw_chip,
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]
@@ -268,11 +252,11 @@ class Menus:
                     elif "wire" in key:
                         model_wire = [
                             (
-                                self.board.sketcher.drawWire,
+                                self.board.sketcher.draw_wire,
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]
@@ -307,7 +291,7 @@ class Menus:
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
@@ -372,38 +356,43 @@ class Menus:
         """Handler for the 'About' menu item."""
         print("About this software")
         messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
-        
+
     def checkCircuit(self):
         print("Lancer la vérification")
-        func    = []
-        wire    = []
-        pwr     = [(61,1,"-"), (61,2,"+")]  # [(col, line, "+" ou "-"), ...]
-        pwrChip = {"+" : [], "-": []}
-        io      = []
-        for id, component in current_dict_circuit.items():
+        func = []
+        wire = []
+        pwr = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
+        pwrChip = {"+": [], "-": []}
+        io = []
+        for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
                 (x, y) = component["pinUL_XY"]
                 numPinUL = component["pinCount"] // 2
-                (real_x,real_y),(col,line) = self.sketcher.find_nearest_grid_chip(x,y)
+                (real_x, real_y), (col, line) = self.sketcher.find_nearest_grid_chip(x, y)
                 ioIn, ioOut = [], []
                 for io in component["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
-                    #ioIN, ioOut = [], []
-                    ioIn = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[0]]
-                    ioOut = [(col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL)) for numPin in io[1]]
-                    func += [(id,ioIn, component["symbScript"], ioOut)]
-                    #print(f"ioIN  = {ioIn}")
-                    #print(f"ioOUT = {ioOut}")
-                    #print(f"func= {func}")
-                    #print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                    # ioIN, ioOut = [], []
+                    ioIn = [
+                        (col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                        for numPin in io[0]
+                    ]
+                    ioOut = [
+                        (col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                        for numPin in io[1]
+                    ]
+                    func += [(id, ioIn, component["symbScript"], ioOut)]
+                    # print(f"ioIN  = {ioIn}")
+                    # print(f"ioOUT = {ioOut}")
+                    # print(f"func= {func}")
+                    # print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
                 for pwr in component["pwr"]:
                     numPin, polarity = pwr[0], pwr[1]
-                    pwrChip[polarity] += [(id,col + (numPin % numPinUL) -1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))]
-                    #print(f"pwrChip= {pwrChip}")
+                    pwrChip[polarity] += [
+                        (id, col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                    ]
+                    # print(f"pwrChip= {pwrChip}")
             elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
                 wire += component["coord"]
         print(f"func= {func}\n")
         print(f"pwrChip= {pwrChip}\n")
         print(f"wire = {wire}")
-        
-                
-                    

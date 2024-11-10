@@ -23,6 +23,7 @@ from .chip_functions import (
     DFlipFlop,
     Demux,
     JKFlipFlop,
+    LogicalFunction,
     Mux,
     NandGate,
     NorGate,
@@ -57,9 +58,7 @@ class Package:
         Returns:
             Package - The Package object constructed from the JSON data.
         """
-        return Package(
-            json_data["type_name"], json_data["chip_width"], json_data["pin_count"]
-        )
+        return Package(json_data["type_name"], json_data["chip_width"], json_data["pin_count"])
 
 
 class Chip:
@@ -68,6 +67,7 @@ class Chip:
     Attributes:
         element_id (str): The unique identifier of the chip.
         chip_type (str): The type of the chip (e.g., "74HCXX").
+        description (str): A description of the chip.
         package_name (str): The name of the package associated with the chip.
         pin_count (int): The number of pins on the chip.
         chip_width (float): The width of the chip.
@@ -79,6 +79,7 @@ class Chip:
         self,
         element_id: str,
         chip_type: str | None = None,
+        description: str | None = None,
         pkg: Package | None = None,
         functions: list[ChipFunction] | None = None,
         position: ConnectionPointID | None = None,
@@ -89,6 +90,7 @@ class Chip:
         Args:
             element_id (str): The unique identifier of the chip.
             chip_type (str): The chip_type of the chip (74HCXX).
+            description (str): A description of the chip.
             pkg (Package): The package associated with the chip.
             functions (list[ChipFunction]): A list containing the functions of the chip.
             position (ConnectionPointID, optional): The position of the chip on the breadboard (from the top left pin).
@@ -97,12 +99,13 @@ class Chip:
         self.element_id = element_id
         if (
             chip_type is not None
+            and description is not None
             and pkg is not None
             and functions is not None
             and model is None
         ):
             self.chip_type = chip_type
-
+            self.description = description
             self.package_name: str = pkg.type_name
             self.pin_count: int = pkg.pin_count
             self.chip_width: float = pkg.chip_width
@@ -115,7 +118,7 @@ class Chip:
                 self.set_position(position)
         elif model is not None:
             self.chip_type = model.chip_type
-
+            self.description = model.description
             self.package_name = model.package_name
             self.pin_count = model.pin_count
             self.chip_width = model.chip_width
@@ -229,12 +232,38 @@ class Chip:
 
         if package_dict is not None and isinstance(json_data["package"], str):
             return Chip(
-                json_data["name"], json_data["name"], package_dict[json_data["package"]], functions
+                json_data["name"],
+                json_data["name"],
+                json_data["description"],
+                package_dict[json_data["package"]],
+                functions,
             )
 
-        raise ValueError(
-            "The package does not exist in the Components/Packages directory."
-        )
+        raise ValueError("The package does not exist in the Components/Packages directory.")
+
+    def to_generic_dict(self) -> dict[str, Any]:
+        """
+        Returns a dictionary representation of the Chip object.
+        Returns:
+            dict: A dictionary containing the attributes of the Chip object, without position and instance info.
+        """
+        attr_dict = {
+            "label": self.chip_type,
+            "description": self.description,
+            "type": self.chip_type,
+            "packageName": self.package_name,
+            "pinCount": self.pin_count,
+            "chipWidth": self.chip_width,
+        }
+
+        if self.functions:
+            attr_dict["logicFunctionName"] = self.functions[0].__class__.__name__
+            attr_dict["io"] = [
+                ([pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins])
+                for func in self.functions
+                if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+            ]
+        return attr_dict
 
     def __str__(self):
         """
@@ -337,7 +366,7 @@ class Circuit:
         """
         ret = self.wires.pop(element_id, None)
         return ret is not None
-    
+
     def add_io(self, io: IO) -> None:
         """
         Adds an input/output component to the circuit.
@@ -381,9 +410,7 @@ def get_all_available_chips() -> dict[str, Chip]:
     """
     file_errors = []
     available_packages = {}
-    pkgs_dir = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "Components", "Packages"
-    )
+    pkgs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Packages")
     for filename in os.listdir(pkgs_dir):
         if filename.endswith(".json"):
             with open(os.path.join(pkgs_dir, filename), "r", encoding="utf-8") as file:
@@ -395,9 +422,7 @@ def get_all_available_chips() -> dict[str, Chip]:
                     file_errors.append(f"Error loading package from {filename}: {e}")
 
     all_chips = {}
-    chips_dir = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "Components", "Chips"
-    )
+    chips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Chips")
     for root, _, files in os.walk(chips_dir):
         for filename in files:
             if filename.endswith(".json"):

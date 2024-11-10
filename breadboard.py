@@ -3,37 +3,17 @@ This module provides a Breadboard class for circuit design using the Tkinter Can
 It includes methods for mouse tracking, and matrix filling 
 for breadboards with 830 and 1260 points. Additionally, it provides a method for generating circuit layouts 
 on the canvas.
-Classes:
-    Breadboard: A class to represent a breadboard for circuit design.
-Attributes:
-    canvas (Canvas): The canvas on which the breadboard is drawn.
-    id_origin (dict): A dictionary to store the origin coordinates.
-    current_cursor (None): The current cursor state.
-    cursor_save (None): The saved cursor state.
-    id_type (dict): A dictionary to store the types of components.
-    current_dict_circuit (dict): The current dictionary for the circuit.
-    num_id (int): The current ID number.
-    mouse_x (int): The current x-coordinate of the mouse.
-    mouse_y (int): The current y-coordinate of the mouse.
-    drag_mouse_x (int): The x-coordinate of the mouse during drag.
-    drag_mouse_y (int): The y-coordinate of the mouse during drag.
-    matrix (dict): The matrix representing the breadboard.
-Methods:
-    follow_mouse(event): Updates the mouse coordinates based on the event.
-    fill_matrix_830_pts(col_distance=1, line_distance=1, **kwargs): Fills the breadboard matrix with 830 points.
-    fill_matrix_1260_pts(): Fills the breadboard matrix with 1260 points.
-    circuit(x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
 """
 
 from tkinter import Canvas
 
-
 from component_sketch import ComponentSketcher
-
-from dataCDLT import  matrix830pts,matrix1260pts, VERTICAL, HORIZONTAL,FREE, id_origins, selector_dx_ul, selector_dy_ul, selector_dx_br, selector_dy_br
-
-
-from dataComponent import ComponentData
+from dataCDLT import (
+    FREE,
+    HORIZONTAL,
+    PERSO,
+    VERTICAL,
+)
 
 
 class Breadboard:
@@ -43,58 +23,16 @@ class Breadboard:
     ----------
     canvas : Canvas
         The canvas on which the breadboard is drawn.
-    id_origin : dict
-        A dictionary to store the origin coordinates.
-    current_cursor : None
-        The current cursor state.
-    cursor_save : None
-        The saved cursor state.
-    id_type : dict
-        A dictionary to store the types of components.
-    current_dict_circuit : dict
-        The current dictionary for the circuit.
-    num_id : int
-        The current ID number.
-    mouse_x : int
-        The current x-coordinate of the mouse.
-    mouse_y : int
-        The current y-coordinate of the mouse.
-    drag_mouse_x : int
-        The x-coordinate of the mouse during drag.
-    drag_mouse_y : int
-        The y-coordinate of the mouse during drag.
-    matrix : dict
-        The matrix representing the breadboard.
-    Methods
-    -------
-    follow_mouse(event):
-        Updates the mouse coordinates based on the event.
-    fill_matrix_830_pts(colD=1, lineD=1, **kwargs):
-        Fills the breadboard matrix with 830 points.
-    fill_matrix_1260_pts(colD=1, lineD=1, **kwargs):
-        Fills the breadboard matrix with 1260 points.
-    circuit(xD=0, yD=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
-        Draws a circuit on the breadboard based on the given model.
+    sketcher : ComponentSketcher
+        The ComponentSketcher instance used to draw the circuit.
     """
 
-    def __init__(self, canvas: Canvas):
+    def __init__(self, canvas: Canvas, sketcher: ComponentSketcher):
         self.canvas = canvas
-        self.current_cursor = None
-        self.cursor_save = None
-        self.id_type = {}
-        self.current_dict_circuit = {}
-        self.num_id = 1
-        self.mouse_x, self.mouse_y = 0, 0
-        self.drag_mouse_x, self.drag_mouse_y = 0, 0
-        self.id_type.update(
-            {"DIP14": 0, "74HC00": 0, "74HC02": 0, "74HC08": 0, "74HC04": 0, "74HC32": 0, "id_circuit": 0}
-        )
+        self.sketcher = sketcher
         self.selector()
-
         self.canvas.config(cursor="")
-
         canvas.bind("<Motion>", self.follow_mouse)
-        self.sketcher = ComponentSketcher(canvas)
 
     def follow_mouse(self, event):
         """
@@ -102,11 +40,13 @@ class Breadboard:
         Args:
             event: An event object that contains the current mouse position.
         """
-        self.mouse_x, self.mouse_y = event.x, event.y
-        self.canvas.coords("selector_cable", [ event.x + selector_dx_ul, event.y+selector_dy_ul, event.x + selector_dx_br, event.y + selector_dy_br])
-        
-    def selector(self):
+        # FIXME fixing the coords crashes the app
+        self.canvas.coords("selector_cable", [event.x - 10, event.y - 10, event.x + 0, event.y + 0])
 
+    def selector(self):
+        """
+        Create the round selector cable movement
+        """
         self.canvas.create_oval(
             100,
             100,
@@ -114,12 +54,12 @@ class Breadboard:
             110,
             fill="#dfdfdf",
             outline="#404040",
-            width=1 ,
-            tags=("selector_cable"), 
+            width=1,
+            tags=("selector_cable"),
         )
         self.canvas.itemconfig("selector_cable", state="hidden")
-        
-    def fill_matrix_830_pts(self, col_distance=1, line_distance=1, **kwargs):
+
+    def fill_matrix_830_pts(self, col_distance=1, line_distance=1):
         """
         Fills a matrix representing an 830-point breadboard with initial values.
         This method populates the matrix with coordinates and states for each point on the breadboard.
@@ -128,21 +68,13 @@ class Breadboard:
         Args:
             col_distance (int, optional): The distance between columns. Defaults to 1.
             line_distance (int, optional): The distance between lines. Defaults to 1.
-            **kwargs: Additional keyword arguments. If 'matrix' is provided in kwargs, it will be used
-                      as the matrix to be filled. Otherwise, the default matrix830pts will be used.
-        Keyword Args:
-            matrix (dict): A dictionary representing the matrix to be filled. If not provided,
-                           matrix830pts is used.
         Returns:
             None
         """
 
         inter_space = 15
 
-        matrix = matrix830pts
-        for key, value in kwargs.items():
-            if key == "matrix":
-                matrix = value
+        matrix = self.sketcher.matrix
 
         for i in range(50):
             id_top_plus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(1 + line_distance)
@@ -155,10 +87,9 @@ class Breadboard:
                     0.5 * inter_space + (2 + (i % 5) + col_distance + (i // 5) * 6) * inter_space,
                     (1.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
-                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6,  line_distance),
-                "etat": FREE,
+                "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, line_distance),
+                "state": FREE,
                 "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, line_distance)],
-                
             }
             matrix[id_top_plus] = {
                 "id": ["mh", "moins haut", "2"],
@@ -167,7 +98,7 @@ class Breadboard:
                     (2.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 1 + line_distance)],
             }
             matrix[id_bot_minus] = {
@@ -177,7 +108,7 @@ class Breadboard:
                     (19.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 12 + line_distance)],
             }
             matrix[id_bot_plus] = {
@@ -187,7 +118,7 @@ class Breadboard:
                     (20.5 + 22.2 * (line_distance // 15)) * inter_space,
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
-                "etat": FREE,
+                "state": FREE,
                 "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 13 + line_distance)],
             }
         for l in range(5):
@@ -200,7 +131,7 @@ class Breadboard:
                         (5.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
                     "coord": (c + col_distance, l + 2 + line_distance),
-                    "etat": FREE,
+                    "state": FREE,
                     "link": [(c + col_distance, 2 + line_distance, c + col_distance, 6 + line_distance)],
                 }
                 id_in_matrix = str(c + col_distance) + "," + str(l + 7 + line_distance)
@@ -211,7 +142,7 @@ class Breadboard:
                         (12.5 + l + 22.2 * (line_distance // 15)) * inter_space,
                     ),
                     "coord": (c + col_distance, l + 7 + line_distance),
-                    "etat": FREE,
+                    "state": FREE,
                     "link": [(c + col_distance, 7 + line_distance, c + col_distance, 11 + line_distance)],
                 }
 
@@ -226,37 +157,95 @@ class Breadboard:
         None
         """
 
-        self.fill_matrix_830_pts(matrix=matrix1260pts)
-        self.fill_matrix_830_pts(line_distance=15, matrix=matrix1260pts)
+        self.fill_matrix_830_pts()
+        self.fill_matrix_830_pts(line_distance=15)
 
-    def calculate_center_y(self, line_distance, inter_space):
-        # The center line between 'e' and 'f' is at line 7.5
-        
-        center_line = line_distance + 10.5
-        center_y = center_line * inter_space
-        return center_y
-
-    
-    def draw_matrix_points(self, scale=1): # used to debug the matrix
+    def draw_matrix_points(self, scale=1):  # used to debug the matrix
         """
         Draw all points in the matrix on the canvas, center snap points in yellow, others in orange.
         """
-        for id_in_matrix, point in matrix1260pts.items():
+        for id_in_matrix, point in self.sketcher.matrix.items():
             x, y = point["xy"]
-            
+
             # Adjust for the origin
-            x += id_origins["xyOrigin"][0]
-            y += id_origins["xyOrigin"][1]
+            x += self.sketcher.id_origins["xyOrigin"][0]
+            y += self.sketcher.id_origins["xyOrigin"][1]
             # Adjust for scaling
             x *= scale
             y *= scale
             # Determine color
-            if id_in_matrix.startswith('snap,'):
-                color = 'yellow'
+            if id_in_matrix.startswith("snap,"):
+                color = "yellow"
             else:
-                color = 'orange'
+                color = "orange"
             # Draw a small circle at (x, y) with the specified color
             radius = 2 * scale  # Adjust size as needed
-            self.canvas.create_oval(
-                x - radius, y - radius, x + radius, y + radius,
-                fill=color, outline='')
+            self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill=color, outline="")
+
+    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10):
+        """
+        Draws a blank breadboard model on the canvas.
+        """
+        line_distribution = [(self.sketcher.draw_hole, 63)]
+        power_block = [(self.sketcher.draw_hole, 5), (self.sketcher.draw_blank, 1)]
+        neg_power_rail = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
+            (self.sketcher.draw_rail, 60),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"deltaY": 1.3, "scaleChar": 2}),
+        ]
+        pos_power_rail = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+            (self.sketcher.draw_red_rail, 60),
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char, 1, {"color": "#ff0000", "text": "+", "deltaY": -0.6, "scaleChar": 2}),
+        ]
+        power_line = [(self.sketcher.draw_blank, 3), (power_block, 10, {"direction": HORIZONTAL})]
+        power_strip = [
+            (neg_power_rail, 1, {"direction": VERTICAL}),
+            (power_line, 2, {"direction": VERTICAL}),
+            (pos_power_rail, 1, {"direction": VERTICAL}),
+        ]
+        strip_distribution = [(line_distribution, 5, {"direction": VERTICAL})]
+        numbering = [
+            (self.sketcher.draw_blank, 1),
+            (self.sketcher.draw_num_iter, 1, {"beginNum": 1, "endNum": 63, "direction": HORIZONTAL, "deltaY": -1.5}),
+        ]
+
+        board830pts = [
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "bboard830"}),
+            (self.sketcher.draw_board, 1),
+            (self.sketcher.draw_half_blank, 1, {"direction": HORIZONTAL}),
+            (self.sketcher.draw_half_blank, 1, {"direction": VERTICAL}),
+            (power_strip, 1, {"direction": VERTICAL}),
+            (numbering, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "anchor": "center", "deltaY": 0.7}),
+            (strip_distribution, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 5.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "f", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 0.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "deltaY": 0.7}),
+            (strip_distribution, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 12.5, "column": 64.5, "id_origin": "bboard830"}),
+            (self.sketcher.draw_half_blank, 1),
+            (self.sketcher.draw_char_iter, 1, {"beginChar": "a", "numChars": 5, "direction": VERTICAL, "deltaY": 0.7}),
+            (self.sketcher.go_xy, 1, {"line": 18.8, "column": 0.5, "id_origin": "bboard830"}),
+            (numbering, 1, {"direction": VERTICAL}),
+            (self.sketcher.go_xy, 1, {"line": 18.5, "column": 0.5, "id_origin": "bboard830"}),
+            (power_strip, 1, {"direction": VERTICAL}),
+        ]
+
+        board1260pts = [(board830pts, 2, {"direction": PERSO, "dXY": (0, 1.3)})]
+        blank_board_model = [
+            (self.sketcher.set_xy_origin, 1, {"id_origin": "circTest"}),
+            (board1260pts, 1),
+            (self.sketcher.go_xy, 1, {"line": 10.1, "column": 1.4, "id_origin": "circTest"}),
+            (self.sketcher.go_xy, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
+        ]
+        self.sketcher.circuit(x_origin, y_origin, scale=self.sketcher.scale_factor, model=blank_board_model)

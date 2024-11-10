@@ -1,6 +1,9 @@
 {
     "name": "74HC151",
+    "description": "8-to-1 multiplexer",
     "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
     "functions": [
         {
             "func_type": "MUX",

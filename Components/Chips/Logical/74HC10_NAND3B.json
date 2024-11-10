@@ -1,6 +1,9 @@
 {
     "name": "74HC10",
+    "description": "Triple 3-input NAND gate",
     "package": "DIP14",
+    "vcc_pin": 14,
+    "gnd_pin": 7,
     "functions": [
         {
             "func_type": "NAND",
