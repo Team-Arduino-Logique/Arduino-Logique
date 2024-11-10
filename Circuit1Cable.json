@@ -1,0 +1,36 @@
+{
+    "_wire_12": {
+        "mode": 0,
+        "coord": [
+            [
+                17,
+                9,
+                29,
+                22
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_12_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    312.5,
+                    212.5
+                ],
+                "tag": "_wire_12_start"
+            },
+            "end": {
+                "position": [
+                    312.5,
+                    212.5
+                ],
+                "tag": "_wire_12_end"
+            }
+        }
+    }
+}

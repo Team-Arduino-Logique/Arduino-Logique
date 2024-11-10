@@ -35,6 +35,7 @@ class ComponentData:
         pins7400 = {
             "logicFunction": self.sketcher.symbNAND,
             "symbScript" : "!&",
+            "pwr" : [(6,"-"), (7,"+")],
             "io": [
                 (
                     [1, 2],
@@ -65,6 +66,7 @@ class ComponentData:
         pins7402 = {
             "logicFunction": self.sketcher.symbNOR,
             "symbScript" : "!|",
+            "pwr" : [(6,"-"), (7,"+")],
             "io": [
                 (
                     [1, 2],
@@ -95,6 +97,7 @@ class ComponentData:
         pins7404 = {
             "logicFunction": self.sketcher.symbNOT,
             "symbScript" : "!",
+            "pwr" : [(6,"-"), (7,"+")],
             "io": [
                 (
                     [1, 2],
@@ -125,6 +128,7 @@ class ComponentData:
         pins7408 = {
             "logicFunction": self.sketcher.symbAND,
             "symbScript" : "&",
+            "pwr" : [(6,"-"), (7,"+")],
             "io": [
                 (
                     [1, 2],
@@ -155,6 +159,7 @@ class ComponentData:
         pins7432 = {
             "logicFunction": self.sketcher.symbOR,
             "symbScript" : "|",
+            "pwr" : [(6,"-"), (7,"+")],
             "io": [
                 (
                     [1, 2],

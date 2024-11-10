@@ -1844,6 +1844,8 @@ class ComponentSketcher:
                 io = value
             if key == "symbScript":
                 symbScript = value
+            if key == "pwr":
+                pwr = value
 
 
         dimLine = (dim["pinCount"] - 0.30) * inter_space / 2
@@ -1874,6 +1876,7 @@ class ComponentSketcher:
             params["btnMenu"] = [1, 1, 0]
             params["symbScript"] = symbScript
             params["io"] = io
+            params["pwr"] = pwr
             #params["logicFunction"] = logicFunction
             nbBrocheParCote = dim["pinCount"] // 2
             #self.change_hole_state(xD,yD,nbBrocheParCote,USED)
