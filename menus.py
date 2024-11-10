@@ -221,8 +221,8 @@ class Menus:
                 # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
-                self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
-                x_o, y_o = self.board.id_origins["xyOrigin"]
+                # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
+                x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
                 for key, val in circuit_data.items():

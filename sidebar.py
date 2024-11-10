@@ -13,6 +13,7 @@ from typing import Callable, Tuple
 import subprocess
 import sys
 from idlelib.tooltip import Hovertip  # type: ignore
+from toolbar import Toolbar
 from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips
@@ -50,7 +51,9 @@ class Sidebar:
         - saved_bindings: A dictionary of saved event bindings.
     """
 
-    def __init__(self, parent, current_dict_circuit, chip_images_path="chips", canvas=None, sketcher=None) -> None:
+    def __init__(
+        self, parent, current_dict_circuit, toolbar: Toolbar, chip_images_path="chips", canvas=None, sketcher=None
+    ) -> None:
         """
         Initializes the sidebar.
         Parameters:
@@ -74,6 +77,7 @@ class Sidebar:
 
         self.canvas: tk.Canvas = canvas
         self.sketcher: ComponentSketcher = sketcher
+        self.toolbar = toolbar
 
         self.selected_chip_name = None
         self.chip_cursor_image = None
@@ -262,6 +266,8 @@ class Sidebar:
         """
         # Cancel any ongoing chip placement
         self.cancel_chip_placement()
+        self.toolbar.deactivate_button("all")
+        self.toolbar.deactivate_mode("all")
 
         # Set the new selected chip
         self.selected_chip_name = chip_name
@@ -384,20 +390,6 @@ class Sidebar:
         if column is None or line is None:
             messagebox.showerror("Placement Error", "No grid point found nearby.")
             return
-
-        # Adjust for scaling and origin
-        # scale = self.sketcher.scale_factor
-        # xO, yO = id_origins["xyOrigin"]
-
-        # # Use goXY to get the exact position
-        # exact_x, exact_y = self.sketcher.goXY(
-        #     xO,
-        #     yO,
-        #     scale=scale,
-        #     width=-1,
-        #     column=column,
-        #     line=line
-        # )
 
         try:
             chip_dict = self.available_chips_and_imgs[self.chip_name_to_index[chip_name]][0].to_generic_dict()

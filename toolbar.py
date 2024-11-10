@@ -203,6 +203,9 @@ class Toolbar:
         btn = self.buttons.get(action_name)
         if btn:
             btn.configure(bg="#505050")  # Inactive background color
+        elif action_name == "all":
+            for button in self.buttons.values():
+                button.configure(bg="#505050")
 
     def activate_mode(self, action_name):
         """

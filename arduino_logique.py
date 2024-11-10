@@ -92,6 +92,7 @@ def main():
         canvas=canvas,
         sketcher=sketcher,
         current_dict_circuit=sketcher.current_dict_circuit,
+        toolbar=toolbar,
     )
 
     # Creating the Menus instance with proper references
