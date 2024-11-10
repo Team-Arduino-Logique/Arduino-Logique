@@ -14,7 +14,7 @@ import subprocess
 import sys
 from idlelib.tooltip import Hovertip  # type: ignore
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, FREE, USED, current_dict_circuit
+from dataCDLT import matrix1260pts, FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips
 
 
@@ -50,7 +50,7 @@ class Sidebar:
         - saved_bindings: A dictionary of saved event bindings.
     """
 
-    def __init__(self, parent, chip_images_path="chips", canvas=None, sketcher=None) -> None:
+    def __init__(self, parent, current_dict_circuit, chip_images_path="chips", canvas=None, sketcher=None) -> None:
         """
         Initializes the sidebar.
         Parameters:
@@ -59,7 +59,7 @@ class Sidebar:
             - canvas: The canvas where the chips are placed.
             - sketcher: The component sketcher object.
         """
-
+        self.current_dict_circuit = current_dict_circuit
         images = self.load_chip_images(chip_images_path)
         self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
             (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
@@ -462,11 +462,11 @@ class Sidebar:
         self.sketcher.circuit(nearest_x, nearest_y, scale=self.sketcher.scale_factor, model=model_chip)
         print(f"Chip {chip_name} placed at ({column}, {line}).")
 
-        # Update the current_dict_circuit with the new chip
-        chip_keys = [key for key in current_dict_circuit if key.startswith("_chip")]
+        # Update the self.current_dict_circuit with the new chip
+        chip_keys = [key for key in self.current_dict_circuit if key.startswith("_chip")]
         if chip_keys:
             last_chip_key = chip_keys[-1]  # Get the last key in sorted order
-            added_chip_params = current_dict_circuit[last_chip_key]
+            added_chip_params = self.current_dict_circuit[last_chip_key]
             print("Last chip parameter:", added_chip_params)
             added_chip_params["occupied_holes"] = occupied_holes
         else:

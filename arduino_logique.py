@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
-from dataCDLT import current_dict_circuit, id_origins
+from dataCDLT import id_origins
 from menus import Menus
 from sidebar import Sidebar
 from toolbar import Toolbar
@@ -74,7 +74,7 @@ def main():
 
 
     # Creating the toolbar instance
-    toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher)
+    toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher, current_dict_circuit=sketcher.current_dict_circuit)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
     toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
@@ -92,6 +92,7 @@ def main():
         chip_images_path="Assets/chips",
         canvas=canvas,
         sketcher=sketcher,
+        current_dict_circuit=sketcher.current_dict_circuit,
     )
 
     # Creating the Menus instance with proper references
@@ -99,16 +100,13 @@ def main():
         parent=win,
         canvas=canvas,
         board=board,
-        current_dict_circuit=current_dict_circuit,
+        current_dict_circuit=sketcher.current_dict_circuit,
         zoom_function=zoom,
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
     # Assigning the references to menus
-    menus.canvas = canvas
-    menus.board = board
-    menus.current_dict_circuit = current_dict_circuit
     menus.zoom_function = zoom
 
     # Creating a slider and placing it in row=3, spanning both columns

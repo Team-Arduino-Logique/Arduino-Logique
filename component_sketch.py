@@ -20,7 +20,6 @@ from dataCDLT import (
     NO,
     AUTO,
     id_origins,
-    current_dict_circuit,
     matrix1260pts,
     matrix830pts,
     FREE,
@@ -60,6 +59,7 @@ class ComponentSketcher:
         self.delete_mode_active = False
         self.drag_mouse = [0,0]
         self.id_type: dict[str, int] = {}
+        self.current_dict_circuit = {}
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -122,7 +122,7 @@ class ComponentSketcher:
         self.wire_drag_data["wire_id"] = wire_id
         self.wire_drag_data["endpoint"] = endpoint
 
-        endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         self.canvas.itemconfig(endpoint_tag, outline="red", fill="red")
 
     def on_wire_endpoint_drag(self, event, wire_id, endpoint):
@@ -135,10 +135,10 @@ class ComponentSketcher:
             canvas_x = self.canvas.canvasx(event.x)
             canvas_y = self.canvas.canvasy(event.y)
 
-            color = current_dict_circuit[wire_id]["color"]
-            coord = current_dict_circuit[wire_id]["coord"]
+            color = self.current_dict_circuit[wire_id]["color"]
+            coord = self.current_dict_circuit[wire_id]["coord"]
 
-            multipoints = current_dict_circuit[wire_id]["multipoints"]
+            multipoints = self.current_dict_circuit[wire_id]["multipoints"]
             x_o, y_o = id_origins["xyOrigin"]
             if endpoint == "start":
                 matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
@@ -181,7 +181,7 @@ class ComponentSketcher:
             ####################    FIN MODIF KH 25/10/2024  ##################################
 
             # Remove highlight
-            endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline="#404040", fill="#dfdfdf")
             self.drag_selector = False
 
@@ -189,7 +189,7 @@ class ComponentSketcher:
         """
         Updates the wire body based on the positions of the endpoints.
         """
-        params = current_dict_circuit[wire_id]
+        params = self.current_dict_circuit[wire_id]
         start_pos = self.canvas.coords(params["endpoints"]["start"]["tag"])
         end_pos = self.canvas.coords(params["endpoints"]["end"]["tag"])
 
@@ -208,7 +208,7 @@ class ComponentSketcher:
         """
         # Get current position of the endpoint
         ############## MODIF KH 25/10/2024 #######################
-        # endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+        # endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
         # pos = self.canvas.coords(endpoint_tag)
         # x = (pos[0] + pos[2]) / 2
         # y = (pos[1] + pos[3]) / 2
@@ -225,9 +225,9 @@ class ComponentSketcher:
         # x_o, y_o = id_origins["xyOrigin"]
         # nearest_x, nearest_y = self.find_nearest_grid_point(x, y)
 
-        coord = current_dict_circuit[wire_id]["coord"]
-        xy = [current_dict_circuit[wire_id]["XY"]]
-        color = current_dict_circuit[wire_id]["color"]
+        coord = self.current_dict_circuit[wire_id]["coord"]
+        xy = [self.current_dict_circuit[wire_id]["XY"]]
+        color = self.current_dict_circuit[wire_id]["color"]
         if endpoint == "start":
             x = canvas_x  # pos[0] # + dx
             y = canvas_y  # pos[1] # + dy
@@ -252,7 +252,7 @@ class ComponentSketcher:
         # self.canvas.move(endpoint_tag, dx, dy)
 
         # Update endpoint position in params
-        # current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
+        # self.current_dict_circuit[wire_id]["endpoints"][endpoint]["position"] = (nearest_x, nearest_y)
 
         # Update the wire body
         # self.update_wire_body(wire_id)
@@ -328,8 +328,8 @@ class ComponentSketcher:
         Find the nearest multipoint to the given x, y coordinates on the wire body.
         """
         nearest_point = -1
-        multipoint = current_dict_circuit[wire_id]["multipoints"]
-        [(x_start, y_start, x_end, y_end)] = current_dict_circuit[wire_id]["coord"]
+        multipoint = self.current_dict_circuit[wire_id]["multipoints"]
+        [(x_start, y_start, x_end, y_end)] = self.current_dict_circuit[wire_id]["coord"]
         x_start, y_start = self.get_xy(x_start, y_start, matrix=matrix1260pts)
         x_end, y_end = self.get_xy(x_end, y_end, matrix=matrix1260pts)
         i = 0
@@ -366,7 +366,7 @@ class ComponentSketcher:
             insert_point = True
         # multipoint.insert(nearest_point, x)
         # multipoint.insert(nearest_point + 1, y)
-        current_dict_circuit[wire_id]["multipoints"] = multipoint
+        self.current_dict_circuit[wire_id]["multipoints"] = multipoint
         return nearest_point, insert_point
 
     def on_wire_body_enter(self, _, wire_id):
@@ -374,7 +374,7 @@ class ComponentSketcher:
         Event handler for when the mouse enters the wire body.
         """
         if not self.drag_selector and not self.delete_mode_active:
-            color = current_dict_circuit[wire_id]["color"]
+            color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
             self.canvas.itemconfig("selector_cable", fill=contour, outline=encre)
@@ -403,19 +403,19 @@ class ComponentSketcher:
             self.wire_drag_data["endpoint"] = "selector_cable"
             endpoint_tag = "selector_cable"
 
-            color = current_dict_circuit[wire_id]["color"]
+            color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-            # endpoint_tag = current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
+            # endpoint_tag = self.current_dict_circuit[wire_id]["endpoints"][endpoint]["tag"]
             self.canvas.itemconfig(endpoint_tag, outline=contour, fill=encre)
             if insert_point:
-                multipoints = current_dict_circuit[wire_id]["multipoints"]
+                multipoints = self.current_dict_circuit[wire_id]["multipoints"]
                 multipoints.insert(
                     self.nearest_multipoint,
                     x - x_o,
                 )
                 multipoints.insert(self.nearest_multipoint + 1, y - y_o)
-                current_dict_circuit[wire_id]["multipoints"] = multipoints
+                self.current_dict_circuit[wire_id]["multipoints"] = multipoints
 
     def on_wire_body_left_click(self, event, wire_id) -> None:
         """
@@ -426,10 +426,10 @@ class ComponentSketcher:
         self.nearest_multipoint, insert_point = self.find_nearest_multipoint(x - x_o, y - y_o, wire_id)
         if not insert_point:
             print("Deleting multipoint")
-            multipoints: list[int] = current_dict_circuit[wire_id]["multipoints"]
+            multipoints: list[int] = self.current_dict_circuit[wire_id]["multipoints"]
             multipoints.pop(self.nearest_multipoint)
             multipoints.pop(self.nearest_multipoint)
-            current_dict_circuit[wire_id]["multipoints"] = multipoints
+            self.current_dict_circuit[wire_id]["multipoints"] = multipoints
             model_wire = [
                 (
                     self.draw_wire,
@@ -437,9 +437,9 @@ class ComponentSketcher:
                     {
                         "id": wire_id,
                         "multipoints": multipoints,
-                        "coord": current_dict_circuit[wire_id]["coord"],
-                        "color": current_dict_circuit[wire_id]["color"],
-                        "XY": [current_dict_circuit[wire_id]["XY"]],
+                        "coord": self.current_dict_circuit[wire_id]["coord"],
+                        "color": self.current_dict_circuit[wire_id]["color"],
+                        "XY": [self.current_dict_circuit[wire_id]["XY"]],
                         "matrix": matrix1260pts,
                     },
                 )
@@ -450,7 +450,7 @@ class ComponentSketcher:
         """
         Deletes the wire from the canvas and updates the matrix.
         """
-        wire_params = current_dict_circuit[wire_id]
+        wire_params = self.current_dict_circuit[wire_id]
         for tag in wire_params["tags"]:
             self.canvas.delete(tag)
         endpoints = (
@@ -462,7 +462,7 @@ class ComponentSketcher:
             matrix1260pts[hole_id]["state"] = FREE
 
         # Delete the wire from the dictionary
-        del current_dict_circuit[wire_id]
+        del self.current_dict_circuit[wire_id]
 
         print(f"Wire {wire_id} deleted")
 
@@ -474,10 +474,10 @@ class ComponentSketcher:
             return
         x_o, y_o = id_origins["xyOrigin"]
         x, y = event.x - x_o, event.y - y_o
-        multipoints = current_dict_circuit[wire_id]["multipoints"]
-        coord = current_dict_circuit[wire_id]["coord"]
-        xy = [current_dict_circuit[wire_id]["XY"]]
-        color = current_dict_circuit[wire_id]["color"]
+        multipoints = self.current_dict_circuit[wire_id]["multipoints"]
+        coord = self.current_dict_circuit[wire_id]["coord"]
+        xy = [self.current_dict_circuit[wire_id]["XY"]]
+        color = self.current_dict_circuit[wire_id]["color"]
         multipoints[self.nearest_multipoint] = x
         multipoints[self.nearest_multipoint + 1] = y
 
@@ -524,7 +524,7 @@ class ComponentSketcher:
         self.drag_chip_data["x"] = adjusted_x
         self.drag_chip_data["y"] = adjusted_y
 
-        chip_params = current_dict_circuit[chip_id]
+        chip_params = self.current_dict_circuit[chip_id]
         self.drag_chip_data["initial_XY"] = chip_params["XY"]
 
         if "occupied_holes" in chip_params:
@@ -562,7 +562,7 @@ class ComponentSketcher:
         """
         Deletes the chip from the canvas and updates the matrix.
         """
-        chip_params = current_dict_circuit[chip_id]
+        chip_params = self.current_dict_circuit[chip_id]
         for tag in chip_params["tags"]:
             self.canvas.delete(tag)
 
@@ -571,7 +571,7 @@ class ComponentSketcher:
             matrix1260pts[hole_id]["state"] = FREE
 
         # Delete the chip from the dictionary
-        del current_dict_circuit[chip_id]
+        del self.current_dict_circuit[chip_id]
 
         print(f"Chip {chip_id} deleted")
 
@@ -595,7 +595,7 @@ class ComponentSketcher:
             dy = adjusted_y - self.drag_chip_data["y"]
 
             # Move all items associated with the chip
-            chip_params = current_dict_circuit[chip_id]
+            chip_params = self.current_dict_circuit[chip_id]
             # for tag in chip_params["tags"]:
             #     self.canvas.move(tag, dx, dy)
 
@@ -629,15 +629,15 @@ class ComponentSketcher:
         chip_id = self.drag_chip_data["chip_id"]
         if chip_id:
             # MODIF KH POUR DRAG-DROP 23/10/2024
-            # (x, y) = current_dict_circuit[chip_id]["XY"]
-            (x, y) = current_dict_circuit[chip_id]["pinUL_XY"]
+            # (x, y) = self.current_dict_circuit[chip_id]["XY"]
+            (x, y) = self.current_dict_circuit[chip_id]["pinUL_XY"]
             # FIN MODIF KH
             (real_x, real_y), (col, line) = self.find_nearest_grid_chip(x, y)
             print(f"Real x: {real_x}, Real y: {real_y}")
             print(f"Col: {col}, Line: {line}")
 
             # Get chip parameters
-            chip_params = current_dict_circuit[chip_id]
+            chip_params = self.current_dict_circuit[chip_id]
             pin_count = chip_params["pinCount"]
             half_pin_count = pin_count // 2
 
@@ -838,7 +838,7 @@ class ComponentSketcher:
             self.pin_io_drag_data["y"] = canvas_y
 
             # Highlight the pin_io to indicate selection using outline_tag
-            outline_tag = current_dict_circuit[pin_id]["outline_tag"]
+            outline_tag = self.current_dict_circuit[pin_id]["outline_tag"]
             print(f"Highlighting outline_tag: {outline_tag}")
             self.canvas.itemconfig(outline_tag, outline="red")
 
@@ -846,7 +846,7 @@ class ComponentSketcher:
         """
         Deletes the pin_io element from the canvas and updates the matrix.
         """
-        pin_io_params = current_dict_circuit[pin_id]
+        pin_io_params = self.current_dict_circuit[pin_id]
         for tag in pin_io_params["tags"]:
             self.canvas.delete(tag)
         # Restore occupied holes
@@ -854,7 +854,7 @@ class ComponentSketcher:
         matrix1260pts[hole_id]["state"] = FREE
 
         # Delete the pin_io from the dictionary
-        del current_dict_circuit[pin_id]
+        del self.current_dict_circuit[pin_id]
 
         print(f"Pin_io {pin_id} deleted")
 
@@ -870,7 +870,7 @@ class ComponentSketcher:
             x_o = id_origins["xyOrigin"][0]
             y_o = id_origins["xyOrigin"][1]
 
-            coord = current_dict_circuit[pin_id]["coord"]
+            coord = self.current_dict_circuit[pin_id]["coord"]
 
             (_, _), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
 
@@ -889,7 +889,7 @@ class ComponentSketcher:
             self.pin_io_drag_data["pin_id"] = None
 
             # Remove highlight using outline_tag
-            outline_tag = current_dict_circuit[pin_id]["outline_tag"]
+            outline_tag = self.current_dict_circuit[pin_id]["outline_tag"]
             print(f"Removing highlight from outline_tag: {outline_tag}")
             self.canvas.itemconfig(outline_tag, outline="#404040")
 
@@ -1921,7 +1921,7 @@ class ComponentSketcher:
         """
         Handle the switch in the menu.
         """
-        params = current_dict_circuit.get(element_id)
+        params = self.current_dict_circuit.get(element_id)
         if params:
             btn = params["btnMenu"][num_btn - 1]
             if btn > 0:
@@ -2020,7 +2020,7 @@ class ComponentSketcher:
         fill_menu = "#48484c"
         out_menu = "#909098"
         color_cross = "#e0e0e0"
-        params = current_dict_circuit.get(element_id)
+        params = self.current_dict_circuit.get(element_id)
         if params:
             [btn1, btn2, btn3] = params["btnMenu"]
             if btn1 == 0:
@@ -2118,9 +2118,7 @@ class ComponentSketcher:
             self.draw_switch(
                 x_menu + 10, y_menu + 93, fill_switch=color3, pos_switch=pos3, tag="switch_" + tag, num_btn=3
             )
-            # img_save.append(
-            #     canvas.create_image(xMenu + 85, yMenu + 105, image=image_ico_pdf, tags=tag, anchor="center")
-            # )
+
             self.canvas.tag_bind(
                 "btn3_switch_" + tag,
                 "<Button-1>",
@@ -2208,8 +2206,8 @@ class ComponentSketcher:
 
         params = {}
         if chip_id:
-            if current_dict_circuit.get(chip_id):
-                params = current_dict_circuit[chip_id]
+            if self.current_dict_circuit.get(chip_id):
+                params = self.current_dict_circuit[chip_id]
                 tags = params["tags"]
         else:
             if chip_type not in self.id_type:
@@ -2218,7 +2216,7 @@ class ComponentSketcher:
                 self.id_type["chip"] = 0
             self.id_type[chip_type] += 1
             chip_id = "_chip_" + str(self.id_type["chip"])
-            current_dict_circuit["last_id"] = chip_id
+            self.current_dict_circuit["last_id"] = chip_id
             self.id_type["chip"] += 1
             _, (col, line) = self.find_nearest_grid_point(x_distance, y_distance)
             self.change_hole_state(col, line, dim["pinCount"], USED)
@@ -2382,7 +2380,7 @@ class ComponentSketcher:
                 self.canvas.itemconfig(tag_cover, state="hidden")
             else:
                 params["tags"].append(tag_cover)
-            current_dict_circuit[chip_id] = params
+            self.current_dict_circuit[chip_id] = params
             self.draw_menu(
                 x_distance + dim_line + 2.3 * scale + space * 0, y_distance - space, thickness, label, tag_menu, chip_id
             )
@@ -2472,8 +2470,8 @@ class ComponentSketcher:
 
         params = {}
         if wire_id:  # If the wire already exists, delete it and redraw
-            if current_dict_circuit.get(wire_id):
-                params = current_dict_circuit[wire_id]
+            if self.current_dict_circuit.get(wire_id):
+                params = self.current_dict_circuit[wire_id]
                 # tags = params["tags"]
                 params["mode"] = mode
                 params["coord"] = coord
@@ -2529,7 +2527,7 @@ class ComponentSketcher:
             if "wire" not in self.id_type:
                 self.id_type["wire"] = 0
             wire_id = "_wire_" + str(self.id_type["wire"])
-            current_dict_circuit["last_id"] = wire_id
+            self.current_dict_circuit["last_id"] = wire_id
             self.id_type["wire"] += 1
             params["id"] = wire_id
             params["mode"] = mode
@@ -2742,7 +2740,7 @@ class ComponentSketcher:
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
         matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = USED
 
-        current_dict_circuit[wire_id] = params
+        self.current_dict_circuit[wire_id] = params
 
         return x_distance, y_distance
 
@@ -2763,8 +2761,8 @@ class ComponentSketcher:
         # space = 9 * scale
         thickness = 1 * scale
 
-        if element_id and current_dict_circuit.get(element_id):
-            params = current_dict_circuit[element_id]
+        if element_id and self.current_dict_circuit.get(element_id):
+            params = self.current_dict_circuit[element_id]
             old_x, old_y = params["XY"]
             params["coord"] = coord
             x_origin, y_origin = coord[0]
@@ -2895,7 +2893,7 @@ class ComponentSketcher:
                 )
                 params["tags"].append(arrow_head_id)
 
-            current_dict_circuit[element_id] = params
+            self.current_dict_circuit[element_id] = params
 
             print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
 
@@ -2918,12 +2916,12 @@ class ComponentSketcher:
 
     def clear_board(self):
         """Clear the board of all drawn components."""
-        for item in current_dict_circuit.values():
+        for item in self.current_dict_circuit.values():
             if "tags" not in item:
                 continue
             for tag in item["tags"]:
                 self.canvas.delete(tag)
         for key in self.id_type:
             self.id_type[key] = 0
-        current_dict_circuit.clear()
+        self.current_dict_circuit.clear()
         # TODO Khalid update the Circuit instance

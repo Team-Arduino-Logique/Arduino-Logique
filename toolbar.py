@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, id_origins, current_dict_circuit, INPUT, OUTPUT, FREE
+from dataCDLT import matrix1260pts, id_origins, INPUT, OUTPUT, FREE
 
 
 @dataclass
@@ -39,9 +39,10 @@ class Toolbar:
 
     ICON_SIZE = 24
 
-    def __init__(self, parent: tk.Tk, canvas: tk.Canvas, sketcher: ComponentSketcher) -> None:
+    def __init__(self, parent: tk.Tk, canvas: tk.Canvas, sketcher: ComponentSketcher, current_dict_circuit) -> None:
         self.canvas = canvas
         self.sketcher = sketcher
+        self.current_dict_circuit = current_dict_circuit
         self.selected_color = "#479dff"
         self.buttons: dict[str, tk.Button] = {}
         self.tool_mode = None
@@ -270,7 +271,7 @@ class Toolbar:
                 and matrix1260pts[f"{col},{line}"]["state"] == FREE
             ):
 
-                coord = current_dict_circuit[self.wire_info.wire_id]["coord"]
+                coord = self.current_dict_circuit[self.wire_info.wire_id]["coord"]
                 matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
                 color = self.hex_to_rgb(self.selected_color)
                 coord = [(coord[0][0], coord[0][1], col, line)]
@@ -315,7 +316,7 @@ class Toolbar:
                         )
                     ]
                     self.sketcher.circuit(x_origin, y_origin, model=model_wire)
-                    self.wire_info.wire_id = current_dict_circuit["last_id"]
+                    self.wire_info.wire_id = self.current_dict_circuit["last_id"]
                     self.wire_info.start_point = (adjusted_x, adjusted_y)
                     self.wire_info.start_col_line = (col, line)
             else:
