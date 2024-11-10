@@ -12,8 +12,7 @@ from typing import Callable
 import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
-from component_sketch import ComponentSketcher
-from dataCDLT import id_origins, matrix1260pts
+from dataCDLT import id_origins
 
 
 class Menus:
@@ -236,7 +235,7 @@ class Menus:
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]
@@ -249,7 +248,7 @@ class Menus:
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]

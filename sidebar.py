@@ -14,7 +14,7 @@ import subprocess
 import sys
 from idlelib.tooltip import Hovertip  # type: ignore
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, FREE, USED
+from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips
 
 
@@ -378,7 +378,7 @@ class Sidebar:
         Places the selected chip on the breadboard at the nearest grid point.
         """
         # Find the nearest grid point
-        (nearest_x, nearest_y), (column, line) = self.sketcher.find_nearest_grid(x, y, matrix=matrix1260pts)
+        (nearest_x, nearest_y), (column, line) = self.sketcher.find_nearest_grid(x, y, matrix=self.sketcher.matrix)
         print(f"Nearest grid point: {nearest_x}, {nearest_y}, Column: {column}, Line: {line}")
 
         if column is None or line is None:
@@ -441,8 +441,8 @@ class Sidebar:
             # Bottom row (line 6 or 20)
             hole_id_bottom = f"{column + i},{line + 1}"
 
-            hole_top = matrix1260pts.get(hole_id_top)
-            hole_bottom = matrix1260pts.get(hole_id_bottom)
+            hole_top = self.sketcher.matrix.get(hole_id_top)
+            hole_bottom = self.sketcher.matrix.get(hole_id_bottom)
 
             if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                 holes_available = False
@@ -457,7 +457,7 @@ class Sidebar:
 
         # Mark new holes as used
         for hole_id in occupied_holes:
-            matrix1260pts[hole_id]["state"] = USED
+            self.sketcher.matrix[hole_id]["state"] = USED
         model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
         self.sketcher.circuit(nearest_x, nearest_y, scale=self.sketcher.scale_factor, model=model_chip)
         print(f"Chip {chip_name} placed at ({column}, {line}).")

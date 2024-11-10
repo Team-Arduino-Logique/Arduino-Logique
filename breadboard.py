@@ -9,8 +9,6 @@ from tkinter import Canvas
 
 from component_sketch import ComponentSketcher
 from dataCDLT import (
-    matrix830pts,
-    matrix1260pts,
     FREE,
     id_origins,
     HORIZONTAL,
@@ -64,7 +62,7 @@ class Breadboard:
         )
         self.canvas.itemconfig("selector_cable", state="hidden")
 
-    def fill_matrix_830_pts(self, col_distance=1, line_distance=1, **kwargs):
+    def fill_matrix_830_pts(self, col_distance=1, line_distance=1):
         """
         Fills a matrix representing an 830-point breadboard with initial values.
         This method populates the matrix with coordinates and states for each point on the breadboard.
@@ -73,18 +71,13 @@ class Breadboard:
         Args:
             col_distance (int, optional): The distance between columns. Defaults to 1.
             line_distance (int, optional): The distance between lines. Defaults to 1.
-            **kwargs: Additional keyword arguments. If 'matrix' is provided in kwargs, it will be used
-                      as the matrix to be filled. Otherwise, the default matrix830pts will be used.
-        Keyword Args:
-            matrix (dict): A dictionary representing the matrix to be filled. If not provided,
-                           matrix830pts is used.
         Returns:
             None
         """
 
         inter_space = 15
 
-        matrix = kwargs.get("matrix", matrix830pts)
+        matrix = self.sketcher.matrix
 
         for i in range(50):
             id_top_plus = str(2 + (i % 5) + col_distance + (i // 5) * 6) + "," + str(1 + line_distance)
@@ -167,14 +160,14 @@ class Breadboard:
         None
         """
 
-        self.fill_matrix_830_pts(matrix=matrix1260pts)
-        self.fill_matrix_830_pts(line_distance=15, matrix=matrix1260pts)
+        self.fill_matrix_830_pts()
+        self.fill_matrix_830_pts(line_distance=15)
 
     def draw_matrix_points(self, scale=1):  # used to debug the matrix
         """
         Draw all points in the matrix on the canvas, center snap points in yellow, others in orange.
         """
-        for id_in_matrix, point in matrix1260pts.items():
+        for id_in_matrix, point in self.sketcher.matrix.items():
             x, y = point["xy"]
 
             # Adjust for the origin

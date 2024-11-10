@@ -14,6 +14,3 @@ LEFT = 0
 RIGHT = 1
 
 id_origins = {"xyOrigin": (0, 0)}
-
-matrix830pts = {}
-matrix1260pts = {}

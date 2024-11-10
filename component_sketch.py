@@ -7,7 +7,7 @@ well as handling events like dragging and clicking.
 import tkinter as tk
 from tkinter import font
 import math
-from typing import Callable
+from typing import Any, Callable
 
 
 from dataCDLT import (
@@ -20,8 +20,6 @@ from dataCDLT import (
     NO,
     AUTO,
     id_origins,
-    matrix1260pts,
-    matrix830pts,
     FREE,
     USED,
     INPUT,
@@ -59,7 +57,8 @@ class ComponentSketcher:
         self.delete_mode_active = False
         self.drag_mouse = [0,0]
         self.id_type: dict[str, int] = {}
-        self.current_dict_circuit = {}
+        self.current_dict_circuit: dict[str, Any] = {}
+        self.matrix: dict[str, Any] = {}
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -141,11 +140,11 @@ class ComponentSketcher:
             multipoints = self.current_dict_circuit[wire_id]["multipoints"]
             x_o, y_o = id_origins["xyOrigin"]
             if endpoint == "start":
-                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
+                self.matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
             else:
-                matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
+                self.matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
 
-            (_, _), (cn, ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=matrix1260pts)
+            (_, _), (cn, ln) = self.find_nearest_grid_wire(canvas_x, canvas_y, matrix=self.matrix)
             if endpoint == "start":
                 coord = [(cn, ln, coord[0][2], coord[0][3])]
             else:
@@ -160,7 +159,7 @@ class ComponentSketcher:
                         "color": color,
                         "coord": coord,
                         "multipoints": multipoints,
-                        "matrix": matrix1260pts,
+                        "matrix": self.matrix,
                     },
                 )
             ]
@@ -240,7 +239,7 @@ class ComponentSketcher:
             coord = [(coord[0][0], coord[0][1], col, line)]
 
         model_wire = [
-            (self.draw_wire, 1, {"id": wire_id, "color": color, "coord": coord, "XY": xy, "matrix": matrix1260pts})
+            (self.draw_wire, 1, {"id": wire_id, "color": color, "coord": coord, "XY": xy, "matrix": self.matrix})
         ]
 
         self.circuit(id_origins["xyOrigin"], model=model_wire)
@@ -263,7 +262,7 @@ class ComponentSketcher:
         Finds the nearest grid point to (x, y).
         """
         if matrix is None:
-            matrix = matrix1260pts
+            matrix = self.matrix
 
         min_distance = float("inf")
         nearest_point = (x, y)
@@ -285,13 +284,13 @@ class ComponentSketcher:
         Parameters:
             x (float): The x-coordinate.
             y (float): The y-coordinate.
-            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+            matrix (dict, optional): The grid matrix to use. Defaults to self.matrix.
 
         Returns:
             tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
         """
         if matrix is None:
-            matrix = matrix1260pts
+            matrix = self.matrix
 
         min_distance = float("inf")
 
@@ -330,8 +329,8 @@ class ComponentSketcher:
         nearest_point = -1
         multipoint = self.current_dict_circuit[wire_id]["multipoints"]
         [(x_start, y_start, x_end, y_end)] = self.current_dict_circuit[wire_id]["coord"]
-        x_start, y_start = self.get_xy(x_start, y_start, matrix=matrix1260pts)
-        x_end, y_end = self.get_xy(x_end, y_end, matrix=matrix1260pts)
+        x_start, y_start = self.get_xy(x_start, y_start, matrix=self.matrix)
+        x_end, y_end = self.get_xy(x_end, y_end, matrix=self.matrix)
         i = 0
         while nearest_point == -1 and i < len(multipoint):
             if math.hypot(x - multipoint[i], y - multipoint[i + 1]) <= 15:
@@ -440,7 +439,7 @@ class ComponentSketcher:
                         "coord": self.current_dict_circuit[wire_id]["coord"],
                         "color": self.current_dict_circuit[wire_id]["color"],
                         "XY": [self.current_dict_circuit[wire_id]["XY"]],
-                        "matrix": matrix1260pts,
+                        "matrix": self.matrix,
                     },
                 )
             ]
@@ -459,7 +458,7 @@ class ComponentSketcher:
         )
         # Restore occupied holes
         for hole_id in endpoints:
-            matrix1260pts[hole_id]["state"] = FREE
+            self.matrix[hole_id]["state"] = FREE
 
         # Delete the wire from the dictionary
         del self.current_dict_circuit[wire_id]
@@ -491,7 +490,7 @@ class ComponentSketcher:
                     "coord": coord,
                     "color": color,
                     "XY": xy,
-                    "matrix": matrix1260pts,
+                    "matrix": self.matrix,
                 },
             )
         ]
@@ -531,7 +530,7 @@ class ComponentSketcher:
             # Store the previous occupied holes in case we need to restore them
             self.drag_chip_data["previous_occupied_holes"] = chip_params["occupied_holes"]
             for hole_id in chip_params["occupied_holes"]:
-                matrix1260pts[hole_id]["state"] = FREE
+                self.matrix[hole_id]["state"] = FREE
             chip_params["occupied_holes"] = []
 
         print(f"Chip {chip_id} clicked at ({adjusted_x}, {adjusted_y})")
@@ -568,7 +567,7 @@ class ComponentSketcher:
 
         # Restore occupied holes
         for hole_id in chip_params["occupied_holes"]:
-            matrix1260pts[hole_id]["state"] = FREE
+            self.matrix[hole_id]["state"] = FREE
 
         # Delete the chip from the dictionary
         del self.current_dict_circuit[chip_id]
@@ -648,7 +647,7 @@ class ComponentSketcher:
                 print("Not enough space to place the chip here.")
                 col = 63 - half_pin_count + 1
                 (x_o, y_o) = id_origins["xyOrigin"]
-                real_x, real_y = self.get_xy(col, line, matrix=matrix1260pts)
+                real_x, real_y = self.get_xy(col, line, matrix=self.matrix)
                 real_x += x_o
                 real_y += y_o
                 (real_x, real_y), (col, line) = self.find_nearest_grid_chip(real_x, real_y)
@@ -665,8 +664,8 @@ class ComponentSketcher:
                 # Bottom row (line 6 or 20)
                 hole_id_bottom = f"{col + i},{line + 1}"
 
-                hole_top = matrix1260pts.get(hole_id_top)
-                hole_bottom = matrix1260pts.get(hole_id_bottom)
+                hole_top = self.matrix.get(hole_id_top)
+                hole_bottom = self.matrix.get(hole_id_bottom)
 
                 if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                     holes_available = False
@@ -679,7 +678,7 @@ class ComponentSketcher:
                 # Re-mark the previous holes as used
                 previous_occupied_holes = self.drag_chip_data.get("previous_occupied_holes", [])
                 for hole_id in previous_occupied_holes:
-                    matrix1260pts[hole_id]["state"] = USED
+                    self.matrix[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = previous_occupied_holes
 
                 real_x = previous_x
@@ -687,7 +686,7 @@ class ComponentSketcher:
             else:
                 # Mark new holes as used
                 for hole_id in occupied_holes:
-                    matrix1260pts[hole_id]["state"] = USED
+                    self.matrix[hole_id]["state"] = USED
                 chip_params["occupied_holes"] = occupied_holes
 
             # AJOUT KH DRAG-DROP 23/10/2024
@@ -708,7 +707,7 @@ class ComponentSketcher:
         """
         half_pin_count = pin_count // 2
         holes = []
-        col, line = self.get_col_line(x, y, matrix=matrix1260pts)
+        col, line = self.get_col_line(x, y, matrix=self.matrix)
         if line not in [7, 21]:
             return holes  # Chip not on correct lines
         for i in range(half_pin_count):
@@ -738,13 +737,13 @@ class ComponentSketcher:
         Parameters:
             x (float): The x-coordinate.
             y (float): The y-coordinate.
-            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+            matrix (dict, optional): The grid matrix to use. Defaults to self.matrix.
 
         Returns:
             tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
         """
         if matrix is None:
-            matrix = matrix1260pts
+            matrix = self.matrix
 
         min_distance = float("inf")
 
@@ -780,13 +779,13 @@ class ComponentSketcher:
         Parameters:
             x (float): The x-coordinate.
             y (float): The y-coordinate.
-            matrix (dict, optional): The grid matrix to use. Defaults to matrix1260pts.
+            matrix (dict, optional): The grid matrix to use. Defaults to self.matrix.
 
         Returns:
             tuple: (nearest_x, nearest_y) coordinates of the nearest grid point.
         """
         if matrix is None:
-            matrix = matrix1260pts
+            matrix = self.matrix
 
         min_distance = float("inf")
 
@@ -851,7 +850,7 @@ class ComponentSketcher:
             self.canvas.delete(tag)
         # Restore occupied holes
         hole_id = f"{pin_io_params['coord'][0][0]},{pin_io_params['coord'][0][1]}"
-        matrix1260pts[hole_id]["state"] = FREE
+        self.matrix[hole_id]["state"] = FREE
 
         # Delete the pin_io from the dictionary
         del self.current_dict_circuit[pin_id]
@@ -872,12 +871,12 @@ class ComponentSketcher:
 
             coord = self.current_dict_circuit[pin_id]["coord"]
 
-            (_, _), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=matrix1260pts)
+            (_, _), (col, line) = self.find_nearest_grid_point(canvas_x, canvas_y, matrix=self.matrix)
 
-            if matrix1260pts[f"{col},{line}"]["state"] == FREE:
+            if self.matrix[f"{col},{line}"]["state"] == FREE:
 
-                matrix1260pts[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
-                model_pin_io = [(self.draw_pin_io, 1, {"id": pin_id, "coord": [(col, line)], "matrix": matrix1260pts})]
+                self.matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = FREE
+                model_pin_io = [(self.draw_pin_io, 1, {"id": pin_id, "coord": [(col, line)], "matrix": self.matrix})]
                 self.circuit(x_o, y_o, model=model_pin_io)
 
     def on_pin_io_release(self, _, pin_id):
@@ -2177,8 +2176,8 @@ class ComponentSketcher:
         Change the state of the holes at (col, line).
         """
         for i in range(pin_count // 2):
-            matrix1260pts[f"{col+i},{line}"]["state"] = state
-            matrix1260pts[f"{col+i},{line+1}"]["state"] = state
+            self.matrix[f"{col+i},{line}"]["state"] = state
+            self.matrix[f"{col+i},{line+1}"]["state"] = state
 
     def draw_chip(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
         """
@@ -2424,7 +2423,7 @@ class ComponentSketcher:
         # inter_space = 15 * scale
         # space = 9 * scale
         # thickness = 1 * scale
-        matrix = kwargs.get("matrix", matrix830pts)
+        matrix = self.matrix
         point_col_lin = (-1, -1)
 
         for point in matrix.items():
@@ -2442,7 +2441,7 @@ class ComponentSketcher:
         # inter_space = 15 * scale
         # space = 9 * scale
         # thickness = 1 * scale
-        matrix = kwargs.get("matrix", matrix830pts)
+        matrix = self.matrix
 
         element_id = str(column) + "," + str(line)
         x, y = matrix[element_id]["xy"]
@@ -2459,7 +2458,7 @@ class ComponentSketcher:
         color = kwargs.get("color", (0, 0, 0))
         mode = kwargs.get("mode", AUTO)
         coord = kwargs.get("coord", [])
-        matrix = kwargs.get("matrix", matrix830pts)
+        matrix = self.matrix
         wire_id = kwargs.get("id", None)
         # tags = kwargs.get("tags", [])
         (xs, ys, xe, ye) = kwargs.get("XY", [(0, 0, 0, 0)])[0]
@@ -2751,7 +2750,7 @@ class ComponentSketcher:
         if width != -1:
             scale = width / 9.0
         # mode = kwargs.get("mode", AUTO)
-        matrix = kwargs.get("matrix", matrix830pts)
+        matrix = self.matrix
         element_id = kwargs.get("id", None)
         coord = kwargs.get("coord", [])
         # tags = kwargs.get("tags", [])

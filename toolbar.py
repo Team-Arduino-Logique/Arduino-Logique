@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, id_origins, INPUT, OUTPUT, FREE
+from dataCDLT import id_origins, INPUT, OUTPUT, FREE
 
 
 @dataclass
@@ -264,22 +264,22 @@ class Toolbar:
         x_min, y_min = id_origins["xyOrigin"]
         x_max, y_max = id_origins["bottomLimit"]
         if x_min < x < x_max and y_min < y < y_max:
-            (x, y), (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix1260pts)
+            (x, y), (col, line) = self.sketcher.find_nearest_grid_point(x, y, self.sketcher.matrix)
             if (
                 self.tool_mode == "Connection"
                 and self.wire_info.start_point
-                and matrix1260pts[f"{col},{line}"]["state"] == FREE
+                and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE
             ):
 
                 coord = self.current_dict_circuit[self.wire_info.wire_id]["coord"]
-                matrix1260pts[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
+                self.sketcher.matrix[f"{coord[0][2]},{coord[0][3]}"]["state"] = FREE
                 color = self.hex_to_rgb(self.selected_color)
                 coord = [(coord[0][0], coord[0][1], col, line)]
                 model_wire = [
                     (
                         self.sketcher.draw_wire,
                         1,
-                        {"id": self.wire_info.wire_id, "color": color, "coord": coord, "matrix": matrix1260pts},
+                        {"id": self.wire_info.wire_id, "color": color, "coord": coord, "matrix": self.sketcher.matrix},
                     )
                 ]
                 x_origin, y_origin = id_origins.get("xyOrigin", (0, 0))
@@ -298,12 +298,12 @@ class Toolbar:
         if x < x_origin or x > x_max or y < y_origin or y > y_max:
             return  # Click is outside valid area
 
-        (adjusted_x, adjusted_y), (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix=matrix1260pts)
+        (adjusted_x, adjusted_y), (col, line) = self.sketcher.find_nearest_grid_point(x, y, matrix=self.sketcher.matrix)
 
         if self.tool_mode == "Connection":
             # Wire placement logic
             if self.wire_info.start_point is None:
-                if matrix1260pts[f"{col},{line}"]["state"] == FREE:
+                if self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
                     model_wire = [
                         (
                             self.sketcher.draw_wire,
@@ -311,7 +311,7 @@ class Toolbar:
                             {
                                 "color": self.hex_to_rgb(self.selected_color),
                                 "coord": [(col, line, col, line)],
-                                "matrix": matrix1260pts,
+                                "matrix": self.sketcher.matrix,
                             },
                         )
                     ]
@@ -325,14 +325,14 @@ class Toolbar:
                 self.wire_info.start_col_line = None
                 print("Wire placement completed.")
 
-        elif self.tool_mode in ("Input", "Output") and matrix1260pts[f"{col},{line}"]["state"] == FREE:
+        elif self.tool_mode in ("Input", "Output") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
             # pin_io placement logic
             type_const = INPUT if self.tool_mode == "Input" else OUTPUT
             model_pin_io = [
                 (
                     self.sketcher.draw_pin_io,
                     1,
-                    {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": matrix1260pts},
+                    {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": self.sketcher.matrix},
                 )
             ]
             self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
