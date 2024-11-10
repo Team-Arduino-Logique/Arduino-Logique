@@ -411,7 +411,7 @@ class ComponentSketcher:
 
         # Delete the wire from the dictionary
         del self.current_dict_circuit[wire_id]
-
+        # TODO Khalid update the Circuit instance
         print(f"Wire {wire_id} deleted")
 
     def on_wire_body_drag(self, event, wire_id):
@@ -512,7 +512,7 @@ class ComponentSketcher:
 
         # Delete the chip from the dictionary
         del self.current_dict_circuit[chip_id]
-
+        # TODO Khalid update the Circuit instance
         print(f"Chip {chip_id} deleted")
 
     def on_chip_drag(self, event):
@@ -760,7 +760,7 @@ class ComponentSketcher:
 
         # Delete the pin_io from the dictionary
         del self.current_dict_circuit[pin_id]
-
+        # TODO Khalid update the Circuit instance
         print(f"Pin_io {pin_id} deleted")
 
     def on_pin_io_drag(self, event, pin_id):
