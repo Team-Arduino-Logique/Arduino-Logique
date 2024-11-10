@@ -93,7 +93,8 @@ class Menus:
             self.create_menu(menu_name, options, menu_commands)
 
         # Bind to parent to close dropdowns when clicking outside
-        self.parent.bind("<Button-1>", self.close_dropdown)
+        self.parent.bind("<Button-1>", self.close_dropdown, add="+")
+        self.canvas.bind("<Button-1>", self.close_dropdown, add="+")
 
     def create_menu(self, menu_name, options, menu_commands):
         """
@@ -262,8 +263,19 @@ class Menus:
                             )
                         ]
                         self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+                    elif "io" in key:
+                        model_io = [
+                            (
+                                self.board.sketcher.draw_pin_io,
+                                1,
+                                {
+                                    **val,
+                                    "matrix": self.board.sketcher.matrix,
+                                },
+                            )
+                        ]
+                        self.board.sketcher.circuit(x_o, y_o, model=model_io)
                     else:
-                        # TODO add IO
                         print(f"Unspecified component: {key}")
                 messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
             except Exception as e:
