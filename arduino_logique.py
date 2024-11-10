@@ -74,7 +74,7 @@ def main():
     board.sketcher = sketcher  # Use the same sketcher instance in the board
 
     # Creating the toolbar instance
-    toolbar = Toolbar(parent=win, canvas=canvas, board=board, sketcher=sketcher)
+    toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
     toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
 
