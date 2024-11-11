@@ -2475,7 +2475,6 @@ class ComponentSketcher:
         coord = kwargs.get("coord", [])
         element_type = kwargs.get("type", INPUT)
         color = kwargs.get("color", "#479dff")
-        assigned_pin = kwargs.get("assigned_pin", None)
         thickness = 1 * scale
 
         if element_id and self.current_dict_circuit.get(element_id):
@@ -2490,7 +2489,6 @@ class ComponentSketcher:
             self.canvas.move(element_id, dx, dy)
             params["XY"] = (x_origin, y_origin)
             params["color"] = color
-            params["assigned_pin"] = assigned_pin
 
         else:
             if "io" not in self.id_type:
@@ -2507,7 +2505,6 @@ class ComponentSketcher:
             params["controller_pin"] = "IO"
             params["type"] = element_type
             params["color"] = color
-            params["assigned_pin"] = assigned_pin
 
             # tags here
             pin_tag = f"pin_io_{element_id}"
@@ -2561,6 +2558,25 @@ class ComponentSketcher:
             # Bring the rhombus to the front
             self.canvas.tag_raise(element_id)
 
+            # take the last number of the element_id as the pin number as an integer
+            pin_number = element_id.split("_")[-1]
+
+            label_x = x_distance + x_origin + 5 * scale,
+            label_y = y_distance + y_origin - 48 * scale,
+
+            label_tag = f"{element_id}_label"
+            text_id = self.canvas.create_text(
+                label_x,
+                label_y,
+                text=pin_number,
+                font=("FiraCode-Bold", int(10 * scale)),
+                fill="#000000",
+                anchor="center",
+                tags=(element_id, label_tag),
+            )
+            params["label_tag"] = label_tag
+            params["tags"].append(text_id)
+
             if element_type == INPUT:
                 # Arrow pointing down
                 arrow_line_id = self.canvas.create_line(
@@ -2611,6 +2627,8 @@ class ComponentSketcher:
                     tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
+
+
 
             self.current_dict_circuit[element_id] = params
 
