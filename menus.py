@@ -13,6 +13,46 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
+from dataCDLT import INPUT, OUTPUT
+
+MICROCONTROLLER_PINS = {
+    "Arduino Mega": {
+        "input_pins": [22, 23, 24, 25, 26, 27, 28, 29],
+        "output_pins": [32, 33, 34, 35, 36, 37],
+        "clock_pin": 2,
+    },
+    "Arduino Uno": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "Arduino Micro": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "Arduino Mini": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "STM32": {
+        "input_pins": ["PA0", "PA1", "PA2", "PA3", "PB0", "PB1", "PB2", "PB3"],
+        "output_pins": ["PC0", "PC1", "PC2", "PC3", "PC4", "PC5"],
+        "clock_pin": "PA0",
+    },
+    "NodeMCU ESP8266": {
+        "input_pins": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
+        "output_pins": ["D0", "D1", "D2", "D3", "D4", "D5"],
+        "clock_pin": "D2",
+    },
+    "NodeMCU ESP32": {
+        "input_pins": [32, 33, 34, 35, 25, 26, 27, 14],
+        "output_pins": [23, 22, 21, 19, 18, 5],
+        "clock_pin": 2,
+    },
+}
+
 
 class Menus:
     """
@@ -57,6 +97,8 @@ class Menus:
         """The zoom function to adjust the canvas."""
         self.com_port: str | None = None
         """The selected COM port."""
+        self.selected_microcontroller = None
+        """The selected microcontroller."""
 
         # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
@@ -65,8 +107,17 @@ class Menus:
         # Define menu items and their corresponding dropdown options
         menus = {
             "File": ["New", "Open", "Save", "Exit"],
-            "Controllers": ["Arduino", "ESP32"],
+            "Controllers": [
+                "Arduino Mega",
+                "Arduino Uno",
+                "Arduino Micro",
+                "Arduino Mini",
+                "STM32",
+                "NodeMCU ESP8266",
+                "NodeMCU ESP32"
+            ],
             "Ports": ["Configure Ports"],
+            "Export": ["Show Correspondence Table"],
             "Help": ["Documentation", "About"],
         }
 
@@ -76,9 +127,15 @@ class Menus:
             "Open": self.open_file,
             "Save": self.save_file,
             "Exit": self.parent.quit,
-            "Arduino": self.Arduino,
-            "ESP32": self.ESP32,
+            "Arduino Mega": lambda: self.select_microcontroller("Arduino Mega"),
+            "Arduino Uno": lambda: self.select_microcontroller("Arduino Uno"),
+            "Arduino Micro": lambda: self.select_microcontroller("Arduino Micro"),
+            "Arduino Mini": lambda: self.select_microcontroller("Arduino Mini"),
+            "STM32": lambda: self.select_microcontroller("STM32"),
+            "NodeMCU ESP8266": lambda: self.select_microcontroller("NodeMCU ESP8266"),
+            "NodeMCU ESP32": lambda: self.select_microcontroller("NodeMCU ESP32"),
             "Configure Ports": self.configure_ports,
+            "Show Correspondence Table": self.show_correspondence_table,
             "Documentation": self.open_documentation,
             "About": self.about,
         }
@@ -89,6 +146,63 @@ class Menus:
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown)
+
+    def select_microcontroller(self, microcontroller_name):
+        """Handler for microcontroller selection."""
+        print(f"{microcontroller_name} selected.")
+        self.selected_microcontroller = microcontroller_name
+        messagebox.showinfo("Microcontroller Selected", f"{microcontroller_name} has been selected.")
+
+    def show_correspondence_table(self):
+        """Displays the correspondence table between pin_io objects and microcontroller pins."""
+        if self.selected_microcontroller is None:
+            messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
+            return
+
+        pin_mappings = MICROCONTROLLER_PINS.get(self.selected_microcontroller)
+        if not pin_mappings:
+            messagebox.showerror("Error", f"No pin mappings found for {self.selected_microcontroller}.")
+            return
+
+        input_pins = pin_mappings["input_pins"]
+        output_pins = pin_mappings["output_pins"]
+
+        # Gather pin_io objects from current_dict_circuit
+        pin_ios = [value for key, value in self.current_dict_circuit.items() if key.startswith("_io_")]
+
+        # Separate pin_ios into inputs and outputs
+        input_pin_ios = [pin for pin in pin_ios if pin["type"] == INPUT]
+        output_pin_ios = [pin for pin in pin_ios if pin["type"] == OUTPUT]
+
+        # Check if we have more pin_ios than available pins
+        if len(input_pin_ios) > len(input_pins):
+            messagebox.showerror(
+                "Too Many Inputs",
+                f"You have {len(input_pin_ios)} input pin_ios but only {len(input_pins)} available input pins on the microcontroller.",
+            )
+            return
+        if len(output_pin_ios) > len(output_pins):
+            messagebox.showerror(
+                "Too Many Outputs",
+                f"You have {len(output_pin_ios)} output pin_ios but only {len(output_pins)} available output pins on the microcontroller.",
+            )
+            return
+
+        # Generate the correspondence table
+        correspondence = []
+        for idx, pin_io in enumerate(input_pin_ios):
+            mcu_pin = input_pins[idx]
+            correspondence.append(f"{pin_io['id']} (Input) --> MCU Pin {mcu_pin}")
+
+        for idx, pin_io in enumerate(output_pin_ios):
+            mcu_pin = output_pins[idx]
+            correspondence.append(f"{pin_io['id']} (Output) --> MCU Pin {mcu_pin}")
+
+        # Display the correspondence table
+        table_text = "\n".join(correspondence)
+        print("Correspondence Table:\n", table_text)
+        # Show in a message box or create a new window
+        messagebox.showinfo("Correspondence Table", table_text)
 
     def create_menu(self, menu_name, options, menu_commands):
         """

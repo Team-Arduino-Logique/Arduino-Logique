@@ -1,4 +1,5 @@
 """
+component_sketch.py
 This module provides a class `ComponentSketcher` for sketching and manipulating electronic components on 
 a Tkinter canvas. It includes methods for drawing various components such as chips, wires, and pins, as 
 well as handling events like dragging and clicking.
@@ -2474,6 +2475,7 @@ class ComponentSketcher:
         coord = kwargs.get("coord", [])
         element_type = kwargs.get("type", INPUT)
         color = kwargs.get("color", "#479dff")
+        assigned_pin = kwargs.get("assigned_pin", None)
         thickness = 1 * scale
 
         if element_id and self.current_dict_circuit.get(element_id):
@@ -2488,6 +2490,7 @@ class ComponentSketcher:
             self.canvas.move(element_id, dx, dy)
             params["XY"] = (x_origin, y_origin)
             params["color"] = color
+            params["assigned_pin"] = assigned_pin
 
         else:
             if "io" not in self.id_type:
@@ -2504,6 +2507,7 @@ class ComponentSketcher:
             params["controller_pin"] = "IO"
             params["type"] = element_type
             params["color"] = color
+            params["assigned_pin"] = assigned_pin
 
             # tags here
             pin_tag = f"pin_io_{element_id}"
