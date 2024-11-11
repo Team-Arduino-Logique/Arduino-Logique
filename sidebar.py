@@ -13,8 +13,9 @@ from typing import Callable, Tuple
 import subprocess
 import sys
 from idlelib.tooltip import Hovertip  # type: ignore
+from toolbar import Toolbar
 from component_sketch import ComponentSketcher
-from dataCDLT import matrix1260pts, FREE, USED, current_dict_circuit
+from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips
 
 
@@ -50,7 +51,9 @@ class Sidebar:
         - saved_bindings: A dictionary of saved event bindings.
     """
 
-    def __init__(self, parent, chip_images_path="chips", canvas=None, sketcher=None) -> None:
+    def __init__(
+        self, parent, current_dict_circuit, toolbar: Toolbar, chip_images_path="chips", canvas=None, sketcher=None
+    ) -> None:
         """
         Initializes the sidebar.
         Parameters:
@@ -59,7 +62,7 @@ class Sidebar:
             - canvas: The canvas where the chips are placed.
             - sketcher: The component sketcher object.
         """
-
+        self.current_dict_circuit = current_dict_circuit
         images = self.load_chip_images(chip_images_path)
         self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
             (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
@@ -74,6 +77,7 @@ class Sidebar:
 
         self.canvas: tk.Canvas = canvas
         self.sketcher: ComponentSketcher = sketcher
+        self.toolbar = toolbar
 
         self.selected_chip_name = None
         self.chip_cursor_image = None
@@ -262,6 +266,8 @@ class Sidebar:
         """
         # Cancel any ongoing chip placement
         self.cancel_chip_placement()
+        self.toolbar.deactivate_button("all")
+        self.toolbar.deactivate_mode("all")
 
         # Set the new selected chip
         self.selected_chip_name = chip_name
@@ -378,26 +384,12 @@ class Sidebar:
         Places the selected chip on the breadboard at the nearest grid point.
         """
         # Find the nearest grid point
-        (nearest_x, nearest_y), (column, line) = self.sketcher.find_nearest_grid(x, y, matrix=matrix1260pts)
+        (nearest_x, nearest_y), (column, line) = self.sketcher.find_nearest_grid(x, y, matrix=self.sketcher.matrix)
         print(f"Nearest grid point: {nearest_x}, {nearest_y}, Column: {column}, Line: {line}")
 
         if column is None or line is None:
             messagebox.showerror("Placement Error", "No grid point found nearby.")
             return
-
-        # Adjust for scaling and origin
-        # scale = self.sketcher.scale_factor
-        # xO, yO = id_origins["xyOrigin"]
-
-        # # Use goXY to get the exact position
-        # exact_x, exact_y = self.sketcher.goXY(
-        #     xO,
-        #     yO,
-        #     scale=scale,
-        #     width=-1,
-        #     column=column,
-        #     line=line
-        # )
 
         try:
             chip_dict = self.available_chips_and_imgs[self.chip_name_to_index[chip_name]][0].to_generic_dict()
@@ -408,13 +400,13 @@ class Sidebar:
             messagebox.showerror("Error", f"Unknown chip: {chip_name}")
             return
 
-        chip_dict["internalFunc"] = self.sketcher.internalFunc
+        chip_dict["internalFunc"] = self.sketcher.internal_func
         chip_dict["open"] = 0
-        chip_dict["logicFunction"] = self.sketcher.drawSymb(chip_dict["logicFunctionName"])
+        chip_dict["logicFunction"] = self.sketcher.draw_symb(chip_dict["logicFunctionName"])
 
         chip_model = [
             (
-                self.sketcher.drawChip,
+                self.sketcher.draw_chip,
                 1,
                 chip_dict,
             )
@@ -441,8 +433,8 @@ class Sidebar:
             # Bottom row (line 6 or 20)
             hole_id_bottom = f"{column + i},{line + 1}"
 
-            hole_top = matrix1260pts.get(hole_id_top)
-            hole_bottom = matrix1260pts.get(hole_id_bottom)
+            hole_top = self.sketcher.matrix.get(hole_id_top)
+            hole_bottom = self.sketcher.matrix.get(hole_id_bottom)
 
             if hole_top["state"] != FREE or hole_bottom["state"] != FREE:
                 holes_available = False
@@ -457,16 +449,16 @@ class Sidebar:
 
         # Mark new holes as used
         for hole_id in occupied_holes:
-            matrix1260pts[hole_id]["state"] = USED
+            self.sketcher.matrix[hole_id]["state"] = USED
         model_chip = [(chip_model, 1, {"XY": (nearest_x, nearest_y), "pinUL_XY": (pin_x, pin_y)})]
         self.sketcher.circuit(nearest_x, nearest_y, scale=self.sketcher.scale_factor, model=model_chip)
         print(f"Chip {chip_name} placed at ({column}, {line}).")
 
-        # Update the current_dict_circuit with the new chip
-        chip_keys = [key for key in current_dict_circuit if key.startswith("_chip")]
+        # Update the self.current_dict_circuit with the new chip
+        chip_keys = [key for key in self.current_dict_circuit if key.startswith("_chip")]
         if chip_keys:
             last_chip_key = chip_keys[-1]  # Get the last key in sorted order
-            added_chip_params = current_dict_circuit[last_chip_key]
+            added_chip_params = self.current_dict_circuit[last_chip_key]
             print("Last chip parameter:", added_chip_params)
             added_chip_params["occupied_holes"] = occupied_holes
         else:

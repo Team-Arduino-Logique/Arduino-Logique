@@ -12,9 +12,6 @@ from typing import Callable
 import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
-from component_sketch import ComponentSketcher
-from dataComponent import ComponentData
-from dataCDLT import id_origins, matrix1260pts
 
 
 class Menus:
@@ -24,7 +21,6 @@ class Menus:
         parent (tk.Tk | tk.Frame): The main window or parent frame.
         canvas (tk.Canvas): The canvas widget for drawing circuits.
         board (Breadboard): The Breadboard instance.
-        component_data (ComponentData): The ComponentData instance.
         model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
         zoom (Callable): The zoom function to adjust the canvas.
@@ -36,8 +32,6 @@ class Menus:
         parent: tk.Tk | tk.Frame,
         canvas: tk.Canvas,
         board: Breadboard,
-        component_data: ComponentData,
-        model: list,
         current_dict_circuit: dict,
         zoom_function: Callable,
     ):
@@ -48,8 +42,6 @@ class Menus:
         - parent (tk.Tk or tk.Frame): The main window or parent frame.
         - canvas (tk.Canvas): The canvas widget for drawing circuits.
         - board (Breadboard): The Breadboard instance.
-        - component_data (ComponentData): The ComponentData instance.
-        - model (list): The model data for the circuit.
         - current_dict_circuit (dict): The current circuit data.
         - zoom_function (callable): The zoom function to adjust the canvas.
         """
@@ -59,10 +51,6 @@ class Menus:
         """The canvas widget for drawing circuits."""
         self.board: Breadboard = board
         """The Breadboard instance."""
-        self.component_data: ComponentData = component_data
-        """The ComponentData instance."""
-        self.model: list = model
-        """The model data for the circuit."""
         self.current_dict_circuit: dict = current_dict_circuit
         """The current circuit data."""
         self.zoom: Callable = zoom_function
@@ -218,9 +206,6 @@ class Menus:
         # Clear the canvas and reset the circuit
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
-        self.component_data = ComponentData(ComponentSketcher(self.canvas))
-        self.model = self.component_data.circuitTest
-        self.zoom(self.canvas, 10.0, self.board, 50, 10, self.model)
         print("New file created.")
         messagebox.showinfo("New File", "A new circuit has been created.")
 
@@ -236,8 +221,8 @@ class Menus:
                 # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
-                self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
-                x_o, y_o = id_origins["xyOrigin"]
+                # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
+                x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
                 for key, val in circuit_data.items():
@@ -245,11 +230,11 @@ class Menus:
                         x, y = val["XY"]
                         model_chip = [
                             (
-                                self.board.sketcher.drawChip,
+                                self.board.sketcher.draw_chip,
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]
@@ -258,11 +243,11 @@ class Menus:
                     elif "wire" in key:
                         model_wire = [
                             (
-                                self.board.sketcher.drawWire,
+                                self.board.sketcher.draw_wire,
                                 1,
                                 {
                                     **val,
-                                    "matrix": matrix1260pts,
+                                    "matrix": self.board.sketcher.matrix,
                                 },
                             )
                         ]
