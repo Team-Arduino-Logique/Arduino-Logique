@@ -154,7 +154,7 @@ class Menus:
         messagebox.showinfo("Microcontroller Selected", f"{microcontroller_name} has been selected.")
 
     def show_correspondence_table(self):
-        """Displays the correspondence table between pin_io objects and microcontroller pins."""
+        """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
         if self.selected_microcontroller is None:
             messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
             return
@@ -188,21 +188,41 @@ class Menus:
             )
             return
 
-        # Generate the correspondence table
-        correspondence = []
+        # Create a new window for the correspondence table
+        table_window = tk.Toplevel(self.parent)
+        table_window.title("Correspondence Table")
+        table_window.geometry("400x300")
+
+        # Create a Treeview widget for the table
+        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=10)
+        tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+        # Define columns and headings
+        tree.column("ID", anchor="center", width=120)
+        tree.column("Type", anchor="center", width=80)
+        tree.column("MCU Pin", anchor="center", width=120)
+        tree.heading("ID", text="Pin IO ID")
+        tree.heading("Type", text="Type")
+        tree.heading("MCU Pin", text="MCU Pin")
+
+        # Populate the table with input and output pin mappings
         for idx, pin_io in enumerate(input_pin_ios):
             mcu_pin = input_pins[idx]
-            correspondence.append(f"{pin_io['id']} (Input) --> MCU Pin {mcu_pin}")
+            tree.insert("", "end", values=(pin_io["id"], "Input", mcu_pin))
 
         for idx, pin_io in enumerate(output_pin_ios):
             mcu_pin = output_pins[idx]
-            correspondence.append(f"{pin_io['id']} (Output) --> MCU Pin {mcu_pin}")
+            tree.insert("", "end", values=(pin_io["id"], "Output", mcu_pin))
 
-        # Display the correspondence table
-        table_text = "\n".join(correspondence)
-        print("Correspondence Table:\n", table_text)
-        # Show in a message box or create a new window
-        messagebox.showinfo("Correspondence Table", table_text)
+        # Add a scrollbar if the list gets too long
+        scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+
+        # Show the table in the new window
+        table_window.transient(self.parent)  # Set to be on top of the parent window
+        table_window.grab_set()  # Prevent interaction with the main window until closed
+        table_window.mainloop()
 
     def create_menu(self, menu_name, options, menu_commands):
         """
