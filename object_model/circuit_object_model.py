@@ -32,7 +32,7 @@ from .chip_functions import (
     XnorGate,
     XorGate,
 )
-from .circuit_util_elements import ConnectionPointID, FunctionRepresentation
+from .circuit_util_elements import ConnectionPointID, FunctionRepresentation, Pin
 
 
 @dataclass
@@ -82,6 +82,8 @@ class Chip:
         description: str | None = None,
         pkg: Package | None = None,
         functions: list[ChipFunction] | None = None,
+        vcc: Pin | None = None,
+        gnd: Pin | None = None,
         position: ConnectionPointID | None = None,
         model: Chip | None = None,
     ):
@@ -102,6 +104,8 @@ class Chip:
             and description is not None
             and pkg is not None
             and functions is not None
+            and vcc is not None
+            and gnd is not None
             and model is None
         ):
             self.chip_type = chip_type
@@ -110,6 +114,8 @@ class Chip:
             self.pin_count: int = pkg.pin_count
             self.chip_width: float = pkg.chip_width
             self.functions: list[ChipFunction] = functions
+            self.vcc = vcc
+            self.gnd = gnd
             if position is not None:
                 for fn in self.functions:
                     fn.calculate_pin_pos(position, 1, self.pin_count)
@@ -123,6 +129,8 @@ class Chip:
             self.pin_count = model.pin_count
             self.chip_width = model.chip_width
             self.functions = model.functions
+            self.vcc = model.vcc
+            self.gnd = model.gnd
         else:
             raise ValueError("Invalid parameters provided.")
 
@@ -237,6 +245,8 @@ class Chip:
                 json_data["description"],
                 package_dict[json_data["package"]],
                 functions,
+                Pin(json_data["vcc_pin"], None),
+                Pin(json_data["gnd_pin"], None),
             )
 
         raise ValueError("The package does not exist in the Components/Packages directory.")
@@ -254,6 +264,7 @@ class Chip:
             "packageName": self.package_name,
             "pinCount": self.pin_count,
             "chipWidth": self.chip_width,
+            "pwr": [(self.vcc.pin_num, "+"), (self.gnd.pin_num, "-")],
         }
 
         if self.functions:
