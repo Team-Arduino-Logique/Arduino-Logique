@@ -2015,6 +2015,10 @@ class ComponentSketcher:
         dim["chipWidth"] = kwargs.get("chipWidth", dim["chipWidth"])
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
+        dim["pwr"] = kwargs.get("pwr", None)
+
+        logic_function_name = kwargs.get("logicFunctionName", None)
+
         cover_open = kwargs.get("open", NO)
         chip_id = kwargs.get("id", None)
         tags = kwargs.get("tags", [])
@@ -2052,6 +2056,7 @@ class ComponentSketcher:
             params["label"] = label
             params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
+            params["pwr"] = dim["pwr"]
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id
             tag_menu = "menu" + chip_id
