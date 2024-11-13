@@ -1,4 +1,5 @@
 """
+component_sketch.py
 This module provides a class `ComponentSketcher` for sketching and manipulating electronic components on 
 a Tkinter canvas. It includes methods for drawing various components such as chips, wires, and pins, as 
 well as handling events like dragging and clicking.
@@ -2562,6 +2563,25 @@ class ComponentSketcher:
             # Bring the rhombus to the front
             self.canvas.tag_raise(element_id)
 
+            # take the last number of the element_id as the pin number as an integer
+            pin_number = element_id.split("_")[-1]
+
+            label_x = x_distance + x_origin + 5 * scale,
+            label_y = y_distance + y_origin - 48 * scale,
+
+            label_tag = f"{element_id}_label"
+            text_id = self.canvas.create_text(
+                label_x,
+                label_y,
+                text=pin_number,
+                font=("FiraCode-Bold", int(10 * scale)),
+                fill="#000000",
+                anchor="center",
+                tags=(element_id, label_tag),
+            )
+            params["label_tag"] = label_tag
+            params["tags"].append(text_id)
+
             if element_type == INPUT:
                 # Arrow pointing down
                 arrow_line_id = self.canvas.create_line(
@@ -2612,6 +2632,8 @@ class ComponentSketcher:
                     tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
+
+
 
             self.current_dict_circuit[element_id] = params
 
