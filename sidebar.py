@@ -213,7 +213,7 @@ class Sidebar:
                 self.chips_inner_frame,
                 image=chip_image,
                 text=chip.chip_type,
-                compound="top",
+                compound="center",
                 font=fira_code_font,
                 fg="white",  # Set text color to white
                 bg="#333333",
