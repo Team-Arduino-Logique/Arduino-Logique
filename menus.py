@@ -208,13 +208,13 @@ class Menus:
         # Populate the table with input and output pin mappings
         for idx, pin_io in enumerate(input_pin_ios):
             mcu_pin = input_pins[idx]
-            last_letter = pin_io["id"][-1]
-            tree.insert("", "end", values=(last_letter, "Input", mcu_pin))
+            pin_number = pin_io["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "Input", mcu_pin))
 
         for idx, pin_io in enumerate(output_pin_ios):
             mcu_pin = output_pins[idx]
-            last_letter = pin_io["id"][-1]
-            tree.insert("", "end", values=(last_letter, "Output", mcu_pin))
+            pin_number = pin_io["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "Output", mcu_pin))
 
         # Add a scrollbar if the list gets too long
         scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)

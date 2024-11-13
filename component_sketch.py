@@ -2564,17 +2564,17 @@ class ComponentSketcher:
             self.canvas.tag_raise(element_id)
 
             # take the last number of the element_id as the pin number as an integer
-            pin_number = element_id.split("_")[-1]
+            pin_number = element_id.rsplit('_', maxsplit=1)[-1]
 
             label_x = x_distance + x_origin + 5 * scale,
-            label_y = y_distance + y_origin - 48 * scale,
+            label_y = y_distance + y_origin - 17 * scale,
 
             label_tag = f"{element_id}_label"
             text_id = self.canvas.create_text(
                 label_x,
                 label_y,
                 text=pin_number,
-                font=("FiraCode-Bold", int(10 * scale)),
+                font=("FiraCode-Bold", int(7 * scale)),
                 fill="#000000",
                 anchor="center",
                 tags=(element_id, label_tag),
@@ -2584,16 +2584,16 @@ class ComponentSketcher:
 
             if element_type == INPUT:
                 # Arrow pointing down
-                arrow_line_id = self.canvas.create_line(
-                    x_distance + x_origin + 5 * scale,
-                    y_distance + y_origin - 23 * scale,
-                    x_distance + x_origin + 5 * scale,
-                    y_distance + y_origin - 13 * scale,
-                    fill="#404040",
-                    width=2 * thickness,
-                    tags=(element_id, interactive_tag),
-                )
-                params["tags"].append(arrow_line_id)
+                # arrow_line_id = self.canvas.create_line(
+                #     x_distance + x_origin + 5 * scale,
+                #     y_distance + y_origin - 23 * scale,
+                #     x_distance + x_origin + 5 * scale,
+                #     y_distance + y_origin - 13 * scale,
+                #     fill="#404040",
+                #     width=2 * thickness,
+                #     tags=(element_id, interactive_tag),
+                # )
+                # params["tags"].append(arrow_line_id)
 
                 arrow_head_id = self.canvas.create_polygon(
                     x_distance + x_origin + 0 * scale,
@@ -2609,16 +2609,16 @@ class ComponentSketcher:
                 params["tags"].append(arrow_head_id)
             elif element_type == OUTPUT:
                 # Arrow pointing up
-                arrow_line_id = self.canvas.create_line(
-                    x_distance + x_origin + 5 * scale,
-                    y_distance + y_origin - 23 * scale,
-                    x_distance + x_origin + 5 * scale,
-                    y_distance + y_origin - 13 * scale,
-                    fill="#000000",
-                    width=2 * thickness,
-                    tags=(element_id, interactive_tag),
-                )
-                params["tags"].append(arrow_line_id)
+                # arrow_line_id = self.canvas.create_line(
+                #     x_distance + x_origin + 5 * scale,
+                #     y_distance + y_origin - 23 * scale,
+                #     x_distance + x_origin + 5 * scale,
+                #     y_distance + y_origin - 13 * scale,
+                #     fill="#000000",
+                #     width=2 * thickness,
+                #     tags=(element_id, interactive_tag),
+                # )
+                # params["tags"].append(arrow_line_id)
 
                 arrow_head_id = self.canvas.create_polygon(
                     x_distance + x_origin + 0 * scale,
