@@ -1,4 +1,5 @@
 """
+breadboard.py
 This module provides a Breadboard class for circuit design using the Tkinter Canvas library.
 It includes methods for mouse tracking, and matrix filling 
 for breadboards with 830 and 1260 points. Additionally, it provides a method for generating circuit layouts 
