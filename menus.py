@@ -251,12 +251,12 @@ class Menus:
         btn.pack(side="left")
 
         # Create the dropdown frame
-        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid")
+        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid", width=200)
 
         # Calculate dropdown height based on number of options
         button_height = 30  # Approximate height of each dropdown button
         dropdown_height = button_height * len(options)
-        dropdown.place(x=0, y=0, width=150, height=dropdown_height)  # Initial size based on options
+        dropdown.place(x=0, y=0, width=200, height=dropdown_height)  # Initial size based on options
         dropdown.place_forget()  # Hide initially
 
         # Populate the dropdown with menu options
@@ -270,12 +270,13 @@ class Menus:
                 activeforeground="white",
                 bd=0,
                 anchor="w",
+                width=200,
                 padx=20,
                 pady=5,
                 font=("FiraCode-Bold", 12),
                 command=menu_commands.get(option, lambda opt=option: print(f"{opt} selected")),
             )
-            option_btn.pack(fill="x")
+            option_btn.pack(fill="both")
 
         # Attach the dropdown to the button
         btn.dropdown = dropdown
@@ -297,7 +298,7 @@ class Menus:
                         # Position the dropdown below the button
                         btn_x = child.winfo_rootx() - self.parent.winfo_rootx()
                         btn_y = child.winfo_rooty() - self.parent.winfo_rooty() + child.winfo_height()
-                        child.dropdown.place(x=btn_x, y=btn_y, width=150)
+                        child.dropdown.place(x=btn_x, y=btn_y, width=200)
                         print(f"Opened dropdown for {menu_name}")
                         child.dropdown.lift()  # Ensure dropdown is on top
                 else:
