@@ -52,7 +52,6 @@ class Toolbar:
         self.canvas.bind("<Motion>", self.canvas_follow_mouse, add="+")
         self.canvas.bind("<Button-1>", self.canvas_click, add="+")
         self.canvas.bind("<Button-3>", self.cancel_placement, add="+")
-        self.pin_io_list: list[dict[str, int]] = []
 
     def create_topbar(self, parent: tk.Tk):
         """
@@ -340,8 +339,6 @@ class Toolbar:
                 )
             ]
             self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
-            pin_io_id = self.current_dict_circuit["last_id"]
-            self.pin_io_list.append({"id": pin_io_id, "type": type_const})
             # Optionally deactivate after placement
             # self.cancel_pin_io_placement()
 
