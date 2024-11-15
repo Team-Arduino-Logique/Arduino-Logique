@@ -5,6 +5,7 @@ The menu bar includes options for file operations, controller selection, port co
 
 from copy import deepcopy
 
+from dataclasses import dataclass
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import json
@@ -54,6 +55,20 @@ MICROCONTROLLER_PINS = {
 }
 
 
+@dataclass
+class SerialPort:
+    """Data class representing the info for a serial port."""
+
+    com_port: str | None
+    """The COM port to connect to."""
+    baud_rate: int
+    """The baud rate for the port."""
+    timeout: int
+    """The timeout for the port."""
+    connection: serial.Serial | None
+    """The serial connection object."""
+
+
 class Menus:
     """
     Menus class for creating a custom menu bar in a Tkinter application.
@@ -95,8 +110,6 @@ class Menus:
         """The current circuit data."""
         self.zoom: Callable = zoom_function
         """The zoom function to adjust the canvas."""
-        self.com_port: str | None = None
-        """The selected COM port."""
         self.selected_microcontroller = None
         """The selected microcontroller."""
 
@@ -104,9 +117,8 @@ class Menus:
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
 
-        self.baud_rate = 115200
-        self.timeout = 1
-        self.serial_conn = None
+        self.serial_port = SerialPort(None, 115200, 1, None)
+        """The serial port configuration."""
 
         # Define menu items and their corresponding dropdown options
         menus = {
@@ -462,7 +474,7 @@ class Menus:
                     json.dump(circuit_data, file, indent=4)
                 print(f"Circuit saved to {file_path}")
                 messagebox.showinfo("Save Successful", f"Circuit saved to {file_path}")
-            except Exception as e:
+            except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
                 messagebox.showerror("Save Error", f"An error occurred while saving the file:\n{e}")
         else:
@@ -495,7 +507,7 @@ class Menus:
             def confirm_selection():
                 selected_option = combobox.get()
                 print(f"Selected option: {selected_option}")
-                self.com_port = selected_option
+                self.serial_port.com_port = selected_option
                 dialog.destroy()
 
             confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
@@ -514,20 +526,21 @@ class Menus:
     def open_port(self):
         """Handler for the 'Open Port' menu item."""
         try:
-            self.serial_conn = serial.Serial(port=self.com_port, baudrate=self.baud_rate, timeout=self.timeout)
-            print(f"Port série {self.com_port} ouvert avec succès.")
+            self.serial_port.connection = serial.Serial(
+                port=self.serial_port.com_port, baudrate=self.serial_port.baud_rate, timeout=self.serial_port.timeout
+            )
+            print(f"Port série {self.serial_port.com_port} ouvert avec succès.")
         except serial.SerialException as e:
-            print(f"Erreur lors de l'ouverture du port {self.com_port}: {e}")
+            print(f"Erreur lors de l'ouverture du port {self.serial_port.com_port}: {e}")
 
     def send_data(self, data):
         """
-        Envoie une chaîne de caractères sur le port série.
-        :param data: Chaîne de caractères à envoyer.
+        Send a string of data to the microcontroller through the serial port.
         """
-        if self.serial_conn and self.serial_conn.is_open:
+        if self.serial_port.connection and self.serial_port.connection.is_open:
             try:
                 # Convertir la chaîne en bytes et l'envoyer
-                self.serial_conn.write(data.encode("utf-8"))
+                self.serial_port.connection.write(data.encode("utf-8"))
                 print(f"Données envoyées: {data}")
             except serial.SerialException as e:
                 print(f"Erreur lors de l'envoi des données: {e}")
@@ -535,14 +548,15 @@ class Menus:
             print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
 
     def close_port(self):
-        """Ferme le port série."""
-        if self.serial_conn and self.serial_conn.is_open:
-            self.serial_conn.close()
-            print(f"Port série {self.com_port} fermé.")
+        """Close the serial port."""
+        if self.serial_port.connection and self.serial_port.connection.is_open:
+            self.serial_port.connection.close()
+            print(f"Port série {self.serial_port.com_port} fermé.")
         else:
             print("Le port série est déjà fermé.")
 
     def download_script(self, script):
+        """Upload the script to the microcontroller through the serial port."""
         self.open_port()
         self.send_data(script)
         self.close_port()
