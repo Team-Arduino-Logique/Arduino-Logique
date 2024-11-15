@@ -70,8 +70,6 @@ def main():
     board = Breadboard(canvas, sketcher)
     board.fill_matrix_1260_pts()
 
-
-
     # Creating the toolbar instance
     toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher, current_dict_circuit=sketcher.current_dict_circuit)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
@@ -83,10 +81,9 @@ def main():
 
     # Draw the circuit
     board.draw_blank_board_model(50, 10)
-    
 
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
-    _ = Sidebar(
+    sidebar = Sidebar(
         parent=win,
         chip_images_path="Assets/chips",
         canvas=canvas,
@@ -94,6 +91,13 @@ def main():
         current_dict_circuit=sketcher.current_dict_circuit,
         toolbar=toolbar,
     )
+
+    def refresh_sidebar():
+        sidebar.refresh()
+        win.after(5000, refresh_sidebar)
+
+    # Start the periodic refresh
+    refresh_sidebar()
 
     # Creating the Menus instance with proper references
     menus = Menus(

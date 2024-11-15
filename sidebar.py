@@ -16,7 +16,7 @@ from idlelib.tooltip import Hovertip  # type: ignore
 from toolbar import Toolbar
 from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
-from object_model.circuit_object_model import Chip, get_all_available_chips
+from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
 
 
 @dataclass
@@ -62,19 +62,8 @@ class Sidebar:
             - canvas: The canvas where the chips are placed.
             - sketcher: The component sketcher object.
         """
-        self.current_dict_circuit = current_dict_circuit
-        images = self.load_chip_images(chip_images_path)
-        self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
-            (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
-        ]
-        # Sort the chips based on the number after 'HC' in their chip_type
-        self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split("HC")[-1]))
-
-        # Create a reverse lookup dictionary for chip names to their index in the list
-        self.chip_name_to_index = {
-            chip.chip_type: index for index, (chip, _) in enumerate(self.available_chips_and_imgs)
-        }
-
+        self.initialize_chip_data(current_dict_circuit, chip_images_path)
+        self.chip_images_path = chip_images_path
         self.canvas: tk.Canvas = canvas
         self.sketcher: ComponentSketcher = sketcher
         self.toolbar = toolbar
@@ -101,6 +90,25 @@ class Sidebar:
         self.create_search_bar(sidebar_frame)
         self.create_chips_area(sidebar_frame)
         self.create_manage_button(sidebar_frame)
+
+        self.chip_files_mtimes = get_chip_modification_times()
+
+    def initialize_chip_data(self, current_dict_circuit, chip_images_path) -> None:
+        """
+        Initializes the chip data for the sidebar.
+        """
+        self.current_dict_circuit = current_dict_circuit
+        images = self.load_chip_images(chip_images_path)
+        self.available_chips_and_imgs: list[Tuple[Chip, tk.PhotoImage | None]] = [
+            (chip, images.get(chip.package_name)) for chip in get_all_available_chips().values()
+        ]
+        # Sort the chips based on the number after 'HC' in their chip_type
+        self.available_chips_and_imgs.sort(key=lambda chip_img: int(chip_img[0].chip_type.split("HC")[-1]))
+
+        # Create a reverse lookup dictionary for chip names to their index in the list
+        self.chip_name_to_index = {
+            chip.chip_type: index for index, (chip, _) in enumerate(self.available_chips_and_imgs)
+        }
 
     def load_chip_images(self, img_path) -> dict[str, tk.PhotoImage]:
         """
@@ -494,3 +502,16 @@ class Sidebar:
                 or any(query in func.__class__.__name__.lower() for func in chip_data[0].functions)
             ]
         self.display_chips(filtered_chips)
+
+    def refresh(self):
+        """
+        Refreshes the sidebar with updated chip data.
+        """
+        current_mtimes = get_chip_modification_times()
+        if current_mtimes != self.chip_files_mtimes:
+            self.chip_files_mtimes = current_mtimes
+            self.initialize_chip_data(self.current_dict_circuit, self.chip_images_path)
+            self.on_search(None)
+            print("Sidebar refreshed with updated chips.")
+        else:
+            print("No changes detected. Sidebar not refreshed.")
