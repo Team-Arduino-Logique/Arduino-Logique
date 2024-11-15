@@ -377,6 +377,20 @@ class Menus:
                             )
                         ]
                         self.board.sketcher.circuit(x, y, model=model_chip)
+                        new_chip_id = self.current_dict_circuit["last_id"]
+
+                        (_, _), (column, line) = self.board.sketcher.find_nearest_grid(
+                            x, y, matrix=self.board.sketcher.matrix
+                        )
+                        occupied_holes = []
+                        for i in range(val["pinCount"] // 2):
+                            # Top row (line 7 or 21)
+                            hole_id_top = f"{column + i},{line}"
+                            # Bottom row (line 6 or 20)
+                            hole_id_bottom = f"{column + i},{line + 1}"
+                            occupied_holes.extend([hole_id_top, hole_id_bottom])
+                        val["occupied_holes"] = occupied_holes
+                        self.current_dict_circuit[new_chip_id]["occupied_holes"] = occupied_holes
 
                     elif "wire" in key:
                         model_wire = [
