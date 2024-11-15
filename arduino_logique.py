@@ -70,8 +70,6 @@ def main():
     board = Breadboard(canvas, sketcher)
     board.fill_matrix_1260_pts()
 
-
-
     # Creating the toolbar instance
     toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher, current_dict_circuit=sketcher.current_dict_circuit)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
