@@ -16,7 +16,7 @@ from idlelib.tooltip import Hovertip  # type: ignore
 from toolbar import Toolbar
 from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
-from object_model.circuit_object_model import Chip, get_all_available_chips
+from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
 
 
 @dataclass
@@ -91,30 +91,7 @@ class Sidebar:
         self.create_chips_area(sidebar_frame)
         self.create_manage_button(sidebar_frame)
 
-        self.chips_images_path = chip_images_path
-        self.chip_files_mtimes = self.get_chips_files_mtimes()
-
-    def get_chips_files_mtimes(self):
-        """
-        Gets the modification times of the chip JSON files.
-        """
-        chip_files_mtimes = {}
-        # Construct the correct base path relative to the sidebar.py location
-        chips_dir = os.path.join(os.path.dirname(__file__), "Components", "Chips")
-        
-        # Subdirectories containing JSON files
-        subdirs = ["Sequential", "Logical"]
-        
-        for subdir in subdirs:
-            folder_path = os.path.join(chips_dir, subdir)
-            if not os.path.isdir(folder_path):
-                print(f"Warning: Subdirectory '{folder_path}' does not exist.")
-                continue
-            for filename in os.listdir(folder_path):
-                filepath = os.path.join(folder_path, filename)
-                if os.path.isfile(filepath) and filename.lower().endswith(".json"):
-                    chip_files_mtimes[filepath] = os.path.getmtime(filepath)
-        return chip_files_mtimes
+        self.chip_files_mtimes = get_chip_modification_times()
 
     def initialize_chip_data(self, current_dict_circuit, chip_images_path) -> None:
         """
@@ -530,12 +507,11 @@ class Sidebar:
         """
         Refreshes the sidebar with updated chip data.
         """
-        current_mtimes = self.get_chips_files_mtimes()
+        current_mtimes = get_chip_modification_times()
         if current_mtimes != self.chip_files_mtimes:
             self.chip_files_mtimes = current_mtimes
-            self.initialize_chip_data(self.current_dict_circuit, self.chips_images_path)
+            self.initialize_chip_data(self.current_dict_circuit, self.chip_images_path)
             self.on_search(None)
             print("Sidebar refreshed with updated chips.")
         else:
             print("No changes detected. Sidebar not refreshed.")
-
