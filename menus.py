@@ -104,40 +104,32 @@ class Menus:
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
 
+        self.baud_rate = 115200
+        self.timeout = 1
+        self.serial_conn = None
+
         # Define menu items and their corresponding dropdown options
         menus = {
-            "File": ["New", "Open", "Save", "Exit"],
-            "Controllers": [
-                "Arduino Mega",
-                "Arduino Uno",
-                "Arduino Micro",
-                "Arduino Mini",
-                "STM32",
-                "NodeMCU ESP8266",
-                "NodeMCU ESP32"
+            "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
+            "Microcontrôleur": ["Choisir un microcontrôleur", "Table de correspondance", "Configurer le port série"],
+            "Exporter": [
+                "Vérifier",
+                "Téléverser",
             ],
-            "Ports": ["Configure Ports"],
-            "Export": ["Show Correspondence Table"],
-            "Help": ["Documentation", "About"],
+            "Aide": ["Documentation", "À propos"],
         }
 
         # Mapping menu labels to their handler functions
         menu_commands = {
-            "New": self.new_file,
-            "Open": self.open_file,
-            "Save": self.save_file,
-            "Exit": self.parent.quit,
-            "Arduino Mega": lambda: self.select_microcontroller("Arduino Mega"),
-            "Arduino Uno": lambda: self.select_microcontroller("Arduino Uno"),
-            "Arduino Micro": lambda: self.select_microcontroller("Arduino Micro"),
-            "Arduino Mini": lambda: self.select_microcontroller("Arduino Mini"),
-            "STM32": lambda: self.select_microcontroller("STM32"),
-            "NodeMCU ESP8266": lambda: self.select_microcontroller("NodeMCU ESP8266"),
-            "NodeMCU ESP32": lambda: self.select_microcontroller("NodeMCU ESP32"),
-            "Configure Ports": self.configure_ports,
-            "Show Correspondence Table": self.show_correspondence_table,
+            "Nouveau": self.new_file,
+            "Ouvrir": self.open_file,
+            "Enregistrer": self.save_file,
+            "Quitter": self.parent.quit,
+            "Configurer le port série": self.configure_ports,
+            "Table de correspondance": self.show_correspondence_table,
+            "Choisir un microcontrôleur": self.select_microcontroller,
             "Documentation": self.open_documentation,
-            "About": self.about,
+            "À propos": self.about,
         }
 
         # Create each menu button and its dropdown
@@ -148,11 +140,33 @@ class Menus:
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
         self.canvas.bind("<Button-1>", self.close_dropdown, add="+")
 
-    def select_microcontroller(self, microcontroller_name):
+    def select_microcontroller(self):
         """Handler for microcontroller selection."""
-        print(f"{microcontroller_name} selected.")
-        self.selected_microcontroller = microcontroller_name
-        messagebox.showinfo("Microcontroller Selected", f"{microcontroller_name} has been selected.")
+        # Create a new top-level window for the dialog
+        dialog = tk.Toplevel(self.parent)
+        dialog.title("Choisir un microcontrôleur")
+
+        # Set the size and position of the dialog
+        dialog.geometry("300x150")
+
+        # Create a label for the combobox
+        label = tk.Label(dialog, text="Choisir:")
+        label.pack(pady=10)
+        available_microcontrollers = list(MICROCONTROLLER_PINS.keys())
+        # Create a combobox with the options
+        combobox = ttk.Combobox(dialog, values=available_microcontrollers)
+        combobox.pack(pady=10)
+
+        # Create a button to confirm the selection
+        def confirm_selection():
+            selected_option = combobox.get()
+            print(f"Selected option: {selected_option}")
+            self.selected_microcontroller = selected_option
+            print(f"{selected_option} selected.")
+            dialog.destroy()
+
+        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button.pack(pady=10)
 
     def show_correspondence_table(self):
         """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
@@ -179,13 +193,15 @@ class Menus:
         if len(input_pin_ios) > len(input_pins):
             messagebox.showerror(
                 "Too Many Inputs",
-                f"You have {len(input_pin_ios)} input pin_ios but only {len(input_pins)} available input pins on the microcontroller.",
+                f"You have {len(input_pin_ios)} input pin_ios but only "
+                f"{len(input_pins)} available input pins on the microcontroller.",
             )
             return
         if len(output_pin_ios) > len(output_pins):
             messagebox.showerror(
                 "Too Many Outputs",
-                f"You have {len(output_pin_ios)} output pin_ios but only {len(output_pins)} available output pins on the microcontroller.",
+                f"You have {len(output_pin_ios)} output pin_ios but only "
+                f"{len(output_pins)} available output pins on the microcontroller.",
             )
             return
 
@@ -252,13 +268,18 @@ class Menus:
         btn.pack(side="left")
 
         # Create the dropdown frame
-        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid", width=200)
+        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid", width=250)
 
         # Calculate dropdown height based on number of options
         button_height = 30  # Approximate height of each dropdown button
         dropdown_height = button_height * len(options)
-        dropdown.place(x=0, y=0, width=200, height=dropdown_height)  # Initial size based on options
+        dropdown.place(x=0, y=0, width=250, height=dropdown_height)  # Initial size based on options
         dropdown.place_forget()  # Hide initially
+
+        def select_menu_item(option):
+            """Wrapper function to close dropdown and execute the menu command."""
+            self.close_dropdown(None)
+            menu_commands.get(option, lambda: print(f"{option} selected"))()
 
         # Populate the dropdown with menu options
         for option in options:
@@ -271,11 +292,11 @@ class Menus:
                 activeforeground="white",
                 bd=0,
                 anchor="w",
-                width=200,
+                width=250,
                 padx=20,
                 pady=5,
                 font=("FiraCode-Bold", 12),
-                command=menu_commands.get(option, lambda opt=option: print(f"{opt} selected")),
+                command=lambda o=option: select_menu_item(o),
             )
             option_btn.pack(fill="both")
 
@@ -299,7 +320,7 @@ class Menus:
                         # Position the dropdown below the button
                         btn_x = child.winfo_rootx() - self.parent.winfo_rootx()
                         btn_y = child.winfo_rooty() - self.parent.winfo_rooty() + child.winfo_height()
-                        child.dropdown.place(x=btn_x, y=btn_y, width=200)
+                        child.dropdown.place(x=btn_x, y=btn_y, width=250)
                         print(f"Opened dropdown for {menu_name}")
                         child.dropdown.lift()  # Ensure dropdown is on top
                 else:
@@ -329,10 +350,14 @@ class Menus:
         Parameters:
         - event (tk.Event): The event object.
         """
-        if not self.is_descendant(event.widget, self.menu_bar) and not any(
-            self.is_descendant(event.widget, child.dropdown)
-            for child in self.menu_bar.winfo_children()
-            if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+        if (
+            event is None
+            or not self.is_descendant(event.widget, self.menu_bar)
+            and not any(
+                self.is_descendant(event.widget, child.dropdown)
+                for child in self.menu_bar.winfo_children()
+                if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+            )
         ):
             for child in self.menu_bar.winfo_children():
                 if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
@@ -403,7 +428,6 @@ class Menus:
                         ]
                         self.board.sketcher.circuit(x_o, y_o, model=model_io)
                     else:
-                        # TODO add IO
                         print(f"Unspecified component: {key}")
                 messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
             except Exception as e:
@@ -432,7 +456,7 @@ class Menus:
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
@@ -444,20 +468,9 @@ class Menus:
         else:
             print("Save file cancelled.")
 
-    def Arduino(self):
-        """Handler for the 'Arduino' menu item."""
-        print("Arduino")
-        messagebox.showinfo("Arduino", "Arduino choice functionality not implemented yet.")
-
-    def ESP32(self):
-        """Handler for the 'ESP32' menu item."""
-        print("ESP32")
-        messagebox.showinfo("ESP32", "ESP32 choice functionality not implemented yet.")
-
     def configure_ports(self):
         """Handler for the 'Configure Ports' menu item."""
         print("Configure Ports")
-
         options = [comport.device for comport in serial.tools.list_ports.comports()]
         if len(options) == 0:
             message = "No COM ports available. Please connect a device and try again."
@@ -497,3 +510,39 @@ class Menus:
         """Handler for the 'About' menu item."""
         print("About this software")
         messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
+
+    def open_port(self):
+        """Handler for the 'Open Port' menu item."""
+        try:
+            self.serial_conn = serial.Serial(port=self.com_port, baudrate=self.baud_rate, timeout=self.timeout)
+            print(f"Port série {self.com_port} ouvert avec succès.")
+        except serial.SerialException as e:
+            print(f"Erreur lors de l'ouverture du port {self.com_port}: {e}")
+
+    def send_data(self, data):
+        """
+        Envoie une chaîne de caractères sur le port série.
+        :param data: Chaîne de caractères à envoyer.
+        """
+        if self.serial_conn and self.serial_conn.is_open:
+            try:
+                # Convertir la chaîne en bytes et l'envoyer
+                self.serial_conn.write(data.encode("utf-8"))
+                print(f"Données envoyées: {data}")
+            except serial.SerialException as e:
+                print(f"Erreur lors de l'envoi des données: {e}")
+        else:
+            print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
+
+    def close_port(self):
+        """Ferme le port série."""
+        if self.serial_conn and self.serial_conn.is_open:
+            self.serial_conn.close()
+            print(f"Port série {self.com_port} fermé.")
+        else:
+            print("Le port série est déjà fermé.")
+
+    def download_script(self, script):
+        self.open_port()
+        self.send_data(script)
+        self.close_port()
