@@ -89,7 +89,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, line_distance),
                 "state": FREE,
-                "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, line_distance)],
+                "link": [(2 + col_distance,  line_distance, 60 + col_distance, line_distance)],
             }
             matrix[id_top_plus] = {
                 "id": ["mh", "moins haut", "2"],
@@ -99,7 +99,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
                 "state": FREE,
-                "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 1 + line_distance)],
+                "link": [(2 + col_distance, 1 + line_distance, 60 + col_distance, 1 + line_distance)],
             }
             matrix[id_bot_minus] = {
                 "id": ["pb", "plus bas", "13"],
@@ -109,7 +109,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
                 "state": FREE,
-                "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 12 + line_distance)],
+                "link": [(2 + col_distance, line_distance, 60 + col_distance, 12 + line_distance)],
             }
             matrix[id_bot_plus] = {
                 "id": ["mb", "moins bas", "14"],
@@ -119,7 +119,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
                 "state": FREE,
-                "link": [(2 + col_distance, 1 + line_distance, 51 + col_distance, 13 + line_distance)],
+                "link": [(2 + col_distance, 1 + line_distance, 60 + col_distance, 13 + line_distance)],
             }
         for l in range(5):
             for c in range(63):

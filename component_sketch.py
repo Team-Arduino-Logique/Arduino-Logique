@@ -2057,10 +2057,10 @@ class ComponentSketcher:
             params["label"] = label
             params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
-            #params["symbScript"] = symb_script
-            #params["io"] = io
-            #params["pwr"] = pwr
-            #params["logicFunction"] = logicFunction
+            params["symbScript"] = logic_function_name
+            params["io"] = io
+            params["pwr"] = pwr
+            params["logicFunction"] = logic_function_name
             params["pwr"] = dim["pwr"]
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id

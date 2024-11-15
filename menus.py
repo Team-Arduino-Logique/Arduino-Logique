@@ -36,6 +36,7 @@ class Menus:
         current_dict_circuit: dict,
         zoom_function: Callable,
         sketcher: ComponentSketcher,
+
     ):
         """
         Initializes the custom menu bar.
@@ -60,6 +61,10 @@ class Menus:
         self.sketcher = sketcher
         self.com_port: str | None = None
         """The selected COM port."""
+        
+        self.baud_rate = 115200
+        self.timeout = 1
+        self.serial_conn = None
 
         # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
@@ -81,6 +86,7 @@ class Menus:
             "Enregistrer": self.save_file,
             "Quitter": self.parent.quit,
             "Vérification": self.checkCircuit,
+            "Téléverser"  : self.download_script,
             "Arduino": self.Arduino,
             "ESP32": self.ESP32,
             "Configurer le port série": self.configure_ports,
@@ -369,28 +375,80 @@ class Menus:
         """Handler for the 'About' menu item."""
         print("About this software")
         messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
+            
+    def open_port(self):
+        """Ouvre le port série."""
+        try:
+            self.serial_conn = serial.Serial(
+                port=self.com_port,
+                baudrate=self.baud_rate,
+                timeout=self.timeout
+            )
+            print(f"Port série {self.com_port} ouvert avec succès.")
+        except serial.SerialException as e:
+            print(f"Erreur lors de l'ouverture du port {self.com_port}: {e}")
+
+    def send_data(self, data):
+        """
+        Envoie une chaîne de caractères sur le port série.
+        :param data: Chaîne de caractères à envoyer.
+        """
+        if self.serial_conn and self.serial_conn.is_open:
+            try:
+                # Convertir la chaîne en bytes et l'envoyer
+                self.serial_conn.write(data.encode('utf-8'))
+                print(f"Données envoyées: {data}")
+            except serial.SerialException as e:
+                print(f"Erreur lors de l'envoi des données: {e}")
+        else:
+            print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
+
+    def close_port(self):
+        """Ferme le port série."""
+        if self.serial_conn and self.serial_conn.is_open:
+            self.serial_conn.close()
+            print(f"Port série {self.com_port} fermé.")
+        else:
+            print("Le port série est déjà fermé.")
+            
+    def download_script(self, script):
+        self.open_port()
+        self.send_data(script)
+        self.close_port()
+        
+    def is_linked_to(self, dest, src):
+        res = False
+        c, l = src
+        for zone in dest:
+            c1, l1,c2, l2 = zone
+            if (c >= c1 and c<= c2 and l >= l1 and l<= l2):
+                res = True
+                break
+        return res
 
     def checkCircuit(self):
         print("Lancer la vérification")
         func = []
         wire = []
-        pwr = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
+        pwrs = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
         pwrChip = {"+": [], "-": []}
         io = []
+        pwrM, pwrP = [], []
+
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
                 (x, y) = component["pinUL_XY"]
-                numPinUL = component["pinCount"] // 2
+                numPinBR = component["pinCount"] // 2
                 (real_x, real_y), (col, line) = self.sketcher.find_nearest_grid_chip(x, y)
                 ioIn, ioOut = [], []
                 for io in component["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
                     # ioIN, ioOut = [], []
                     ioIn = [
-                        (col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                        (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
                         for numPin in io[0]
                     ]
                     ioOut = [
-                        (col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                        (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
                         for numPin in io[1]
                     ]
                     func += [(id, ioIn, component["symbScript"], ioOut)]
@@ -400,8 +458,10 @@ class Menus:
                     # print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
                 for pwr in component["pwr"]:
                     numPin, polarity = pwr[0], pwr[1]
+                    col_pin = col + numPin - 1 if numPin <= numPinBR else col + (component["pinCount"] - numPin)
+                    line_pin = line if numPin > numPinBR else line+1
                     pwrChip[polarity] += [
-                        (id, col + (numPin % numPinUL) - 1 + (numPin // numPinUL), line + 1 - (numPin // numPinUL))
+                        (id, col_pin, line_pin)
                     ]
                     # print(f"pwrChip= {pwrChip}")
             elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
@@ -409,3 +469,25 @@ class Menus:
         print(f"func= {func}\n")
         print(f"pwrChip= {pwrChip}\n")
         print(f"wire = {wire}")
+        print(f"pwr = {pwrs}")
+        for pwr in pwrs:
+            (col, line, p) = pwr
+            if p == "-":
+                   pwrM = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
+            else:  pwrP = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
+        for w in wire:
+            c1,l1,c2,l2 = w
+            if self.is_linked_to(pwrM, (c1, l1)):
+                    pwrM += self.board.sketcher.matrix[f"{c2},{l2}"]["link"]
+            elif  self.is_linked_to(pwrP, (c1, l1)):  
+                    pwrP += self.board.sketcher.matrix[f"{c2},{l2}"]["link"]
+            if self.is_linked_to(pwrM, (c2, l2)):
+                    pwrM += self.board.sketcher.matrix[f"{c1},{l1}"]["link"]
+            elif  self.is_linked_to(pwrP, (c2, l2)):  
+                    pwrP += self.board.sketcher.matrix[f"{c1},{l1}"]["link"]
+            if (self.is_linked_to(pwrP, (c1, l1)) and self.is_linked_to(pwrM, (c1, l1))) or \
+                (self.is_linked_to(pwrP, (c2, l2)) and self.is_linked_to(pwrM, (c2, l2))):
+                print(f"CC dans le cable {w}")
+        #pwrM.clear()
+        #pwrP.clear()
+        
