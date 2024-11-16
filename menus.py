@@ -78,7 +78,6 @@ class Menus:
         board (Breadboard): The Breadboard instance.
         model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
-        zoom (Callable): The zoom function to adjust the canvas.
         com_port (str | None): The selected COM port.
     """
 
@@ -88,7 +87,6 @@ class Menus:
         canvas: tk.Canvas,
         board: Breadboard,
         current_dict_circuit: dict,
-        zoom_function: Callable,
     ):
         """
         Initializes the custom menu bar.
@@ -97,8 +95,6 @@ class Menus:
         - parent (tk.Tk or tk.Frame): The main window or parent frame.
         - canvas (tk.Canvas): The canvas widget for drawing circuits.
         - board (Breadboard): The Breadboard instance.
-        - current_dict_circuit (dict): The current circuit data.
-        - zoom_function (callable): The zoom function to adjust the canvas.
         """
         self.parent: tk.Tk | tk.Frame = parent
         """The main window or parent frame."""
@@ -108,8 +104,8 @@ class Menus:
         """The Breadboard instance."""
         self.current_dict_circuit: dict = current_dict_circuit
         """The current circuit data."""
-        self.zoom: Callable = zoom_function
-        """The zoom function to adjust the canvas."""
+        self.com_port: str | None = None
+        """The selected COM port."""
         self.selected_microcontroller = None
         """The selected microcontroller."""
 
@@ -396,7 +392,6 @@ class Menus:
                 # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
-                # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
                 x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
