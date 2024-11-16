@@ -2673,7 +2673,7 @@ class ComponentSketcher:
         # TODO Khalid update the Circuit instance
 
 
-    def draw_battery(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, **kwargs):
+    def draw_battery(self, x_distance, y_distance, scale=1, width=-1, direction=HORIZONTAL, pos_wire_end=None, neg_wire_end=None, **kwargs):
         """
         Draws a battery at the given coordinates with two hanging wires.
         """
@@ -2681,7 +2681,7 @@ class ComponentSketcher:
             scale = width / 9.0
 
         inter_space = 15 * scale
-        thickness = 1 * self.scale_factor  # Adjusted thickness
+        thickness = 1 * self.scale_factor
 
         battery_id = '_battery'
 
@@ -2777,15 +2777,21 @@ class ComponentSketcher:
         pos_wire_id = '_battery_pos_wire'
         pos_wire_start_x = battery_x
         pos_wire_start_y = battery_y + battery_height - 15 * scale
-        pos_wire_end_x = battery_x - 100 * scale  # Wires go to the left
-        pos_wire_end_y = pos_wire_start_y
+        if pos_wire_end:
+            pos_wire_end_x, pos_wire_end_y = pos_wire_end
+        else:
+            pos_wire_end_x = battery_x - 100 * scale  # Wires go to the left
+            pos_wire_end_y = pos_wire_start_y
 
         # Negative wire (from the '-' sign at the top)
         neg_wire_id = '_battery_neg_wire'
         neg_wire_start_x = battery_x
         neg_wire_start_y = battery_y + 15 * scale
-        neg_wire_end_x = battery_x - 100 * scale  # Wires go to the left
-        neg_wire_end_y = neg_wire_start_y
+        if neg_wire_end:
+            neg_wire_end_x, neg_wire_end_y = neg_wire_end
+        else:
+            neg_wire_end_x = battery_x - 100 * scale  # Wires go to the left
+            neg_wire_end_y = neg_wire_start_y
 
         # Use draw_battery_wire to draw the wires with similar appearance to draw_wire
         # Positive wire

@@ -183,7 +183,7 @@ class Breadboard:
             radius = 2 * scale  # Adjust size as needed
             self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill=color, outline="")
 
-    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10):
+    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10, battery_pos_wire_end=None, battery_neg_wire_end=None):
         """
         Draws a blank breadboard model on the canvas.
         """
@@ -253,4 +253,9 @@ class Breadboard:
 
         battery_x = x_origin + 1200  # Adjust as needed for proper positioning
         battery_y = y_origin + 300   # Adjust as needed for proper positioning
-        self.sketcher.draw_battery(battery_x, battery_y)
+        self.sketcher.draw_battery(
+            battery_x,
+            battery_y,
+            pos_wire_end=battery_pos_wire_end,
+            neg_wire_end=battery_neg_wire_end,
+        )

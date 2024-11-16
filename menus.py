@@ -13,7 +13,7 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
-from dataCDLT import INPUT, OUTPUT
+from dataCDLT import INPUT, OUTPUT, USED
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -117,7 +117,7 @@ class Menus:
                 "NodeMCU ESP32"
             ],
             "Ports": ["Configure Ports"],
-            "Export": ["Show Correspondence Table"],
+            "Export": ["Correspondence Table"],
             "Help": ["Documentation", "About"],
         }
 
@@ -344,6 +344,8 @@ class Menus:
         # Clear the canvas and reset the circuit
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
+        self.board.draw_blank_board_model()
+
         print("New file created.")
         messagebox.showinfo("New File", "A new circuit has been created.")
 
@@ -363,6 +365,23 @@ class Menus:
                 x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
+                battery_pos_wire_end = None
+                battery_neg_wire_end = None
+
+                for key, val in circuit_data.items():
+                    if key == "_battery_pos_wire":
+                        battery_pos_wire_end = val['end']
+                    elif key == "_battery_neg_wire":
+                        battery_neg_wire_end = val['end']
+
+                # Redraw the blank board model, including the battery with wire positions
+                self.board.draw_blank_board_model(
+                    x_o,
+                    y_o,
+                    battery_pos_wire_end=battery_pos_wire_end,
+                    battery_neg_wire_end=battery_neg_wire_end,
+                )
+
                 for key, val in circuit_data.items():
                     if "chip" in key:
                         x, y = val["XY"]
@@ -378,7 +397,7 @@ class Menus:
                         ]
                         self.board.sketcher.circuit(x, y, model=model_chip)
 
-                    elif "wire" in key:
+                    elif "wire" in key and not key.startswith("_battery"):
                         model_wire = [
                             (
                                 self.board.sketcher.draw_wire,
@@ -433,6 +452,8 @@ class Menus:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
                         comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                    if key == "_battery":
+                        comp_data.pop("battery_rect", None)
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
