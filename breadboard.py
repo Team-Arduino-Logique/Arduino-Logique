@@ -251,6 +251,6 @@ class Breadboard:
         ]
         self.sketcher.circuit(x_origin, y_origin, scale=self.sketcher.scale_factor, model=blank_board_model)
 
-        battery_x = x_origin + 1100  # Adjust as needed for proper positioning
-        battery_y = y_origin + 400   # Adjust as needed for proper positioning
+        battery_x = x_origin + 1200  # Adjust as needed for proper positioning
+        battery_y = y_origin + 300   # Adjust as needed for proper positioning
         self.sketcher.draw_battery(battery_x, battery_y)
