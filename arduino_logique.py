@@ -2,7 +2,7 @@
 ArduinoLogique.py
 Main module for the ArduinoLogique program. This module provides a graphical interface for 
 simulating logic circuits using Tkinter. It includes functionality to initialize a canvas, 
-draw a breadboard, and zoom in and out on the circuit diagram.
+draw a breadboard, etc.
 """
 
 import tkinter as tk
@@ -14,32 +14,6 @@ from sidebar import Sidebar
 from toolbar import Toolbar
 
 
-def zoom(canvas: tk.Canvas, scale: float, sketcher: ComponentSketcher) -> None:
-    """
-    Adjusts the zoom level of the given canvas by scaling the board and updating the scale factor.
-
-    Parameters:
-    - canvas (tk.Canvas): The canvas on which the board is drawn.
-    - scale (float): The scale factor to apply to the board.
-    - sketcher (ComponentSketcher): The ComponentSketcher instance used to draw the circuit.
-
-    Returns:
-    - None
-    """
-    # Calculate the scaling factor
-    new_scale_factor = scale / 10.0
-    scale_ratio = new_scale_factor / sketcher.scale_factor
-
-    # Update the scale factor in the existing ComponentSketcher instance
-    sketcher.scale_factor = new_scale_factor
-
-    # Scale all items on the canvas
-    canvas.scale("all", 0, 0, scale_ratio, scale_ratio)
-
-    # Optionally, you may need to adjust the canvas scroll region or other properties
-    canvas.configure(scrollregion=canvas.bbox("all"))
-
-
 def main():
     """
     Main function for the ArduinoLogique program. This function initializes the main window,
@@ -48,7 +22,8 @@ def main():
     # Creating main window
     win = tk.Tk()
     win.title("Laboratoire virtuel de circuit logique - GIF-1002")
-    win.geometry("1600x900")  # Initial window size
+    win.geometry("1400x800")  # Initial window size
+    win.resizable(False, False)  # Disabling window resizing
     win.configure(bg="#333333")  # Setting consistent background color
 
     # Configuring grid layout for the main window
@@ -105,33 +80,9 @@ def main():
         canvas=canvas,
         board=board,
         current_dict_circuit=sketcher.current_dict_circuit,
-        zoom_function=zoom,
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
-
-    # Assigning the references to menus
-    menus.zoom_function = zoom
-
-    # Creating a slider and placing it in row=3, spanning both columns
-    h_slider = tk.Scale(
-        win,
-        from_=10,
-        to=30,
-        orient="horizontal",
-        command=lambda scale: zoom(canvas, float(scale), sketcher),
-        bg="#333333",
-        fg="white",
-        activebackground="#444444",
-        troughcolor="#555555",
-        highlightbackground="#333333",
-        sliderrelief="flat",
-        bd=0,
-        highlightthickness=0,
-    )
-    h_slider.set(10)  # Setting initial slider value
-
-    h_slider.grid(row=3, column=0, columnspan=2, sticky="ew", padx=0, pady=0)
 
     # Setting default font for all widgets
     default_font = font.Font(family="Arial", size=10)
