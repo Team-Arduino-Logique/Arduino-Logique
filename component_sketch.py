@@ -2681,7 +2681,7 @@ class ComponentSketcher:
             scale = width / 9.0
 
         inter_space = 15 * scale
-        thickness = 2 * scale
+        thickness = 1 * self.scale_factor  # Adjusted thickness
 
         battery_id = '_battery'
 
@@ -2696,11 +2696,23 @@ class ComponentSketcher:
         battery_x = x_distance
         battery_y = y_distance
 
-        # Draw the battery rectangle
-        self.canvas.create_rectangle(
+        # Draw the battery rectangle as a rounded rectangle
+        battery_body = self.canvas.create_rectangle(
             battery_x,
-            battery_y,
+            battery_y + 5 * scale,
             battery_x + battery_width,
+            battery_y + battery_height - 5 * scale,
+            fill='silver',
+            outline='black',
+            width=2,
+            tags=(battery_id,)
+        )
+
+        # Draw the positive terminal (a small rectangle at the bottom)
+        self.canvas.create_rectangle(
+            battery_x + battery_width / 3,
+            battery_y + battery_height - 5 * scale,
+            battery_x + 2 * battery_width / 3,
             battery_y + battery_height,
             fill='gray',
             outline='black',
@@ -2708,21 +2720,45 @@ class ComponentSketcher:
             tags=(battery_id,)
         )
 
-        # Draw '+' sign at the top
+        # Draw the negative terminal (a small rectangle at the top)
+        self.canvas.create_rectangle(
+            battery_x + battery_width / 3,
+            battery_y,
+            battery_x + 2 * battery_width / 3,
+            battery_y + 5 * scale,
+            fill='gray',
+            outline='black',
+            width=2,
+            tags=(battery_id,)
+        )
+
+        # Optionally add text or lines to enhance the look
+        # For example, adding a label "5V"
+        self.canvas.create_text(
+            battery_x + battery_width / 2,
+            battery_y + battery_height / 2,
+            text='5V',
+            font=("Arial", int(12 * scale), 'bold'),
+            fill='black',
+            tags=(battery_id,)
+        )
+
+        # Swap positions of '+' and '-' signs
+        # Draw '-' sign at the top
         self.canvas.create_text(
             battery_x + battery_width / 2,
             battery_y + 15 * scale,
-            text='+',
+            text='-',
             font=("Arial", int(20 * scale), 'bold'),
             fill='black',
             tags=(battery_id,)
         )
 
-        # Draw '-' sign at the bottom
+        # Draw '+' sign at the bottom
         self.canvas.create_text(
             battery_x + battery_width / 2,
             battery_y + battery_height - 15 * scale,
-            text='-',
+            text='+',
             font=("Arial", int(20 * scale), 'bold'),
             fill='black',
             tags=(battery_id,)
@@ -2736,17 +2772,18 @@ class ComponentSketcher:
         }
 
         # Draw wires from the left side of the battery
-        # Positive wire (from the '+' sign)
+        # Swap positions of wires
+        # Positive wire (from the '+' sign at the bottom)
         pos_wire_id = '_battery_pos_wire'
         pos_wire_start_x = battery_x
-        pos_wire_start_y = battery_y + 15 * scale
+        pos_wire_start_y = battery_y + battery_height - 15 * scale
         pos_wire_end_x = battery_x - 100 * scale  # Wires go to the left
         pos_wire_end_y = pos_wire_start_y
 
-        # Negative wire (from the '-' sign)
+        # Negative wire (from the '-' sign at the top)
         neg_wire_id = '_battery_neg_wire'
         neg_wire_start_x = battery_x
-        neg_wire_start_y = battery_y + battery_height - 15 * scale
+        neg_wire_start_y = battery_y + 15 * scale
         neg_wire_end_x = battery_x - 100 * scale  # Wires go to the left
         neg_wire_end_y = neg_wire_start_y
 
@@ -2785,8 +2822,8 @@ class ComponentSketcher:
         """
         Draws a battery wire with appearance similar to draw_wire, but with separate event handling.
         """
-        # Create the wire line with shadow for 3D effect
-        thickness = 2 * self.scale_factor
+        # Adjusted thickness to match regular wires
+        thickness = 1 * self.scale_factor
         encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
         contour = f"#{max(color[0] - 100, 0):02x}{max(color[1] - 100, 0):02x}{max(color[2] - 100, 0):02x}"
 
@@ -2815,8 +2852,8 @@ class ComponentSketcher:
             tags=(wire_id, wire_body_tag)
         )
 
-        # Create the endpoint
-        radius = 5 * self.scale_factor
+        # Adjusted radius to match regular wire endpoints
+        radius = 2 * self.scale_factor
         endpoint = self.canvas.create_oval(
             end_x - radius,
             end_y - radius,
@@ -2896,8 +2933,12 @@ class ComponentSketcher:
     def on_battery_wire_endpoint_click(self, event, wire_id):
         """
         Handler for when a battery wire endpoint is clicked.
-        Initializes the drag data.
         """
+        wire_data = self.current_dict_circuit[wire_id]
+        if 'connected_hole' in wire_data:
+            old_col, old_line = wire_data['connected_hole']
+            self.matrix[f'{old_col},{old_line}']['state'] = FREE
+            del wire_data['connected_hole']
         self.battery_wire_drag_data = {
             'wire_id': wire_id,
         }
@@ -2937,12 +2978,16 @@ class ComponentSketcher:
     def on_battery_wire_endpoint_release(self, event, wire_id):
         """
         Handler for when a battery wire endpoint is released.
-        Snaps the wire end to the nearest allowed power line pin.
         """
         # Snap to allowed positions
         allowed_positions = self.get_power_line_last_pins()
         x, y = event.x, event.y
         nearest_point, nearest_point_coord = self.find_nearest_allowed_grid_point(x, y, allowed_positions)
+
+        if nearest_point_coord is None:
+            # No free hole found; do not update the wire's position
+            print("No free hole available.")
+            return
 
         # Update wire end position to the snapped point
         wire_data = self.current_dict_circuit[wire_id]
@@ -2958,7 +3003,7 @@ class ComponentSketcher:
 
         # Move the endpoint to the snapped position
         endpoint_tag = wire_data['endpoint_tag']
-        radius = 5 * self.scale_factor
+        radius = 2 * self.scale_factor
         self.canvas.coords(
             endpoint_tag,
             new_end_x - radius,
@@ -2969,51 +3014,49 @@ class ComponentSketcher:
 
         # Update wire data
         wire_data['end'] = (new_end_x, new_end_y)
+        wire_data['connected_hole'] = nearest_point_coord
+
+        # Mark the hole as USED
+        col, line = nearest_point_coord
+        self.matrix[f'{col},{line}']['state'] = USED
 
         # Clear drag data
         self.battery_wire_drag_data = {}
 
     def get_power_line_last_pins(self):
         """
-        Returns a list of allowed positions (coordinates) for the battery wires.
+        Returns a list of allowed positions (x, y, col, line) for the battery wires.
         """
         allowed_positions = []
-        last_col = 61  
-        power_lines = [1, 2, 13, 14, 15, 16, 27, 28] 
+        last_col = 61  # Adjusted based on your breadboard configuration
+        power_lines = [1, 2, 13, 14, 15, 16, 27, 28]  # Your updated power lines
 
         for line in power_lines:
-            x, y = self.get_xy(last_col, line, scale=self.scale_factor)
-            x += self.id_origins["xyOrigin"][0]
-            y += self.id_origins["xyOrigin"][1]
-            allowed_positions.append((x, y))
-
+            col = last_col
+            key = f"{col},{line}"
+            if key in self.matrix:
+                x, y = self.matrix[key]['xy']
+                x += self.id_origins["xyOrigin"][0]
+                y += self.id_origins["xyOrigin"][1]
+                allowed_positions.append((x, y, col, line))
         return allowed_positions
 
     def find_nearest_allowed_grid_point(self, x, y, allowed_positions):
         """
         Find the nearest grid point among the allowed positions to the given x, y coordinates.
-
-        Parameters:
-        - x (float): The x-coordinate of the point.
-        - y (float): The y-coordinate of the point.
-        - allowed_positions (list of tuples): List of allowed (x, y) positions.
-
-        Returns:
-        - tuple: (nearest_point (x, y), nearest_point_coord (col, line))
+        Skips positions that are already USED.
         """
         min_distance = float('inf')
         nearest_point = (x, y)
-        nearest_point_coord = (0, 0)
-
-        for grid_x, grid_y in allowed_positions:
+        nearest_point_coord = None
+        for grid_x, grid_y, col, line in allowed_positions:
+            # Check if the hole is FREE
+            hole_state = self.matrix.get(f'{col},{line}', {}).get('state', None)
+            if hole_state != FREE:
+                continue  # Skip used holes
             distance = math.hypot(x - grid_x, y - grid_y)
             if distance < min_distance:
                 min_distance = distance
                 nearest_point = (grid_x, grid_y)
-                # Retrieve (col, line) from the matrix based on (x, y)
-                for key, value in self.matrix.items():
-                    if value['xy'] == (grid_x, grid_y):
-                        nearest_point_coord = value['coord']
-                        break
-
+                nearest_point_coord = (col, line)
         return nearest_point, nearest_point_coord
