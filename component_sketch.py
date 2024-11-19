@@ -332,16 +332,14 @@ class ComponentSketcher:
         if not self.drag_selector and not self.delete_mode_active and not self.wire_drag_data["creating_wire"]:
             color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
-            contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-            self.canvas.itemconfig("selector_cable", fill=contour, outline=encre)
-            self.canvas.itemconfig("selector_cable", state="normal")
+            self.canvas.config(cursor=f"dot {encre}")
 
     def on_wire_body_leave(self, *_):
         """
         Event handler for when the mouse leaves the wire body.
         """
         if not self.drag_selector and not self.wire_drag_data["creating_wire"]:
-            self.canvas.itemconfig("selector_cable", state="hidden")
+            self.canvas.config(cursor="arrow")
 
     def on_wire_body_click(self, event, wire_id) -> None:
         """
@@ -2414,7 +2412,6 @@ class ComponentSketcher:
             }
             self.canvas.tag_raise(select_start_tag)
             self.canvas.tag_raise(select_end_tag)
-            self.canvas.tag_raise("selector_cable")
             # Bind events to the endpoints for drag-and-drop
 
             self.canvas.tag_bind(
