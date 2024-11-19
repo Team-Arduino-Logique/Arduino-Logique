@@ -27,7 +27,9 @@ jobs:
         run: pyinstaller arduino_logique.spec
 
       - name: Compress the build
-        run: tar -czvf arduino_logique_macos.tar.gz dist/arduino_logique
+        run: |
+          cd dist
+          tar -czvf arduino_logique_macos.tar.gz arduino_logique
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -53,7 +55,9 @@ jobs:
         run: pyinstaller arduino_logique.spec
 
       - name: Compress the build
-        run: tar -czvf arduino_logique_ubuntu.tar.gz dist/arduino_logique
+        run: |
+          cd dist
+          tar -czvf arduino_logique_ubuntu.tar.gz arduino_logique
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
