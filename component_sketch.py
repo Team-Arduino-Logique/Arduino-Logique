@@ -333,7 +333,7 @@ class ComponentSketcher:
             color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
-            self.canvas.config(cursor=f"dot #{encre} {contour}")
+            self.canvas.config(cursor=f"dot {encre} {contour}")
 
     def on_wire_body_leave(self, *_):
         """
