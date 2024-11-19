@@ -232,6 +232,7 @@ class Sidebar:
                 height=60,  # Fixed height to match image size
                 borderwidth=0,
                 highlightthickness=0,
+                padx=10
             )
             btn.grid(row=row, column=col, padx=0, pady=0)
             Hovertip(btn, chip.description, 500)  # Adding tooltip with chip name
