@@ -31,34 +31,7 @@ class Breadboard:
     def __init__(self, canvas: Canvas, sketcher: ComponentSketcher):
         self.canvas = canvas
         self.sketcher = sketcher
-        self.selector()
         self.canvas.config(cursor="")
-        canvas.bind("<Motion>", self.follow_mouse)
-
-    def follow_mouse(self, event):
-        """
-        Updates the mouse coordinates based on the given event.
-        Args:
-            event: An event object that contains the current mouse position.
-        """
-        # FIXME fixing the coords crashes the app
-        self.canvas.coords("selector_cable", [event.x - 10, event.y - 10, event.x + 0, event.y + 0])
-
-    def selector(self):
-        """
-        Create the round selector cable movement
-        """
-        self.canvas.create_oval(
-            100,
-            100,
-            110,
-            110,
-            fill="#dfdfdf",
-            outline="#404040",
-            width=1,
-            tags=("selector_cable"),
-        )
-        self.canvas.itemconfig("selector_cable", state="hidden")
 
     def fill_matrix_830_pts(self, col_distance=1, line_distance=1):
         """
