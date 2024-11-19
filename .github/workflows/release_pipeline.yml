@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: macos-build
-          path: arduino_logique_macos.tar.gz
+          path: dist/arduino_logique_macos.tar.gz
 
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ubuntu-build
-          path: arduino_logique_ubuntu.tar.gz
+          path: dist/arduino_logique_ubuntu.tar.gz
 
   build-windows:
     runs-on: windows-latest
