@@ -85,6 +85,8 @@ class Toolbar:
             relief="raised",
             bd=1,
             command=self.choose_color,
+            borderwidth=0,
+            highlightthickness=0,
         )
         self.color_button.pack(side=tk.LEFT, padx=2, pady=2)
         self.create_button("Delete", right_frame, images)
@@ -134,6 +136,8 @@ class Toolbar:
                 command=lambda: self.button_action(action),
                 padx=2,
                 pady=2,
+                borderwidth=0,
+                highlightthickness=0,
             )
             # Keep a reference to prevent garbage collection
             btn.image = image  # type: ignore
@@ -151,6 +155,8 @@ class Toolbar:
                 command=lambda: self.button_action(action),
                 padx=2,
                 pady=2,
+                borderwidth=0,
+                highlightthickness=0,
             )
         btn.pack(side=tk.LEFT, padx=10, pady=2)  # Minimal spacing between buttons
         self.buttons[action] = btn  # Store button reference

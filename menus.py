@@ -242,6 +242,8 @@ class Menus:
             pady=5,
             font=("FiraCode-Bold", 12),
             command=lambda m=menu_name: self.toggle_dropdown(m),
+            borderwidth=0,
+            highlightthickness=0,
         )
         btn.pack(side="left")
 
@@ -270,6 +272,8 @@ class Menus:
                 pady=5,
                 font=("FiraCode-Bold", 12),
                 command=menu_commands.get(option, lambda opt=option: print(f"{opt} selected")),
+                borderwidth=0,
+                highlightthickness=0,
             )
             option_btn.pack(fill="both")
 

@@ -73,7 +73,7 @@ class Sidebar:
         self.saved_bindings: dict[str, Callable] = {}
 
         # Creating the sidebar frame
-        sidebar_frame = tk.Frame(parent, bg="#333333", width=250, bd=0, highlightthickness=0)
+        sidebar_frame = tk.Frame(parent, bg="#333333", width=275, bd=0, highlightthickness=0)
         sidebar_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
         sidebar_frame.grid_propagate(False)  # Preventing frame from resizing
 
@@ -230,8 +230,10 @@ class Sidebar:
                 command=self.create_select_chip_command(chip.chip_type),
                 width=100,  # Fixed width to match image size
                 height=60,  # Fixed height to match image size
+                borderwidth=0,
+                highlightthickness=0,
             )
-            btn.grid(row=row, column=col, padx=1, pady=1)
+            btn.grid(row=row, column=col, padx=0, pady=0)
             Hovertip(btn, chip.description, 500)  # Adding tooltip with chip name
 
             def enter_effect(_, b=btn):
@@ -265,8 +267,9 @@ class Sidebar:
             relief="flat",
             borderwidth=0,
             command=self.manage_components,
+            highlightthickness=0,
         )
-        manage_button.grid(row=3, column=0, padx=10, pady=5, sticky="we")
+        manage_button.grid(row=3, column=0, padx=0, pady=0, sticky="we")
 
     def select_chip(self, chip_name):
         """
@@ -479,9 +482,13 @@ class Sidebar:
         """
         path = Path("Components").resolve()
         if os.name == "nt":  # For Windows
-            os.startfile(path)
-        elif os.name == "posix":  # For macOS and Linux
-            subprocess.Popen(["open", path] if sys.platform == "darwin" else ["xdg-open", path])
+            try:
+                os.startfile(path)
+            except AttributeError:
+                pass
+        elif os.name == "posix":  # For macOS and Linux  # type: ignore
+            with subprocess.Popen(["open", path] if sys.platform == "darwin" else ["xdg-open", path]):
+                pass
         else:
             messagebox.showerror("Error", "Unsupported operating system.")
 
