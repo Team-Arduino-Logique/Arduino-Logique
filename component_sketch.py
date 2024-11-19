@@ -52,7 +52,13 @@ class ComponentSketcher:
         self.drag_selector = False
         self.nearest_multipoint = -1
         self.drag_chip_data = {"chip_id": None, "x": 0, "y": 0}
-        self.wire_drag_data: dict[str, str | int | None] = {"wire_id": None, "endpoint": None, "x": 0, "y": 0}
+        self.wire_drag_data: dict[str, str | int | None] = {
+            "wire_id": None,
+            "endpoint": None,
+            "x": 0,
+            "y": 0,
+            "creating_wire": False,
+        }
         self.pin_io_drag_data = {"pin_id": None, "x": 0, "y": 0}
         self.delete_mode_active = False
         self.drag_mouse = [0, 0]
@@ -323,7 +329,7 @@ class ComponentSketcher:
         """
         Event handler for when the mouse enters the wire body.
         """
-        if not self.drag_selector and not self.delete_mode_active:
+        if not self.drag_selector and not self.delete_mode_active and not self.wire_drag_data["creating_wire"]:
             color = self.current_dict_circuit[wire_id]["color"]
             encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
             contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
@@ -334,7 +340,7 @@ class ComponentSketcher:
         """
         Event handler for when the mouse leaves the wire body.
         """
-        if not self.drag_selector:
+        if not self.drag_selector and not self.wire_drag_data["creating_wire"]:
             self.canvas.itemconfig("selector_cable", state="hidden")
 
     def on_wire_body_click(self, event, wire_id) -> None:
@@ -349,6 +355,7 @@ class ComponentSketcher:
             self.delete_wire(wire_id)
 
         else:
+            self.wire_drag_data["creating_wire"] = True
             self.wire_drag_data["wire_id"] = wire_id
             self.wire_drag_data["endpoint"] = "selector_cable"
             endpoint_tag = "selector_cable"
@@ -450,10 +457,7 @@ class ComponentSketcher:
         """
         Event handler for when the wire body is released.
         """
-        self.wire_drag_data["wire_id"] = None
-        self.wire_drag_data["endpoint"] = None
-        self.nearest_multipoint = -1
-        self.canvas.itemconfig("selector_cable", state="hidden")
+        self.wire_drag_data["creating_wire"] = False
 
     def start_chip_drag(self, event, chip_id):
         """
@@ -2430,6 +2434,12 @@ class ComponentSketcher:
             )
 
             self.canvas.tag_bind(
+                wire_body_tag,
+                "<ButtonRelease-1>",
+                lambda event, wire_id=wire_id: self.on_wire_body_release(event, wire_id),
+            )
+
+            self.canvas.tag_bind(
                 select_start_tag,
                 "<Button-1>",
                 lambda event, wire_id=wire_id: self.on_wire_endpoint_click(event, wire_id, "start"),
@@ -2564,10 +2574,10 @@ class ComponentSketcher:
             self.canvas.tag_raise(element_id)
 
             # take the last number of the element_id as the pin number as an integer
-            pin_number = element_id.rsplit('_', maxsplit=1)[-1]
+            pin_number = element_id.rsplit("_", maxsplit=1)[-1]
 
-            label_x = x_distance + x_origin + 5 * scale,
-            label_y = y_distance + y_origin - 17 * scale,
+            label_x = (x_distance + x_origin + 5 * scale,)
+            label_y = (y_distance + y_origin - 17 * scale,)
 
             label_tag = f"{element_id}_label"
             text_id = self.canvas.create_text(
@@ -2632,8 +2642,6 @@ class ComponentSketcher:
                     tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
-
-
 
             self.current_dict_circuit[element_id] = params
 

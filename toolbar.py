@@ -318,6 +318,7 @@ class Toolbar:
                             },
                         )
                     ]
+                    self.sketcher.wire_drag_data["creating_wire"] = True
                     self.sketcher.circuit(x_origin, y_origin, model=model_wire)
                     self.wire_info.wire_id = self.current_dict_circuit["last_id"]
                     self.wire_info.start_point = (adjusted_x, adjusted_y)
@@ -326,6 +327,7 @@ class Toolbar:
                 # Finalize the wire
                 self.wire_info.start_point = None
                 self.wire_info.start_col_line = None
+                self.sketcher.wire_drag_data["creating_wire"] = False
                 print("Wire placement completed.")
 
         elif self.tool_mode in ("Input", "Output") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
