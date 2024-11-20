@@ -3,6 +3,8 @@
 ([Français](#instructions-dinstallation))
 
 [![GitHub release](https://img.shields.io/github/v/release/Team-Arduino-Logique/Arduino-Logique?sort=semver)](https://github.com/Team-Arduino-Logique/Arduino-Logique/releases/latest)
+[![GitHub latest pre-release](https://img.shields.io/github/v/tag/Team-Arduino-Logique/Arduino-Logique?include_prereleases&sort=semver)](https://github.com/Team-Arduino-Logique/Arduino-Logique/tags)
+
 [![GitHub issues](https://img.shields.io/github/issues/Team-Arduino-Logique/Arduino-Logique.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/issues)
 [![GitHub license](https://img.shields.io/github/license/Team-Arduino-Logique/Arduino-Logique.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/blob/master/LICENSE)
 [![Pylint Workflow](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/pylint.yml/badge.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/pylint.yml)

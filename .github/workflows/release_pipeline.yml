@@ -135,4 +135,4 @@ jobs:
           artifacts: "./dist/arduino_logique_macos.tar.gz,./dist/arduino_logique_ubuntu.tar.gz,./dist/arduino_logique_windows.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.bump.outputs.new_tag }}
-          prerelease: ${{ contains(steps.bump.outputs.new_tag, 'beta') }}
+          makeLatest: ${{ contains(steps.bump.outputs.new_tag, 'beta') }}
