@@ -1,12 +1,33 @@
 # Arduino-Logique
 
-([English instructions](#contents))
+([Français](#instructions-dinstallation))
 
-## Contenu
+[![GitHub release](https://img.shields.io/github/v/release/Team-Arduino-Logique/Arduino-Logique?sort=semver)](https://github.com/Team-Arduino-Logique/Arduino-Logique/releases/latest)
+[![GitHub issues](https://img.shields.io/github/issues/Team-Arduino-Logique/Arduino-Logique.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/issues)
+[![GitHub license](https://img.shields.io/github/license/Team-Arduino-Logique/Arduino-Logique.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/blob/master/LICENSE)
+[![Pylint Workflow](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/pylint.yml/badge.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/pylint.yml)
+[![Build and Release Workflow](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/release_pipeline.yml/badge.svg)](https://github.com/Team-Arduino-Logique/Arduino-Logique/actions/workflows/release_pipeline.yml)
 
-- [Instructions d'installation](#instructions-dinstallation)
+## Contents
+
+- [Installation Instructions (English)](#installation-instructions)
+  - [Windows installation](#windows-installation)
+  - [Microcontroller](#microcontroller)
+- [Instructions d'installation (Français)](#instructions-dinstallation)
   - [Microcontrôleur](#microcontrôleur)
   - [Installation sur Windows](#installation-sur-windows)
+
+## Installation Instructions
+
+Please go to the [release page](https://github.com/Team-Arduino-Logique/Arduino-Logique/releases) and download the latest release for your operating system.
+
+### Windows installation
+
+Windows Defender will warn you about an unverified program. You can still execute it by clicking "More information", then "Continue".
+
+### Microcontroller
+
+#### TODO instructions for microcontroller
 
 ## Instructions d'installation
 
@@ -21,21 +42,3 @@ Veuillez vous rendre sur la [page des versions](https://github.com/Team-Arduino-
 Lors de l'installation sur Windows, un avertissement de sécurité peut apparaître. Pour continuer, cliquez sur "Informations complémentaires", puis sélectionnez "Exécuter quand même".
 
 ![Avertissement de sécurité Windows](docs/images/defender-warning-french.png)
-
-## Contents
-
-- [Installation Instructions (English)](#installation-instructions-english)
-  - [Windows installation](#windows-installation)
-  - [Microcontroller](#microcontroller)
-
-## Installation Instructions (English)
-
-Please go to the [release page](https://github.com/Team-Arduino-Logique/Arduino-Logique/releases) and download the latest release for your operating system.
-
-### Windows installation
-
-Windows Defender will warn you about an unverified program. You can still execute it by clicking "More information", then "Continue".
-
-### Microcontroller
-
-#### TODO instructions for microcontroller
