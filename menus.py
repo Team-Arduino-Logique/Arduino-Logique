@@ -14,7 +14,7 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
-from dataCDLT import INPUT, OUTPUT
+from dataCDLT import INPUT, OUTPUT, USED
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -109,7 +109,6 @@ class Menus:
         self.selected_microcontroller = None
         """The selected microcontroller."""
 
-        # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
 
@@ -127,7 +126,6 @@ class Menus:
             "Aide": ["Documentation", "À propos"],
         }
 
-        # Mapping menu labels to their handler functions
         menu_commands = {
             "Nouveau": self.new_file,
             "Ouvrir": self.open_file,
@@ -140,7 +138,6 @@ class Menus:
             "À propos": self.about,
         }
 
-        # Create each menu button and its dropdown
         for menu_name, options in menus.items():
             self.create_menu(menu_name, options, menu_commands)
 
@@ -381,6 +378,8 @@ class Menus:
         # Clear the canvas and reset the circuit
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
+        self.board.draw_blank_board_model()
+
         print("New file created.")
         messagebox.showinfo("New File", "A new circuit has been created.")
 
@@ -393,17 +392,32 @@ class Menus:
                 with open(file_path, "r", encoding="utf-8") as file:
                     circuit_data = json.load(file)
                 print(f"Circuit loaded from {file_path}")
-                # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
                 x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
+                battery_pos_wire_end = None
+                battery_neg_wire_end = None
+
+                for key, val in circuit_data.items():
+                    if key == "_battery_pos_wire":
+                        battery_pos_wire_end = val['end']
+                    elif key == "_battery_neg_wire":
+                        battery_neg_wire_end = val['end']
+
+                self.board.draw_blank_board_model(
+                    x_o,
+                    y_o,
+                    battery_pos_wire_end=battery_pos_wire_end,
+                    battery_neg_wire_end=battery_neg_wire_end,
+                )
+
                 for key, val in circuit_data.items():
                     if "chip" in key:
                         self.load_chip(val)
 
-                    elif "wire" in key:
+                    elif "wire" in key and not key.startswith("_battery"):
                         self.load_wire(val)
 
                     elif "io" in key:
@@ -484,18 +498,18 @@ class Menus:
         )
         if file_path:
             try:
-                # Extract the circuit data from current_dict_circuit
                 circuit_data = deepcopy(self.current_dict_circuit)
 
-                circuit_data.pop("last_id", None)  # Remove the "last_id" key
+                circuit_data.pop("last_id", None)
                 for key, comp_data in circuit_data.items():
-                    # Remove the "id" and "tags" keys before saving
                     comp_data.pop("id", None)
                     comp_data.pop("tags", None)
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                    if key == "_battery":
+                        comp_data.pop("battery_rect", None)
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
@@ -516,21 +530,16 @@ class Menus:
             print(message)
             messagebox.showwarning("No COM Ports", message)
         else:
-            # Create a new top-level window for the dialog
             dialog = tk.Toplevel(self.parent)
             dialog.title("Configure Ports")
 
-            # Set the size and position of the dialog
             dialog.geometry("300x150")
 
-            # Create a label for the combobox
             label = tk.Label(dialog, text="Select an option:")
             label.pack(pady=10)
-            # Create a combobox with the options
             combobox = ttk.Combobox(dialog, values=options)
             combobox.pack(pady=10)
 
-            # Create a button to confirm the selection
             def confirm_selection():
                 selected_option = combobox.get()
                 print(f"Selected option: {selected_option}")

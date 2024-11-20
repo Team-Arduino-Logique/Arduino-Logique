@@ -14,6 +14,7 @@ from dataCDLT import (
     HORIZONTAL,
     PERSO,
     VERTICAL,
+    USED,
 )
 
 
@@ -156,7 +157,7 @@ class Breadboard:
             radius = 2 * scale  # Adjust size as needed
             self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill=color, outline="")
 
-    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10):
+    def draw_blank_board_model(self, x_origin: int = 50, y_origin: int = 10, battery_pos_wire_end=None, battery_neg_wire_end=None):
         """
         Draws a blank breadboard model on the canvas.
         """
@@ -223,3 +224,24 @@ class Breadboard:
             (self.sketcher.go_xy, 1, {"line": 0, "column": 0, "id_origin": "circTest"}),
         ]
         self.sketcher.circuit(x_origin, y_origin, scale=self.sketcher.scale_factor, model=blank_board_model)
+
+        battery_x = x_origin + 1200  # Adjust as needed for proper positioning
+        battery_y = y_origin + 300   # Adjust as needed for proper positioning
+
+        # Reset all matrix elements' states to FREE
+        for key in self.sketcher.matrix:
+            self.sketcher.matrix[key]['state'] = FREE
+
+        self.sketcher.draw_battery(
+            battery_x,
+            battery_y,
+            pos_wire_end=battery_pos_wire_end,
+            neg_wire_end=battery_neg_wire_end,
+        )
+        if battery_pos_wire_end:
+            allowed_positions = self.sketcher.get_power_line_last_pins()
+            nearest_point, nearest_point_coord = self.sketcher.find_nearest_allowed_grid_point(battery_pos_wire_end[0], battery_pos_wire_end[1], allowed_positions)
+            col, line = nearest_point_coord
+            self.sketcher.matrix[f'{col},{line}']['state'] = USED
+
+        
