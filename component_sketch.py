@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import font
 import math
 from typing import Any, Callable
-from PIL import Image, ImageTk
 import os
 
 
@@ -2714,30 +2713,50 @@ class ComponentSketcher:
             return x_distance, y_distance
 
         try:
-            battery_image = Image.open(image_path)
+            battery_photo = tk.PhotoImage(file=image_path)
 
-            original_width, original_height = battery_image.size
+            original_width = battery_photo.width()
+            original_height = battery_photo.height()
+
             new_width = int(original_width * scale * 0.7)
             new_height = int(original_height * scale * 0.7)
-            battery_image = battery_image.resize((new_width, new_height), Image.LANCZOS)
 
-            battery_photo = ImageTk.PhotoImage(battery_image)
+            scale_x = new_width / original_width
+            scale_y = new_height / original_height
+
+            if scale_x >= 1:
+                zoom_x = int(scale_x)
+                battery_photo = battery_photo.zoom(zoom_x, 1)
+            else:
+                subsample_x = int(1 / scale_x)
+                battery_photo = battery_photo.subsample(subsample_x, 1)
+
+            if scale_y >= 1:
+                zoom_y = int(scale_y)
+                battery_photo = battery_photo.zoom(1, zoom_y)
+            else:
+                subsample_y = int(1 / scale_y)
+                battery_photo = battery_photo.subsample(1, subsample_y)
+
+            new_width = battery_photo.width()
+            new_height = battery_photo.height()
 
         except Exception as e:
             print(f"Error loading battery image: {e}")
             return x_distance, y_distance
 
         battery_obj = self.canvas.create_image(
-            x_distance - 10, 
-            y_distance, 
+            x_distance - 10,
+            y_distance,
             anchor='nw',
             image=battery_photo,
-            tags=()
+            tags=(battery_id,)
         )
 
         if not hasattr(self, 'image_references'):
             self.image_references = []
         self.image_references.append(battery_photo)
+
         neg_wire_offset_x = 0  # Left edge
         neg_wire_offset_y = new_height * 0.2  # 20% from the top
 
