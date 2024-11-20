@@ -136,3 +136,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.bump.outputs.new_tag }}
           makeLatest: ${{ !contains(steps.bump.outputs.new_tag, 'beta') }}
+          prerelease: ${{ contains(steps.bump.outputs.new_tag, 'beta') }}
