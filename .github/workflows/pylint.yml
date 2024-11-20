@@ -1,4 +1,4 @@
-name: Pylint
+name: Pylint/Mypy
 
 on: [pull_request]
 
