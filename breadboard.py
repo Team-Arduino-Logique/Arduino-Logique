@@ -14,6 +14,7 @@ from dataCDLT import (
     HORIZONTAL,
     PERSO,
     VERTICAL,
+    USED,
 )
 
 
@@ -253,9 +254,21 @@ class Breadboard:
 
         battery_x = x_origin + 1200  # Adjust as needed for proper positioning
         battery_y = y_origin + 300   # Adjust as needed for proper positioning
+
+        # Reset all matrix elements' states to FREE
+        for key in self.sketcher.matrix:
+            self.sketcher.matrix[key]['state'] = FREE
+
         self.sketcher.draw_battery(
             battery_x,
             battery_y,
             pos_wire_end=battery_pos_wire_end,
             neg_wire_end=battery_neg_wire_end,
         )
+        if battery_pos_wire_end:
+            allowed_positions = self.sketcher.get_power_line_last_pins()
+            nearest_point, nearest_point_coord = self.sketcher.find_nearest_allowed_grid_point(battery_pos_wire_end[0], battery_pos_wire_end[1], allowed_positions)
+            col, line = nearest_point_coord
+            self.sketcher.matrix[f'{col},{line}']['state'] = USED
+
+        

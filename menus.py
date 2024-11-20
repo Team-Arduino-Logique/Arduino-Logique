@@ -100,11 +100,9 @@ class Menus:
         self.selected_microcontroller = None
         """The selected microcontroller."""
 
-        # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
 
-        # Define menu items and their corresponding dropdown options
         menus = {
             "File": ["New", "Open", "Save", "Exit"],
             "Controllers": [
@@ -121,7 +119,6 @@ class Menus:
             "Help": ["Documentation", "About"],
         }
 
-        # Mapping menu labels to their handler functions
         menu_commands = {
             "New": self.new_file,
             "Open": self.open_file,
@@ -140,7 +137,6 @@ class Menus:
             "About": self.about,
         }
 
-        # Create each menu button and its dropdown
         for menu_name, options in menus.items():
             self.create_menu(menu_name, options, menu_commands)
 
@@ -358,7 +354,6 @@ class Menus:
                 with open(file_path, "r", encoding="utf-8") as file:
                     circuit_data = json.load(file)
                 print(f"Circuit loaded from {file_path}")
-                # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
                 # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
@@ -374,7 +369,6 @@ class Menus:
                     elif key == "_battery_neg_wire":
                         battery_neg_wire_end = val['end']
 
-                # Redraw the blank board model, including the battery with wire positions
                 self.board.draw_blank_board_model(
                     x_o,
                     y_o,
@@ -440,12 +434,10 @@ class Menus:
         )
         if file_path:
             try:
-                # Extract the circuit data from current_dict_circuit
                 circuit_data = deepcopy(self.current_dict_circuit)
 
-                circuit_data.pop("last_id", None)  # Remove the "last_id" key
+                circuit_data.pop("last_id", None)
                 for key, comp_data in circuit_data.items():
-                    # Remove the "id" and "tags" keys before saving
                     comp_data.pop("id", None)
                     comp_data.pop("tags", None)
                     if "label" in comp_data:
@@ -485,21 +477,16 @@ class Menus:
             print(message)
             messagebox.showwarning("No COM Ports", message)
         else:
-            # Create a new top-level window for the dialog
             dialog = tk.Toplevel(self.parent)
             dialog.title("Configure Ports")
 
-            # Set the size and position of the dialog
             dialog.geometry("300x150")
 
-            # Create a label for the combobox
             label = tk.Label(dialog, text="Select an option:")
             label.pack(pady=10)
-            # Create a combobox with the options
             combobox = ttk.Combobox(dialog, values=options)
             combobox.pack(pady=10)
 
-            # Create a button to confirm the selection
             def confirm_selection():
                 selected_option = combobox.get()
                 print(f"Selected option: {selected_option}")
