@@ -397,44 +397,16 @@ class Menus:
 
                 for key, val in circuit_data.items():
                     if "chip" in key:
-                        x, y = val["XY"]
-                        model_chip = [
-                            (
-                                self.board.sketcher.draw_chip,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x, y, model=model_chip)
+                        self.load_chip(val)
 
                     elif "wire" in key:
-                        model_wire = [
-                            (
-                                self.board.sketcher.draw_wire,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+                        self.load_wire(val)
+
                     elif "io" in key:
-                        model_io = [
-                            (
-                                self.board.sketcher.draw_pin_io,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x_o, y_o, model=model_io)
+                        self.load_io(val)
+
                     else:
+
                         print(f"Unspecified component: {key}")
                 messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
             except Exception as e:
@@ -443,6 +415,62 @@ class Menus:
                 raise e
         else:
             print("Open file cancelled.")
+
+    def load_chip(self, chip_data):
+        """Load a chip from the given chip_data."""
+        x, y = chip_data["XY"]
+        model_chip = [
+            (
+                self.board.sketcher.draw_chip,
+                1,
+                {
+                    **chip_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x, y, model=model_chip)
+        new_chip_id = self.current_dict_circuit["last_id"]
+
+        (_, _), (column, line) = self.board.sketcher.find_nearest_grid(x, y, matrix=self.board.sketcher.matrix)
+        occupied_holes = []
+        for i in range(chip_data["pinCount"] // 2):
+            # Top row (line 7 or 21)
+            hole_id_top = f"{column + i},{line}"
+            # Bottom row (line 6 or 20)
+            hole_id_bottom = f"{column + i},{line + 1}"
+            occupied_holes.extend([hole_id_top, hole_id_bottom])
+        self.current_dict_circuit[new_chip_id]["occupied_holes"] = occupied_holes
+
+    def load_wire(self, wire_data):
+        """Load a wire from the given wire_data."""
+        x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
+        model_wire = [
+            (
+                self.board.sketcher.draw_wire,
+                1,
+                {
+                    **wire_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+
+    def load_io(self, io_data):
+        """Load an input/output component from the given io_data."""
+        x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
+        model_io = [
+            (
+                self.board.sketcher.draw_pin_io,
+                1,
+                {
+                    **io_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x_o, y_o, model=model_io)
 
     def save_file(self):
         """Handler for the 'Save' menu item."""
