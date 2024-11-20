@@ -453,6 +453,19 @@ def get_all_available_chips() -> dict[str, Chip]:
     return all_chips
 
 
+def get_chip_modification_times() -> dict[str, float]:
+    """
+    Returns a dictionary of chip modification times.
+    """
+    chip_mod_times = {}
+    chips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Components", "Chips")
+    for root, _, files in os.walk(chips_dir):
+        for filename in files:
+            if filename.endswith(".json"):
+                chip_mod_times[filename] = os.path.getmtime(os.path.join(root, filename))
+    return chip_mod_times
+
+
 if __name__ == "__main__":
     available_chips = get_all_available_chips()
     print("--------------------LOADED CHIPS:--------------------")

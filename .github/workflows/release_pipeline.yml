@@ -1,0 +1,133 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller pyserial
+
+      - name: Build with PyInstaller
+        run: pyinstaller arduino_logique.spec
+
+      - name: Compress the build
+        run: tar -czvf arduino_logique_macos.tar.gz dist/arduino_logique
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-build
+          path: arduino_logique_macos.tar.gz
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller pyserial
+
+      - name: Build with PyInstaller
+        run: pyinstaller arduino_logique.spec
+
+      - name: Compress the build
+        run: tar -czvf arduino_logique_ubuntu.tar.gz dist/arduino_logique
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-build
+          path: arduino_logique_ubuntu.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller pyserial
+
+      - name: Build with PyInstaller
+        run: pyinstaller arduino_logique.spec
+
+      - name: Compress the build
+        run: Compress-Archive -Path dist\arduino_logique -DestinationPath arduino_logique_windows.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: arduino_logique_windows.zip
+
+  release:
+    needs: [build-macos, build-ubuntu, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download macOS build
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-build
+          path: ./dist/
+
+      - name: Download Ubuntu build
+        uses: actions/download-artifact@v3
+        with:
+          name: ubuntu-build
+          path: ./dist/
+
+      - name: Download Windows build
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-build
+          path: ./dist/
+
+      - name: Bump version and push tag
+        id: bump
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          RELEASE_BRANCHES: master
+          INITIAL_VERSION: v0.0.0
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with: 
+          artifacts: "./dist/arduino_logique_macos.tar.gz,./dist/arduino_logique_ubuntu.tar.gz,./dist/arduino_logique_windows.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.bump.outputs.new_tag }}
