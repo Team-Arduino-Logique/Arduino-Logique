@@ -9,6 +9,9 @@ import tkinter as tk
 from tkinter import font
 import math
 from typing import Any, Callable
+from PIL import Image, ImageTk
+import os
+
 
 
 from dataCDLT import (
@@ -66,6 +69,8 @@ class ComponentSketcher:
         self.current_dict_circuit: dict[str, Any] = {}
         self.matrix: dict[str, Any] = {}
         self.id_origins = {"xyOrigin": (0, 0)}
+        self.battery_wire_drag_data: dict[str, Any] = {}
+
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -2660,6 +2665,8 @@ class ComponentSketcher:
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
 
         return x_distance, y_distance
+        
+    
 
     def clear_board(self):
         """Clear the board of all drawn components."""
@@ -2672,3 +2679,345 @@ class ComponentSketcher:
             self.id_type[key] = 0
         self.current_dict_circuit.clear()
         # TODO Khalid update the Circuit instance
+
+
+    
+
+    def draw_battery(self, x_distance, y_distance, scale=1, width=-1, direction='HORIZONTAL', pos_wire_end=None, neg_wire_end=None, **kwargs):
+        """
+        Draws a battery image at the given coordinates with two hanging wires on the left side.
+        
+        Parameters:
+        - x_distance (int): The x-coordinate where the battery will be drawn.
+        - y_distance (int): The y-coordinate where the battery will be drawn.
+        - scale (float): Scaling factor for the battery size.
+        - width (int): Specific width if needed, otherwise calculated from scale.
+        - direction (str): Orientation of the battery, currently only 'HORIZONTAL' is handled.
+        - pos_wire_end (tuple): Coordinates where the positive wire should end.
+        - neg_wire_end (tuple): Coordinates where the negative wire should end.
+        - kwargs: Additional keyword arguments.
+        
+        Returns:
+        - Tuple of (x_distance, y_distance)
+        """
+        battery_id = '_battery'
+
+        # Check if battery already exists
+        if battery_id in self.current_dict_circuit:
+            print("Battery already exists in the circuit.")
+            return x_distance, y_distance
+
+        image_path = os.path.join('Assets', 'Icons', 'battery.png')
+
+        if not os.path.isfile(image_path):
+            print(f"Battery image not found at {image_path}.")
+            return x_distance, y_distance
+
+        try:
+            battery_image = Image.open(image_path)
+
+            original_width, original_height = battery_image.size
+            new_width = int(original_width * scale * 0.7)
+            new_height = int(original_height * scale * 0.7)
+            battery_image = battery_image.resize((new_width, new_height), Image.LANCZOS)
+
+            battery_photo = ImageTk.PhotoImage(battery_image)
+
+        except Exception as e:
+            print(f"Error loading battery image: {e}")
+            return x_distance, y_distance
+
+        battery_obj = self.canvas.create_image(
+            x_distance - 10, 
+            y_distance, 
+            anchor='nw',
+            image=battery_photo,
+            tags=()
+        )
+
+        if not hasattr(self, 'image_references'):
+            self.image_references = []
+        self.image_references.append(battery_photo)
+        neg_wire_offset_x = 0  # Left edge
+        neg_wire_offset_y = new_height * 0.2  # 20% from the top
+
+        pos_wire_offset_x = 0  # Left edge
+        pos_wire_offset_y = new_height * 0.8 
+
+        neg_wire_start_x = x_distance + neg_wire_offset_x
+        neg_wire_start_y = y_distance + neg_wire_offset_y
+
+        pos_wire_start_x = x_distance + pos_wire_offset_x
+        pos_wire_start_y = y_distance + pos_wire_offset_y
+
+        self.current_dict_circuit[battery_id] = {
+            'id': battery_id,
+            'tags': [battery_id]
+        }
+
+        neg_wire_id = '_battery_neg_wire'
+        if neg_wire_end:
+            neg_wire_end_x, neg_wire_end_y = neg_wire_end
+        else:
+            neg_wire_end_x = neg_wire_start_x - 100 * scale  # Wires go to the left
+            neg_wire_end_y = neg_wire_start_y
+
+        self.draw_battery_wire(
+            wire_id=neg_wire_id,
+            start_x=neg_wire_start_x,
+            start_y=neg_wire_start_y,
+            end_x=neg_wire_end_x + 3,
+            end_y=neg_wire_end_y + 3,
+            color=(0, 0, 0),
+            terminal_type='neg'
+        )
+
+        pos_wire_id = '_battery_pos_wire'
+        if pos_wire_end:
+            pos_wire_end_x, pos_wire_end_y = pos_wire_end
+        else:
+            pos_wire_end_x = pos_wire_start_x - 100 * scale
+            pos_wire_end_y = pos_wire_start_y
+
+        self.draw_battery_wire(
+            wire_id=pos_wire_id,
+            start_x=pos_wire_start_x,
+            start_y=pos_wire_start_y,
+            end_x=pos_wire_end_x + 3,
+            end_y=pos_wire_end_y + 3,
+            color=(255, 0, 0),
+            terminal_type='pos'
+        )
+
+        self.canvas.tag_raise(battery_id)
+
+        self.current_dict_circuit[battery_id]['tags'].extend(
+            self.current_dict_circuit[pos_wire_id]['tags'] + self.current_dict_circuit[neg_wire_id]['tags']
+        )
+
+        return x_distance, y_distance
+
+    def draw_battery_wire(self, wire_id, start_x, start_y, end_x, end_y, color, terminal_type):
+        """
+        Draws a battery wire with appearance similar to draw_wire, but with separate event handling.
+        """
+
+        thickness = 1 * self.scale_factor
+        encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+        contour = f"#{max(color[0] - 100, 0):02x}{max(color[1] - 100, 0):02x}{max(color[2] - 100, 0):02x}"
+
+        wire_body_tag = f"{wire_id}_body"
+        wire_body_shadow_tag = f"{wire_id}_body_shadow"
+        endpoint_tag = f"{wire_id}_endpoint"
+
+        # shadow line
+        self.canvas.create_line(
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            fill=contour,
+            width=8 * thickness,
+            tags=(wire_id, wire_body_shadow_tag)
+        )
+        # main line
+        self.canvas.create_line(
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            fill=encre,
+            width=4 * thickness,
+            tags=(wire_id, wire_body_tag)
+        )
+
+        radius = 2 * self.scale_factor
+        endpoint = self.canvas.create_oval(
+            end_x - radius,
+            end_y - radius,
+            end_x + radius,
+            end_y + radius,
+            fill='green' if terminal_type == 'pos' else 'black',
+            outline='',
+            tags=(endpoint_tag,)
+        )
+
+        self.current_dict_circuit[wire_id] = {
+            'id': wire_id,
+            'tags': [wire_id, wire_body_tag, wire_body_shadow_tag, endpoint_tag],
+            'start': (start_x, start_y),
+            'end': (end_x, end_y),
+            'color': color,
+            'terminal_type': terminal_type,
+            'endpoint_tag': endpoint_tag,
+        }
+
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<Button-1>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id)
+        )
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<B1-Motion>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id)
+        )
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<ButtonRelease-1>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id)
+        )
+    
+    def create_battery_wire_endpoint(self, x, y, wire_id, terminal_type):
+        """
+        Creates an interactive endpoint for a battery wire.
+        """
+        endpoint_tag = f"{wire_id}_endpoint"
+
+        radius = 5
+        endpoint = self.canvas.create_oval(
+            x - radius,
+            y - radius,
+            x + radius,
+            y + radius,
+            fill='green' if terminal_type == 'pos' else 'black',
+            outline='',
+            tags=(endpoint_tag,)
+        )
+
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<Button-1>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id)
+        )
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<B1-Motion>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id)
+        )
+        self.canvas.tag_bind(
+            endpoint_tag,
+            "<ButtonRelease-1>",
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id)
+        )
+
+        self.current_dict_circuit[wire_id]['endpoint_tag'] = endpoint_tag
+
+    def on_battery_wire_endpoint_click(self, event, wire_id):
+        """
+        Handler for when a battery wire endpoint is clicked.
+        """
+        allowed_positions = self.get_power_line_last_pins()
+        x, y = event.x, event.y
+        _, nearest_point_coord = self.find_nearest_grid_point(x, y)
+        old_col, old_line = nearest_point_coord
+        self.matrix[f'{old_col},{old_line}']['state'] = FREE
+        self.battery_wire_drag_data = {
+            'wire_id': wire_id,
+        }
+
+    def on_battery_wire_endpoint_drag(self, event, wire_id):
+        """
+        Handler for dragging a battery wire endpoint.
+        Updates the wire's end position as it's being dragged.
+        """
+        if self.battery_wire_drag_data['wire_id'] != wire_id:
+            return
+
+        wire_data = self.current_dict_circuit[wire_id]
+        start_x, start_y = wire_data['start']
+
+        wire_body_tag = f"{wire_id}_body"
+        wire_body_shadow_tag = f"{wire_id}_body_shadow"
+
+        self.canvas.coords(wire_body_shadow_tag, start_x, start_y, event.x, event.y)
+        self.canvas.coords(wire_body_tag, start_x, start_y, event.x, event.y)
+
+        endpoint_tag = wire_data['endpoint_tag']
+        radius = 5 * self.scale_factor
+        self.canvas.coords(
+            endpoint_tag,
+            event.x - radius,
+            event.y - radius,
+            event.x + radius,
+            event.y + radius
+        )
+
+        wire_data['end'] = (event.x, event.y)
+
+    def on_battery_wire_endpoint_release(self, event, wire_id):
+        """
+        Handler for when a battery wire endpoint is released.
+        """
+        allowed_positions = self.get_power_line_last_pins()
+        x, y = event.x, event.y
+        nearest_point, nearest_point_coord = self.find_nearest_allowed_grid_point(x, y, allowed_positions)
+
+        if nearest_point_coord is None:
+            print("No free hole available.")
+            return
+
+        wire_data = self.current_dict_circuit[wire_id]
+        start_x, start_y = wire_data['start']
+        new_end_x, new_end_y = nearest_point
+
+        wire_body_tag = f"{wire_id}_body"
+        wire_body_shadow_tag = f"{wire_id}_body_shadow"
+
+        self.canvas.coords(wire_body_shadow_tag, start_x, start_y, new_end_x + 3, new_end_y + 3)
+        self.canvas.coords(wire_body_tag, start_x, start_y, new_end_x + 3, new_end_y + 3)
+
+        endpoint_tag = wire_data['endpoint_tag']
+        radius = 2 * self.scale_factor
+        self.canvas.coords(
+            endpoint_tag,
+            new_end_x - radius + 3,
+            new_end_y - radius + 3,
+            new_end_x + radius + 3,
+            new_end_y + radius + 3
+        )
+
+        wire_data['end'] = (new_end_x, new_end_y)
+
+        col, line = nearest_point_coord
+        self.matrix[f'{col},{line}']['state'] = USED
+
+        self.battery_wire_drag_data = {}
+
+    def get_power_line_last_pins(self):
+        """
+        Returns a list of allowed positions (x, y, col, line) for the battery wires.
+        """
+        allowed_positions = []
+        last_col = 61 
+        power_lines = [1, 2, 13, 14, 15, 16, 27, 28]
+
+        for line in power_lines:
+            col = last_col
+            key = f"{col},{line}"
+            if key in self.matrix:
+                x, y = self.matrix[key]['xy']
+                x += self.id_origins["xyOrigin"][0]
+                y += self.id_origins["xyOrigin"][1]
+                allowed_positions.append((x, y, col, line))
+        return allowed_positions
+
+    def find_nearest_allowed_grid_point(self, x, y, allowed_positions):
+        """
+        Find the nearest grid point among the allowed positions to the given x, y coordinates.
+        Skips positions that are already USED.
+        """
+        min_distance = float('inf')
+        nearest_point = (x, y)
+        nearest_point_coord = None
+        for grid_x, grid_y, col, line in allowed_positions:
+            # Check if the hole is FREE
+            hole_state = self.matrix.get(f'{col},{line}', {}).get('state', None)
+            if hole_state != FREE:
+                continue
+            distance = math.hypot(x - grid_x, y - grid_y)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = (grid_x, grid_y)
+                nearest_point_coord = (col, line)
+        return nearest_point, nearest_point_coord
