@@ -5,6 +5,7 @@ simulating logic circuits using Tkinter. It includes functionality to initialize
 draw a breadboard, etc.
 """
 
+from pathlib import Path
 import tkinter as tk
 from tkinter import font
 from breadboard import Breadboard
@@ -12,6 +13,7 @@ from component_sketch import ComponentSketcher
 from menus import Menus
 from sidebar import Sidebar
 from toolbar import Toolbar
+from utils import resource_path
 
 
 def main():
@@ -60,7 +62,7 @@ def main():
     # Creating the Sidebar instance after canvas, board, sketcher, component_data are defined
     sidebar = Sidebar(
         parent=win,
-        chip_images_path="Assets/chips",
+        chip_images_path=Path(resource_path("Assets/chips")).resolve(),
         canvas=canvas,
         sketcher=sketcher,
         current_dict_circuit=sketcher.current_dict_circuit,

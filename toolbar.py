@@ -13,6 +13,7 @@ from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE
+from utils import resource_path
 
 
 @dataclass
@@ -94,7 +95,7 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
-        icons_folder = Path("assets/icons").resolve()
+        icons_folder = Path(resource_path("Assets/Icons")).resolve()
         images: dict[str, tk.PhotoImage | None] = {}
         for name in icon_names:
             path = os.path.join(icons_folder, f"{name}.png")
