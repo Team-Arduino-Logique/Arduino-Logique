@@ -5,6 +5,7 @@ a Tkinter canvas. It includes methods for drawing various components such as chi
 well as handling events like dragging and clicking.
 """
 
+from pathlib import Path
 import tkinter as tk
 from tkinter import font
 import math
@@ -28,6 +29,7 @@ from dataCDLT import (
     OUTPUT,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
+from utils import resource_path
 
 
 class ComponentSketcher:
@@ -2706,7 +2708,7 @@ class ComponentSketcher:
             print("Battery already exists in the circuit.")
             return x_distance, y_distance
 
-        image_path = os.path.join('Assets', 'Icons', 'battery.png')
+        image_path = Path(resource_path("Assets/Icons/battery.png")).resolve()
 
         if not os.path.isfile(image_path):
             print(f"Battery image not found at {image_path}.")
