@@ -345,7 +345,7 @@ class ComponentSketcher:
         """
         Event handler for when the mouse leaves the wire body.
         """
-        if not self.drag_selector and not self.wire_drag_data["creating_wire"]:
+        if not self.drag_selector and not self.wire_drag_data["creating_wire"] and not self.delete_mode_active:
             self.canvas.config(cursor="arrow")
 
     def on_wire_body_click(self, event, wire_id) -> None:
