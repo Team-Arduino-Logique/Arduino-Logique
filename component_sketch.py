@@ -2060,7 +2060,7 @@ class ComponentSketcher:
             params["symbScript"] = logic_function_name
             params["io"] = io
             params["pwr"] = pwr
-            params["logicFunction"] = logic_function_name
+            params["logicFunctionName"] = logic_function_name
             params["pwr"] = dim["pwr"]
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id

@@ -1,0 +1,240 @@
+{
+    "_wire_0": {
+        "mode": 0,
+        "coord": [
+            [
+                9,
+                2,
+                10,
+                6
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_0_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    192.5,
+                    47.5
+                ],
+                "tag": "_wire_0_start"
+            },
+            "end": {
+                "position": [
+                    192.5,
+                    47.5
+                ],
+                "tag": "_wire_0_end"
+            }
+        }
+    },
+    "_wire_1": {
+        "mode": 0,
+        "coord": [
+            [
+                18,
+                10,
+                25,
+                10
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_1_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    327.5,
+                    227.5
+                ],
+                "tag": "_wire_1_start"
+            },
+            "end": {
+                "position": [
+                    327.5,
+                    227.5
+                ],
+                "tag": "_wire_1_end"
+            }
+        }
+    },
+    "_wire_2": {
+        "mode": 0,
+        "coord": [
+            [
+                20,
+                5,
+                23,
+                5
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_2_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    357.5,
+                    122.5
+                ],
+                "tag": "_wire_2_start"
+            },
+            "end": {
+                "position": [
+                    357.5,
+                    122.5
+                ],
+                "tag": "_wire_2_end"
+            }
+        }
+    },
+    "_wire_3": {
+        "mode": 0,
+        "coord": [
+            [
+                33,
+                3,
+                34,
+                1
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_3_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    552.5,
+                    92.5
+                ],
+                "tag": "_wire_3_start"
+            },
+            "end": {
+                "position": [
+                    552.5,
+                    92.5
+                ],
+                "tag": "_wire_3_end"
+            }
+        }
+    },
+    "_wire_4": {
+        "mode": 0,
+        "coord": [
+            [
+                23,
+                4,
+                34,
+                4
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_4_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    402.5,
+                    107.5
+                ],
+                "tag": "_wire_4_start"
+            },
+            "end": {
+                "position": [
+                    402.5,
+                    107.5
+                ],
+                "tag": "_wire_4_end"
+            }
+        }
+    },
+    "_wire_5": {
+        "mode": 0,
+        "coord": [
+            [
+                34,
+                5,
+                33,
+                5
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_5_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    567.5,
+                    122.5
+                ],
+                "tag": "_wire_5_start"
+            },
+            "end": {
+                "position": [
+                    567.5,
+                    122.5
+                ],
+                "tag": "_wire_5_end"
+            }
+        }
+    },
+    "_wire_6": {
+        "mode": 0,
+        "coord": [
+            [
+                10,
+                7,
+                20,
+                7
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_6_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    207.5,
+                    152.5
+                ],
+                "tag": "_wire_6_start"
+            },
+            "end": {
+                "position": [
+                    207.5,
+                    152.5
+                ],
+                "tag": "_wire_6_end"
+            }
+        }
+    }
+}

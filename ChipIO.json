@@ -1,0 +1,189 @@
+{
+    "_chip_0": {
+        "XY": [
+            145.5,
+            161.5
+        ],
+        "pinUL_XY": [
+            147.5,
+            152.5
+        ],
+        "chipWidth": 2.4,
+        "pinCount": 14,
+        "label": "74HC00",
+        "type": "74HC00",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ],
+        "symbScript": "NandGate",
+        "io": [
+            [
+                [
+                    1,
+                    2
+                ],
+                [
+                    3
+                ]
+            ],
+            [
+                [
+                    4,
+                    5
+                ],
+                [
+                    6
+                ]
+            ],
+            [
+                [
+                    9,
+                    10
+                ],
+                [
+                    8
+                ]
+            ],
+            [
+                [
+                    12,
+                    13
+                ],
+                [
+                    11
+                ]
+            ]
+        ],
+        "pwr": [
+            [
+                14,
+                "+"
+            ],
+            [
+                7,
+                "-"
+            ]
+        ],
+        "logicFunction": "NandGate",
+        "occupied_holes": [
+            "6,7",
+            "6,8",
+            "7,7",
+            "7,8",
+            "8,7",
+            "8,8",
+            "9,7",
+            "9,8",
+            "10,7",
+            "10,8",
+            "11,7",
+            "11,8",
+            "12,7",
+            "12,8"
+        ]
+    },
+    "_wire_0": {
+        "mode": 0,
+        "coord": [
+            [
+                6,
+                3,
+                6,
+                2
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_0_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    147.5,
+                    92.5
+                ],
+                "tag": "_wire_0_start"
+            },
+            "end": {
+                "position": [
+                    147.5,
+                    92.5
+                ],
+                "tag": "_wire_0_end"
+            }
+        }
+    },
+    "_wire_1": {
+        "mode": 0,
+        "coord": [
+            [
+                7,
+                6,
+                7,
+                2
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_1_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    162.5,
+                    137.5
+                ],
+                "tag": "_wire_1_start"
+            },
+            "end": {
+                "position": [
+                    162.5,
+                    137.5
+                ],
+                "tag": "_wire_1_end"
+            }
+        }
+    },
+    "_wire_2": {
+        "mode": 0,
+        "coord": [
+            [
+                10,
+                6,
+                10,
+                1
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            71,
+            157,
+            255
+        ],
+        "wire_body_tag": "_wire_2_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    207.5,
+                    137.5
+                ],
+                "tag": "_wire_2_start"
+            },
+            "end": {
+                "position": [
+                    207.5,
+                    137.5
+                ],
+                "tag": "_wire_2_end"
+            }
+        }
+    }
+}

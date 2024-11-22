@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "ArduinoLogique",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "arduino_logique.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}

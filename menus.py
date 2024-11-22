@@ -13,7 +13,20 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
-
+from dataCDLT import (
+    HORIZONTAL,
+    RIGHT,
+    VERTICAL,
+    VERTICAL_END_HORIZONTAL,
+    LEFT,
+    PERSO,
+    NO,
+    AUTO,
+    FREE,
+    USED,
+    INPUT,
+    OUTPUT,
+)
 
 class Menus:
     """
@@ -61,6 +74,7 @@ class Menus:
         self.sketcher = sketcher
         self.com_port: str | None = None
         """The selected COM port."""
+        self.script = ""
         
         self.baud_rate = 115200
         self.timeout = 1
@@ -411,9 +425,10 @@ class Menus:
         else:
             print("Le port série est déjà fermé.")
             
-    def download_script(self, script):
+    def download_script(self):
+        self.checkCircuit()
         self.open_port()
-        self.send_data(script)
+        self.send_data(self.script)
         self.close_port()
         
     def is_linked_to(self, dest, src):
@@ -425,15 +440,48 @@ class Menus:
                 res = True
                 break
         return res
+    
+    def checkCloseCircuit(self, ioOut):
+        id, (c1,l1,c2,l2)  = ioOut 
+        ioZone = [(c1,l1,c2,l2)]
+        findOut = False
+        for f in self.func:
+            id, inLst, fName, outLst = f
+            for out in outLst:
+                if self.is_linked_to(ioZone, out): 
+                    findOut = True
+                    for inFunc in inLst:
+                        findIn = False
+                        if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
+                            findIn = True
+                            print("connecté à pwr")
+                        if not findIn:
+                            for io_inZone in self.io_in:
+                                id, zone = io_inZone
+                                if self.is_linked_to([zone], inFunc):
+                                    findIn = True
+                                    print("connecté à une ENTRÉE EXTERNE")
+                        if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
+                            for nextOut in self.chip_out: 
+                                id, (c1, l1) = nextOut
+                                outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                                if self.is_linked_to(outZone, inFunc):
+                                    print("On passe à une autre sortie...")
+                                ######## RAPPEL RECURSIF SUR OUTZONE ######################
+        
 
     def checkCircuit(self):
         print("Lancer la vérification")
-        func = []
-        wire = []
-        pwrs = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
-        pwrChip = {"+": [], "-": []}
-        io = []
-        pwrM, pwrP = [], []
+        self.func = []
+        self.wire = []
+        self.pwrs = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
+        self.pwrChip = {"+": [], "-": [], "pwrConnected":[], "pwrNotConnected": [], "pwrMissConnected": []}  # , "pwrNOTUSED": [], "pwrCC": []
+        self.io_in, self.io_out = [], []
+        self.chip_in, self.chip_out = [], []
+        self.chip_ioCC, self.chip_ioOK = [], []
+        self.pwrM, self.pwrP, self.wireNotUsed, self.pwrCC = [], [], [], []
+        self.io_inCC, self.io_outCC = [], []
+        self.chip_out_wire, self.chip_outCC = [], []
 
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
@@ -447,47 +495,180 @@ class Menus:
                         (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
                         for numPin in io[0]
                     ]
+                    
                     ioOut = [
                         (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
                         for numPin in io[1]
                     ]
-                    func += [(id, ioIn, component["symbScript"], ioOut)]
+                    self.func += [(id, ioIn, component["symbScript"], ioOut)]
+                    self.chip_in += [(id, *ioIn)]
+                    self.chip_out += [(id, *ioOut)]
                     # print(f"ioIN  = {ioIn}")
                     # print(f"ioOUT = {ioOut}")
-                    # print(f"func= {func}")
-                    # print(f"ce1-ce2, func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                    # print(f"self.func= {self.func}")
+                    # print(f"ce1-ce2, self.func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
                 for pwr in component["pwr"]:
                     numPin, polarity = pwr[0], pwr[1]
                     col_pin = col + numPin - 1 if numPin <= numPinBR else col + (component["pinCount"] - numPin)
                     line_pin = line if numPin > numPinBR else line+1
-                    pwrChip[polarity] += [
+                    self.pwrChip[polarity] += [
                         (id, col_pin, line_pin)
                     ]
-                    # print(f"pwrChip= {pwrChip}")
+                    # print(f"pwrChip= {self.pwrChip}")
             elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
-                wire += component["coord"]
-        print(f"func= {func}\n")
-        print(f"pwrChip= {pwrChip}\n")
-        print(f"wire = {wire}")
-        print(f"pwr = {pwrs}")
-        for pwr in pwrs:
+                self.wire += [(id, *component["coord"][0])]
+            elif id[:4] == "_io_":  # [(col1, line1,col2,line2), ...]
+                (col, line) = component["coord"][0][0], component["coord"][0][1]
+                ioZone = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
+                if component["type"] == INPUT:
+                    self.io_in += [(id, *ioZone)]
+                else:
+                    self.io_out += [(id, *ioZone)]
+        print(f"func= {self.func}\n")
+        print(f"pwrChip= {self.pwrChip}\n")
+        print(f"wire = {self.wire}")
+        print(f"pwr = {self.pwrs}")
+        print(f"io_in = {self.io_in}")
+        print(f"io_out = {self.io_out}")
+        print(f"chip_in = {self.chip_in}")
+        print(f"chip_out = {self.chip_out}")
+        for pwr in self.pwrs:
             (col, line, p) = pwr
             if p == "-":
-                   pwrM = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
-            else:  pwrP = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
-        for w in wire:
-            c1,l1,c2,l2 = w
-            if self.is_linked_to(pwrM, (c1, l1)):
-                    pwrM += self.board.sketcher.matrix[f"{c2},{l2}"]["link"]
-            elif  self.is_linked_to(pwrP, (c1, l1)):  
-                    pwrP += self.board.sketcher.matrix[f"{c2},{l2}"]["link"]
-            if self.is_linked_to(pwrM, (c2, l2)):
-                    pwrM += self.board.sketcher.matrix[f"{c1},{l1}"]["link"]
-            elif  self.is_linked_to(pwrP, (c2, l2)):  
-                    pwrP += self.board.sketcher.matrix[f"{c1},{l1}"]["link"]
-            if (self.is_linked_to(pwrP, (c1, l1)) and self.is_linked_to(pwrM, (c1, l1))) or \
-                (self.is_linked_to(pwrP, (c2, l2)) and self.is_linked_to(pwrM, (c2, l2))):
-                print(f"CC dans le cable {w}")
+                   self.pwrM = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
+            else:  self.pwrP = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
+        for w in self.wire:
+            id,c1,l1,c2,l2 = w
+            if self.is_linked_to(self.pwrM, (c1, l1)):
+                    self.pwrM += deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            elif  self.is_linked_to(self.pwrP, (c1, l1)):  
+                    self.pwrP += deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            elif w not in self.wireNotUsed: 
+                self.wireNotUsed += [w] #deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            if self.is_linked_to(self.pwrM, (c2, l2)):
+                    self.pwrM += deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            elif  self.is_linked_to(self.pwrP, (c2, l2)):  
+                    self.pwrP += deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            elif w not in self.wireNotUsed:  
+                 self.wireNotUsed += [w] #deepcopy(self.board.sketcher.matrix[f"{c2},{l2}"]["link"])
+            again = True
+            while again and len(self.wireNotUsed)>0:
+                again = False
+                for wused in self.wireNotUsed[:]:
+                    id,cu1,lu1,cu2,lu2 = wused
+                    if self.is_linked_to(self.pwrM, (cu1, lu1)):
+                            self.pwrM += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
+                            self.wireNotUsed.remove(wused)
+                            again = True
+                    elif  self.is_linked_to(self.pwrP, (cu1, lu1)):  
+                            self.pwrP += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
+                            self.wireNotUsed.remove(wused)
+                            again = True
+                    
+                    if self.is_linked_to(self.pwrM, (cu2, lu2)):
+                            self.pwrM += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                            if not again:
+                                self.wireNotUsed.remove(wused)
+                            again = True
+                    elif  self.is_linked_to(self.pwrP, (cu2, lu2)):  
+                            self.pwrP += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                            if not again:
+                                 self.wireNotUsed.remove(wused)
+                            again = True
+                    if again:
+                        if (self.is_linked_to(self.pwrP, (cu1, lu1)) and self.is_linked_to(self.pwrM, (cu1, lu1))) or \
+                                (self.is_linked_to(self.pwrP, (cu2, lu2)) and self.is_linked_to(self.pwrM, (cu2, lu2))):
+                            self.pwrCC += [wused]
+                            #print(f"CC dans le cable {wused}")                    
+            if (self.is_linked_to(self.pwrP, (c1, l1)) and self.is_linked_to(self.pwrM, (c1, l1))) or \
+                    (self.is_linked_to(self.pwrP, (c2, l2)) and self.is_linked_to(self.pwrM, (c2, l2))):
+                    self.pwrCC += [w]
+                    #print(f"CC dans le cable {w}")
         #pwrM.clear()
         #pwrP.clear()
-        
+    ###############   Verification des chip sur pwr + #####################
+        for chip in self.pwrChip["+"]:
+            id, col_pin, line_pin = chip
+            if self.is_linked_to(self.pwrP, (col_pin, line_pin)):
+                  if id not in self.pwrChip["pwrConnected"]:
+                    self.pwrChip["pwrConnected"].append((id,"+"))
+            elif self.is_linked_to(self.pwrM, (col_pin, line_pin)):
+                  if id not in self.pwrChip["pwrMissConnected"]:
+                    self.pwrChip["pwrMissConnected"].append((id,"+"))
+            elif id not in self.pwrChip["pwrNotConnected"]:
+                    self.pwrChip["pwrNotConnected"].append((id,"+"))
+    ###############   Verification des chip sur pwr - #####################
+        for chip in self.pwrChip["-"]:
+            id, col_pin, line_pin = chip
+            if self.is_linked_to(self.pwrM, (col_pin, line_pin)):
+                  if id not in self.pwrChip["pwrConnected"]:
+                    self.pwrChip["pwrConnected"].append((id,"-"))
+            elif self.is_linked_to(self.pwrP, (col_pin, line_pin)):
+                  if id not in self.pwrChip["pwrMissConnected"]:
+                    self.pwrChip["pwrMissConnected"].append((id,"-"))
+            elif id not in self.pwrChip["pwrNotConnected"]:
+                    self.pwrChip["pwrNotConnected"].append((id,"-"))
+    ###############   Verification des chip_out sur pwr #####################
+        for chipio in self.chip_out:
+            id, (c1,l1)  = chipio
+            if self.is_linked_to(self.pwrM, (c1, l1)):
+                self.chip_ioCC += [chipio]
+            elif self.is_linked_to(self.pwrP, (c1, l1)):
+                self.chip_ioCC += [chipio]
+            else:
+                self.chip_ioOK += [chipio]
+                ###############   Verification des chip_out sur  io_in #####################
+            for ioin in self.io_in:
+                if self.is_linked_to([ioin[1]], (c1, l1)):
+                    self.io_outCC += [ioin[0]]
+                    
+     ###############   Verification des io_in sur pwr #####################
+        for ioin in self.io_in:
+            c1, l1 = ioin[1][0], ioin[1][1]
+            if self.is_linked_to(self.pwrM, (c1, l1)):
+                if ioin[0] not in self.io_outCC:
+                    self.io_outCC += [ioin[0]]
+            elif self.is_linked_to(self.pwrP, (c1, l1)): 
+                if ioin[0] not in self.io_outCC:
+                    self.io_outCC += [ioin[0]]
+                    
+        ###############   Verification des self.chip_out sur chip_out #####################
+        for chipio in self.chip_out:
+            id, (c1,l1)  = chipio  
+            inChipOutWire = False
+            for cow in self.chip_out_wire:
+                if self.is_linked_to(cow, (c1, l1)):
+                    inChipOutWire = True
+                    if chipio not in self.chip_outCC:
+                        self.chip_outCC += [(chipio)] 
+            if not inChipOutWire:
+                cow = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                again = True
+                while again and len(self.wireNotUsed)>0:
+                    again = False
+                    for wused in self.wireNotUsed[:]:
+                        id,cu1,lu1,cu2,lu2 = wused
+                        if self.is_linked_to(cow, (cu1, lu1)):
+                                cow += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
+                                self.wireNotUsed.remove(wused)
+                                again = True
+                        elif  self.is_linked_to(cow, (cu2, lu2)):  
+                                self.pwrP += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                                self.wireNotUsed.remove(wused)
+                                again = True
+            self.chip_out_wire += [cow]
+        if not self.pwrCC and not self.pwrChip["pwrMissConnected"] and not self.chip_ioCC \
+                        and not self.io_outCC and not self.chip_outCC:
+            print("vérification du circuit fermé")
+            for ioOut in self.io_out:
+                self.checkCloseCircuit(ioOut)
+                                    
+        print(f"pwrChipConnected : {self.pwrChip["pwrConnected"]}")
+        print(f"pwrChipNotConnected : {self.pwrChip["pwrNotConnected"]}")
+        print(f"pwrChipMissConnected : {self.pwrChip["pwrMissConnected"]}")
+        print(f"wireNotUsed : {self.wireNotUsed}")
+        print(f"pwrCC : {self.pwrCC}")
+        print(f"chip_ioCC : {self.chip_ioCC}")
+        print(f"chip_ioOK : {self.chip_ioOK}")
+        print(f"io_outCC : {self.io_outCC}")
+        print(f"chip_outCC : {self.chip_outCC}")
