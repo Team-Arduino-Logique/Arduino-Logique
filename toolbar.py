@@ -13,6 +13,7 @@ from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE
+from utils import resource_path
 
 
 @dataclass
@@ -85,6 +86,8 @@ class Toolbar:
             relief="raised",
             bd=1,
             command=self.choose_color,
+            borderwidth=0,
+            highlightthickness=0,
         )
         self.color_button.pack(side=tk.LEFT, padx=2, pady=2)
         self.create_button("Delete", right_frame, images)
@@ -94,7 +97,7 @@ class Toolbar:
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
         icon_names = ["connection", "power", "input", "output", "delete"]
-        icons_folder = Path("assets/icons").resolve()
+        icons_folder = Path(resource_path("Assets/Icons")).resolve()
         images: dict[str, tk.PhotoImage | None] = {}
         for name in icon_names:
             path = os.path.join(icons_folder, f"{name}.png")
@@ -134,6 +137,8 @@ class Toolbar:
                 command=lambda: self.button_action(action),
                 padx=2,
                 pady=2,
+                borderwidth=0,
+                highlightthickness=0,
             )
             # Keep a reference to prevent garbage collection
             btn.image = image  # type: ignore
@@ -151,6 +156,8 @@ class Toolbar:
                 command=lambda: self.button_action(action),
                 padx=2,
                 pady=2,
+                borderwidth=0,
+                highlightthickness=0,
             )
         btn.pack(side=tk.LEFT, padx=10, pady=2)  # Minimal spacing between buttons
         self.buttons[action] = btn  # Store button reference
@@ -328,6 +335,7 @@ class Toolbar:
                             },
                         )
                     ]
+                    self.sketcher.wire_drag_data["creating_wire"] = True
                     self.sketcher.circuit(x_origin, y_origin, model=model_wire)
                     self.wire_info.wire_id = self.current_dict_circuit["last_id"]
                     self.wire_info.start_point = (adjusted_x, adjusted_y)
@@ -336,6 +344,7 @@ class Toolbar:
                 # Finalize the wire
                 self.wire_info.start_point = None
                 self.wire_info.start_col_line = None
+                self.sketcher.wire_drag_data["creating_wire"] = False
                 print("Wire placement completed.")
 
         elif self.tool_mode in ("Input", "Output") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:

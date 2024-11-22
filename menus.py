@@ -5,6 +5,7 @@ The menu bar includes options for file operations, controller selection, port co
 
 from copy import deepcopy
 
+from dataclasses import dataclass
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import json
@@ -27,6 +28,60 @@ from dataCDLT import (
     INPUT,
     OUTPUT,
 )
+from dataCDLT import INPUT, OUTPUT, USED
+
+MICROCONTROLLER_PINS = {
+    "Arduino Mega": {
+        "input_pins": [22, 23, 24, 25, 26, 27, 28, 29],
+        "output_pins": [32, 33, 34, 35, 36, 37],
+        "clock_pin": 2,
+    },
+    "Arduino Uno": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "Arduino Micro": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "Arduino Mini": {
+        "input_pins": [2, 3, 4, 5, 6, 7, 8, 9],
+        "output_pins": [10, 11, 12, 13],
+        "clock_pin": 2,
+    },
+    "STM32": {
+        "input_pins": ["PA0", "PA1", "PA2", "PA3", "PB0", "PB1", "PB2", "PB3"],
+        "output_pins": ["PC0", "PC1", "PC2", "PC3", "PC4", "PC5"],
+        "clock_pin": "PA0",
+    },
+    "NodeMCU ESP8266": {
+        "input_pins": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
+        "output_pins": ["D0", "D1", "D2", "D3", "D4", "D5"],
+        "clock_pin": "D2",
+    },
+    "NodeMCU ESP32": {
+        "input_pins": [32, 33, 34, 35, 25, 26, 27, 14],
+        "output_pins": [23, 22, 21, 19, 18, 5],
+        "clock_pin": 2,
+    },
+}
+
+
+@dataclass
+class SerialPort:
+    """Data class representing the info for a serial port."""
+
+    com_port: str | None
+    """The COM port to connect to."""
+    baud_rate: int
+    """The baud rate for the port."""
+    timeout: int
+    """The timeout for the port."""
+    connection: serial.Serial | None
+    """The serial connection object."""
+
 
 class Menus:
     """
@@ -37,7 +92,6 @@ class Menus:
         board (Breadboard): The Breadboard instance.
         model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
-        zoom (Callable): The zoom function to adjust the canvas.
         com_port (str | None): The selected COM port.
     """
 
@@ -58,8 +112,6 @@ class Menus:
         - parent (tk.Tk or tk.Frame): The main window or parent frame.
         - canvas (tk.Canvas): The canvas widget for drawing circuits.
         - board (Breadboard): The Breadboard instance.
-        - current_dict_circuit (dict): The current circuit data.
-        - zoom_function (callable): The zoom function to adjust the canvas.
         """
         self.parent: tk.Tk | tk.Frame = parent
         """The main window or parent frame."""
@@ -69,52 +121,152 @@ class Menus:
         """The Breadboard instance."""
         self.current_dict_circuit: dict = current_dict_circuit
         """The current circuit data."""
-        self.zoom: Callable = zoom_function
-        """The zoom function to adjust the canvas."""
         self.sketcher = sketcher
         self.com_port: str | None = None
         """The selected COM port."""
         self.script = ""
         
-        self.baud_rate = 115200
-        self.timeout = 1
-        self.serial_conn = None
+        self.selected_microcontroller = None
+        """The selected microcontroller."""
 
-        # Create the menu bar frame (do not pack here)
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
+
+        self.serial_port = SerialPort(None, 115200, 1, None)
+        """The serial port configuration."""
 
         # Define menu items and their corresponding dropdown options
         menus = {
             "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
-            "Circuit": ["Vérification", "Téléverser"],
-            "Controllers": ["Arduino", "ESP32", "STM32"],
-            "Ports": ["Configurer le port série"],
-            "Help": ["Documentation", "A propos"],
+            "Microcontrôleur": ["Choisir un microcontrôleur", "Table de correspondance", "Configurer le port série"],
+            "Circuit": [
+                "Vérifier",
+                "Téléverser",
+            ],
+            "Aide": ["Documentation", "À propos"],
         }
 
-        # Mapping menu labels to their handler functions
         menu_commands = {
             "Nouveau": self.new_file,
             "Ouvrir": self.open_file,
             "Enregistrer": self.save_file,
             "Quitter": self.parent.quit,
-            "Vérification": self.checkCircuit,
-            "Téléverser"  : self.download_script,
-            "Arduino": self.Arduino,
-            "ESP32": self.ESP32,
             "Configurer le port série": self.configure_ports,
+            "Table de correspondance": self.show_correspondence_table,
+            "Choisir un microcontrôleur": self.select_microcontroller,
             "Documentation": self.open_documentation,
-            "A propos": self.about,
+            "À propos": self.about,
         }
 
-        # Create each menu button and its dropdown
         for menu_name, options in menus.items():
             self.create_menu(menu_name, options, menu_commands)
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
         self.canvas.bind("<Button-1>", self.close_dropdown, add="+")
+
+    def select_microcontroller(self):
+        """Handler for microcontroller selection."""
+        # Create a new top-level window for the dialog
+        dialog = tk.Toplevel(self.parent)
+        dialog.title("Choisir un microcontrôleur")
+
+        # Set the size and position of the dialog
+        dialog.geometry("300x150")
+
+        # Create a label for the combobox
+        label = tk.Label(dialog, text="Choisir:")
+        label.pack(pady=10)
+        available_microcontrollers = list(MICROCONTROLLER_PINS.keys())
+        # Create a combobox with the options
+        combobox = ttk.Combobox(dialog, values=available_microcontrollers)
+        combobox.pack(pady=10)
+
+        # Create a button to confirm the selection
+        def confirm_selection():
+            selected_option = combobox.get()
+            print(f"Selected option: {selected_option}")
+            self.selected_microcontroller = selected_option
+            print(f"{selected_option} selected.")
+            dialog.destroy()
+
+        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button.pack(pady=10)
+
+    def show_correspondence_table(self):
+        """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
+        if self.selected_microcontroller is None:
+            messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
+            return
+
+        pin_mappings = MICROCONTROLLER_PINS.get(self.selected_microcontroller)
+        if not pin_mappings:
+            messagebox.showerror("Error", f"No pin mappings found for {self.selected_microcontroller}.")
+            return
+
+        input_pins = pin_mappings["input_pins"]
+        output_pins = pin_mappings["output_pins"]
+
+        # Gather pin_io objects from current_dict_circuit
+        pin_ios = [value for key, value in self.current_dict_circuit.items() if key.startswith("_io_")]
+
+        # Separate pin_ios into inputs and outputs
+        input_pin_ios = [pin for pin in pin_ios if pin["type"] == INPUT]
+        output_pin_ios = [pin for pin in pin_ios if pin["type"] == OUTPUT]
+
+        # Check if we have more pin_ios than available pins
+        if len(input_pin_ios) > len(input_pins):
+            messagebox.showerror(
+                "Too Many Inputs",
+                f"You have {len(input_pin_ios)} input pin_ios but only "
+                f"{len(input_pins)} available input pins on the microcontroller.",
+            )
+            return
+        if len(output_pin_ios) > len(output_pins):
+            messagebox.showerror(
+                "Too Many Outputs",
+                f"You have {len(output_pin_ios)} output pin_ios but only "
+                f"{len(output_pins)} available output pins on the microcontroller.",
+            )
+            return
+
+        # Create a new window for the correspondence table
+        table_window = tk.Toplevel(self.parent)
+        table_window.title("Correspondence Table")
+        table_window.geometry("400x300")
+
+        # Create a Treeview widget for the table
+        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=10)
+        tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+        # Define columns and headings
+        tree.column("ID", anchor="center", width=120)
+        tree.column("Type", anchor="center", width=80)
+        tree.column("MCU Pin", anchor="center", width=120)
+        tree.heading("ID", text="Pin IO ID")
+        tree.heading("Type", text="Type")
+        tree.heading("MCU Pin", text="MCU Pin")
+
+        # Populate the table with input and output pin mappings
+        for idx, pin_io in enumerate(input_pin_ios):
+            mcu_pin = input_pins[idx]
+            pin_number = pin_io["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "Input", mcu_pin))
+
+        for idx, pin_io in enumerate(output_pin_ios):
+            mcu_pin = output_pins[idx]
+            pin_number = pin_io["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "Output", mcu_pin))
+
+        # Add a scrollbar if the list gets too long
+        scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+
+        # Show the table in the new window
+        table_window.transient(self.parent)  # Set to be on top of the parent window
+        table_window.grab_set()  # Prevent interaction with the main window until closed
+        table_window.mainloop()
 
     def create_menu(self, menu_name, options, menu_commands):
         """
@@ -139,17 +291,24 @@ class Menus:
             pady=5,
             font=("FiraCode-Bold", 12),
             command=lambda m=menu_name: self.toggle_dropdown(m),
+            borderwidth=0,
+            highlightthickness=0,
         )
         btn.pack(side="left")
 
         # Create the dropdown frame
-        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid", width=200)
+        dropdown = tk.Frame(self.parent, bg="#333333", bd=1, relief="solid", width=250)
 
         # Calculate dropdown height based on number of options
         button_height = 30  # Approximate height of each dropdown button
         dropdown_height = button_height * len(options)
-        dropdown.place(x=0, y=0, width=200, height=dropdown_height)  # Initial size based on options
+        dropdown.place(x=0, y=0, width=250, height=dropdown_height)  # Initial size based on options
         dropdown.place_forget()  # Hide initially
+
+        def select_menu_item(option):
+            """Wrapper function to close dropdown and execute the menu command."""
+            self.close_dropdown(None)
+            menu_commands.get(option, lambda: print(f"{option} selected"))()
 
         # Populate the dropdown with menu options
         for option in options:
@@ -164,11 +323,13 @@ class Menus:
                 highlightcolor="#444444",  # Border color when active
                 bd=0,
                 anchor="w",
-                width=200,
+                width=250,
                 padx=20,
                 pady=5,
                 font=("FiraCode-Bold", 12),
-                command=menu_commands.get(option, lambda opt=option: print(f"{opt} selected")),
+                command=lambda o=option: select_menu_item(o),
+                borderwidth=0,
+                highlightthickness=0,
             )
             option_btn.pack(fill="both")
 
@@ -192,7 +353,7 @@ class Menus:
                         # Position the dropdown below the button
                         btn_x = child.winfo_rootx() - self.parent.winfo_rootx()
                         btn_y = child.winfo_rooty() - self.parent.winfo_rooty() + child.winfo_height()
-                        child.dropdown.place(x=btn_x, y=btn_y, width=200)
+                        child.dropdown.place(x=btn_x, y=btn_y, width=250)
                         print(f"Opened dropdown for {menu_name}")
                         child.dropdown.lift()  # Ensure dropdown is on top
                 else:
@@ -222,10 +383,14 @@ class Menus:
         Parameters:
         - event (tk.Event): The event object.
         """
-        if not self.is_descendant(event.widget, self.menu_bar) and not any(
-            self.is_descendant(event.widget, child.dropdown)
-            for child in self.menu_bar.winfo_children()
-            if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+        if (
+            event is None
+            or not self.is_descendant(event.widget, self.menu_bar)
+            and not any(
+                self.is_descendant(event.widget, child.dropdown)
+                for child in self.menu_bar.winfo_children()
+                if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+            )
         ):
             for child in self.menu_bar.winfo_children():
                 if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
@@ -237,6 +402,8 @@ class Menus:
         # Clear the canvas and reset the circuit
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
+        self.board.draw_blank_board_model()
+
         print("New file created.")
         messagebox.showinfo("New File", "A new circuit has been created.")
 
@@ -249,53 +416,39 @@ class Menus:
                 with open(file_path, "r", encoding="utf-8") as file:
                     circuit_data = json.load(file)
                 print(f"Circuit loaded from {file_path}")
-                # Update current_dict_circuit and redraw the circuit
                 self.board.sketcher.clear_board()
 
-                # self.zoom(self.canvas, 10.0, self.board, 50, 10, [])
                 x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
                 self.board.sketcher.circuit(x_o, y_o, model=[])
 
+                battery_pos_wire_end = None
+                battery_neg_wire_end = None
+
+                for key, val in circuit_data.items():
+                    if key == "_battery_pos_wire":
+                        battery_pos_wire_end = val['end']
+                    elif key == "_battery_neg_wire":
+                        battery_neg_wire_end = val['end']
+
+                self.board.draw_blank_board_model(
+                    x_o,
+                    y_o,
+                    battery_pos_wire_end=battery_pos_wire_end,
+                    battery_neg_wire_end=battery_neg_wire_end,
+                )
+
                 for key, val in circuit_data.items():
                     if "chip" in key:
-                        x, y = val["XY"]
-                        model_chip = [
-                            (
-                                self.board.sketcher.draw_chip,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x, y, model=model_chip)
+                        self.load_chip(val)
 
-                    elif "wire" in key:
-                        model_wire = [
-                            (
-                                self.board.sketcher.draw_wire,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+                    elif "wire" in key and not key.startswith("_battery"):
+                        self.load_wire(val)
+
                     elif "io" in key:
-                        model_io = [
-                            (
-                                self.board.sketcher.draw_pin_io,
-                                1,
-                                {
-                                    **val,
-                                    "matrix": self.board.sketcher.matrix,
-                                },
-                            )
-                        ]
-                        self.board.sketcher.circuit(x_o, y_o, model=model_io)
+                        self.load_io(val)
+
                     else:
+
                         print(f"Unspecified component: {key}")
                 messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
             except Exception as e:
@@ -305,6 +458,62 @@ class Menus:
         else:
             print("Open file cancelled.")
 
+    def load_chip(self, chip_data):
+        """Load a chip from the given chip_data."""
+        x, y = chip_data["XY"]
+        model_chip = [
+            (
+                self.board.sketcher.draw_chip,
+                1,
+                {
+                    **chip_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x, y, model=model_chip)
+        new_chip_id = self.current_dict_circuit["last_id"]
+
+        (_, _), (column, line) = self.board.sketcher.find_nearest_grid(x, y, matrix=self.board.sketcher.matrix)
+        occupied_holes = []
+        for i in range(chip_data["pinCount"] // 2):
+            # Top row (line 7 or 21)
+            hole_id_top = f"{column + i},{line}"
+            # Bottom row (line 6 or 20)
+            hole_id_bottom = f"{column + i},{line + 1}"
+            occupied_holes.extend([hole_id_top, hole_id_bottom])
+        self.current_dict_circuit[new_chip_id]["occupied_holes"] = occupied_holes
+
+    def load_wire(self, wire_data):
+        """Load a wire from the given wire_data."""
+        x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
+        model_wire = [
+            (
+                self.board.sketcher.draw_wire,
+                1,
+                {
+                    **wire_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x_o, y_o, model=model_wire)
+
+    def load_io(self, io_data):
+        """Load an input/output component from the given io_data."""
+        x_o, y_o = self.board.sketcher.id_origins["xyOrigin"]
+        model_io = [
+            (
+                self.board.sketcher.draw_pin_io,
+                1,
+                {
+                    **io_data,
+                    "matrix": self.board.sketcher.matrix,
+                },
+            )
+        ]
+        self.board.sketcher.circuit(x_o, y_o, model=model_io)
+
     def save_file(self):
         """Handler for the 'Save' menu item."""
         print("Save File")
@@ -313,68 +522,52 @@ class Menus:
         )
         if file_path:
             try:
-                # Extract the circuit data from current_dict_circuit
                 circuit_data = deepcopy(self.current_dict_circuit)
 
-                circuit_data.pop("last_id", None)  # Remove the "last_id" key
+                circuit_data.pop("last_id", None)
                 for key, comp_data in circuit_data.items():
-                    # Remove the "id" and "tags" keys before saving
                     comp_data.pop("id", None)
                     comp_data.pop("tags", None)
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                    if key == "_battery":
+                        comp_data.pop("battery_rect", None)
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
                 print(f"Circuit saved to {file_path}")
                 messagebox.showinfo("Save Successful", f"Circuit saved to {file_path}")
-            except Exception as e:
+            except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
                 messagebox.showerror("Save Error", f"An error occurred while saving the file:\n{e}")
         else:
             print("Save file cancelled.")
 
-    def Arduino(self):
-        """Handler for the 'Arduino' menu item."""
-        print("Arduino")
-        messagebox.showinfo("Arduino", "Arduino choice functionality not implemented yet.")
-
-    def ESP32(self):
-        """Handler for the 'ESP32' menu item."""
-        print("ESP32")
-        messagebox.showinfo("ESP32", "ESP32 choice functionality not implemented yet.")
-
     def configure_ports(self):
         """Handler for the 'Configure Ports' menu item."""
         print("Configure Ports")
-
         options = [comport.device for comport in serial.tools.list_ports.comports()]
         if len(options) == 0:
             message = "No COM ports available. Please connect a device and try again."
             print(message)
             messagebox.showwarning("No COM Ports", message)
         else:
-            # Create a new top-level window for the dialog
             dialog = tk.Toplevel(self.parent)
             dialog.title("Configure Ports")
 
-            # Set the size and position of the dialog
             dialog.geometry("300x150")
 
-            # Create a label for the combobox
             label = tk.Label(dialog, text="Select an option:")
             label.pack(pady=10)
-            # Create a combobox with the options
             combobox = ttk.Combobox(dialog, values=options)
             combobox.pack(pady=10)
 
-            # Create a button to confirm the selection
             def confirm_selection():
                 selected_option = combobox.get()
                 print(f"Selected option: {selected_option}")
-                self.com_port = selected_option
+                self.serial_port.com_port = selected_option
                 dialog.destroy()
 
             confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
@@ -672,3 +865,41 @@ class Menus:
         print(f"chip_ioOK : {self.chip_ioOK}")
         print(f"io_outCC : {self.io_outCC}")
         print(f"chip_outCC : {self.chip_outCC}")
+
+    def open_port(self):
+        """Handler for the 'Open Port' menu item."""
+        try:
+            self.serial_port.connection = serial.Serial(
+                port=self.serial_port.com_port, baudrate=self.serial_port.baud_rate, timeout=self.serial_port.timeout
+            )
+            print(f"Port série {self.serial_port.com_port} ouvert avec succès.")
+        except serial.SerialException as e:
+            print(f"Erreur lors de l'ouverture du port {self.serial_port.com_port}: {e}")
+
+    def send_data(self, data):
+        """
+        Send a string of data to the microcontroller through the serial port.
+        """
+        if self.serial_port.connection and self.serial_port.connection.is_open:
+            try:
+                # Convertir la chaîne en bytes et l'envoyer
+                self.serial_port.connection.write(data.encode("utf-8"))
+                print(f"Données envoyées: {data}")
+            except serial.SerialException as e:
+                print(f"Erreur lors de l'envoi des données: {e}")
+        else:
+            print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
+
+    def close_port(self):
+        """Close the serial port."""
+        if self.serial_port.connection and self.serial_port.connection.is_open:
+            self.serial_port.connection.close()
+            print(f"Port série {self.serial_port.com_port} fermé.")
+        else:
+            print("Le port série est déjà fermé.")
+
+    def download_script(self, script):
+        """Upload the script to the microcontroller through the serial port."""
+        self.open_port()
+        self.send_data(script)
+        self.close_port()
