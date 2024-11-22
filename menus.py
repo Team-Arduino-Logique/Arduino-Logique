@@ -101,7 +101,6 @@ class Menus:
         canvas: tk.Canvas,
         board: Breadboard,
         current_dict_circuit: dict,
-        zoom_function: Callable,
         sketcher: ComponentSketcher,
 
     ):
@@ -154,6 +153,8 @@ class Menus:
             "Configurer le port série": self.configure_ports,
             "Table de correspondance": self.show_correspondence_table,
             "Choisir un microcontrôleur": self.select_microcontroller,
+            "Vérifier": self.checkCircuit,
+            "Téléverser": self.download_script,
             "Documentation": self.open_documentation,
             "À propos": self.about,
         }
@@ -584,7 +585,7 @@ class Menus:
         messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
             
     def open_port(self):
-        """Ouvre le port série."""
+        """Handler for the 'Open Port' menu item."""
         try:
             self.serial_conn = serial.Serial(
                 port=self.com_port,
@@ -597,8 +598,7 @@ class Menus:
 
     def send_data(self, data):
         """
-        Envoie une chaîne de caractères sur le port série.
-        :param data: Chaîne de caractères à envoyer.
+        Send a string of data to the microcontroller through the serial port.
         """
         if self.serial_conn and self.serial_conn.is_open:
             try:
@@ -611,7 +611,7 @@ class Menus:
             print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
 
     def close_port(self):
-        """Ferme le port série."""
+        """Upload the script to the microcontroller through the serial port."""
         if self.serial_conn and self.serial_conn.is_open:
             self.serial_conn.close()
             print(f"Port série {self.com_port} fermé.")
@@ -856,50 +856,12 @@ class Menus:
             for ioOut in self.io_out:
                 self.checkCloseCircuit(ioOut)
                                     
-        print(f"pwrChipConnected : {self.pwrChip["pwrConnected"]}")
-        print(f"pwrChipNotConnected : {self.pwrChip["pwrNotConnected"]}")
-        print(f"pwrChipMissConnected : {self.pwrChip["pwrMissConnected"]}")
+        print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
+        print(f"pwrChipNotConnected : {self.pwrChip['pwrNotConnected']}")
+        print(f"pwrChipMissConnected : {self.pwrChip['pwrMissConnected']}")
         print(f"wireNotUsed : {self.wireNotUsed}")
         print(f"pwrCC : {self.pwrCC}")
         print(f"chip_ioCC : {self.chip_ioCC}")
         print(f"chip_ioOK : {self.chip_ioOK}")
         print(f"io_outCC : {self.io_outCC}")
         print(f"chip_outCC : {self.chip_outCC}")
-
-    def open_port(self):
-        """Handler for the 'Open Port' menu item."""
-        try:
-            self.serial_port.connection = serial.Serial(
-                port=self.serial_port.com_port, baudrate=self.serial_port.baud_rate, timeout=self.serial_port.timeout
-            )
-            print(f"Port série {self.serial_port.com_port} ouvert avec succès.")
-        except serial.SerialException as e:
-            print(f"Erreur lors de l'ouverture du port {self.serial_port.com_port}: {e}")
-
-    def send_data(self, data):
-        """
-        Send a string of data to the microcontroller through the serial port.
-        """
-        if self.serial_port.connection and self.serial_port.connection.is_open:
-            try:
-                # Convertir la chaîne en bytes et l'envoyer
-                self.serial_port.connection.write(data.encode("utf-8"))
-                print(f"Données envoyées: {data}")
-            except serial.SerialException as e:
-                print(f"Erreur lors de l'envoi des données: {e}")
-        else:
-            print("Le port série n'est pas ouvert. Impossible d'envoyer les données.")
-
-    def close_port(self):
-        """Close the serial port."""
-        if self.serial_port.connection and self.serial_port.connection.is_open:
-            self.serial_port.connection.close()
-            print(f"Port série {self.serial_port.com_port} fermé.")
-        else:
-            print("Le port série est déjà fermé.")
-
-    def download_script(self, script):
-        """Upload the script to the microcontroller through the serial port."""
-        self.open_port()
-        self.send_data(script)
-        self.close_port()

@@ -82,6 +82,7 @@ def main():
         canvas=canvas,
         board=board,
         current_dict_circuit=sketcher.current_dict_circuit,
+        sketcher=sketcher,
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
