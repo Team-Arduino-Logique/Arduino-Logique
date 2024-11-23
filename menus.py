@@ -639,44 +639,52 @@ class Menus:
         ioZone = [(c1,l1,c2,l2)]
         findOut = False
         circuitClose = True
+        #chip_out_checked = []
         
         for f in self.func:
             id, inLst, fName, outLst = f
             for out in outLst:
-                if self.is_linked_to(ioZone, out): 
-                    findOut = True
-                    for inFunc in inLst:
-                        findIn = False
-                        if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
-                            findIn = True
-                            print("connecté à pwr")
-                        if not findIn:
-                            for io_inZone in self.io_in:
-                                id, zone = io_inZone
-                                if self.is_linked_to([zone], inFunc):
-                                    findIn = True
-                                    print("connecté à une ENTRÉE EXTERNE")
-                        if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
-                            findNext =False
-                            for nextOut in self.chip_out_wire: 
-                                #id, (c1, l1) = nextOut
-                                #outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
-                                
-                                if self.is_linked_to(nextOut, inFunc):
-                                    for next in nextOut:
-                                        for cow in self.chip_out:
-                                            id, pt = cow
-                                            if self.is_linked_to([next], pt):
-                                                outZone =(id,next)
-                                                print("On passe à une autre sortie...")
-                                                ######## RAPPEL RECURSIF SUR OUTZONE ######################
-                                                findNext = self.checkCloseCircuit(outZone)
-                                                break
-                        if not findIn and not findNext:
-                            self.in_outOC += [(id,inFunc)]
+                #if out not in chip_out_checked:
+                    if self.is_linked_to(ioZone, out): 
+                        findOut = True
+                        #chip_out_checked += [out]
+                        for inFunc in inLst:
+                            findIn = False
+                            if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
+                                findIn = True
+                                print("connecté à pwr")
+                            if not findIn:
+                                for io_inZone in self.io_in:
+                                    id, zone = io_inZone
+                                    if self.is_linked_to([zone], inFunc):
+                                        findIn = True
+                                        print("connecté à une ENTRÉE EXTERNE")
+                            if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
+                                findNext =False
+                                for nextOut in self.chip_out_wire: 
+                                    #id, (c1, l1) = nextOut
+                                    #outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                                    
+                                    if self.is_linked_to(nextOut, inFunc):
+                                        for next in nextOut:
+                                            for cow in self.chip_out:
+                                                id, pt = cow
+                                                if self.is_linked_to([next], pt):
+                                                    outZone =(id,next)
+                                                    print("On passe à une autre sortie...")
+                                                    ######## RAPPEL RECURSIF SUR OUTZONE ######################
+                                                    if outZone not in self.chip_out_checked:
+                                                        self.chip_out_checked += [outZone]
+                                                        findNext = self.checkCloseCircuit(outZone)
+                                                    else: findNext = True
+                                                    break
+                            if not findIn and not findNext:
+                                self.in_outOC += [(id,inFunc)]
+                                circuitClose = False
         if not findOut:
-           self.in_outOC += [ioOut]    
-        if not findOut and not findNext and not findNext:
+            self.in_outOC += [ioOut]   
+            circuitClose = False 
+        if not findOut and not findIn and not findNext:
             circuitClose = False
 
         return circuitClose           
@@ -697,6 +705,7 @@ class Menus:
         self.io_inCC, self.io_outCC = [], []
         self.chip_out_wire, self.chip_outCC = [], []
         self.in_outOC = []
+        self.chip_out_checked = []
 
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
@@ -878,7 +887,9 @@ class Menus:
                         and not self.io_outCC and not self.chip_outCC:
             print("vérification du circuit fermé")
             for ioOut in self.io_out:
-                self.checkCloseCircuit(ioOut)
+               if  self.checkCloseCircuit(ioOut):
+                        print(f"le circuit est fermée sur la sortie {ioOut}")
+               else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
                                     
         print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
         print(f"pwrChipNotConnected : {self.pwrChip['pwrNotConnected']}")
