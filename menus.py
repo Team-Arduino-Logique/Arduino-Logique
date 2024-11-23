@@ -638,6 +638,8 @@ class Menus:
         id, (c1,l1,c2,l2)  = ioOut 
         ioZone = [(c1,l1,c2,l2)]
         findOut = False
+        circuitClose = True
+        
         for f in self.func:
             id, inLst, fName, outLst = f
             for out in outLst:
@@ -655,12 +657,31 @@ class Menus:
                                     findIn = True
                                     print("connecté à une ENTRÉE EXTERNE")
                         if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
-                            for nextOut in self.chip_out: 
-                                id, (c1, l1) = nextOut
-                                outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
-                                if self.is_linked_to(outZone, inFunc):
-                                    print("On passe à une autre sortie...")
-                                ######## RAPPEL RECURSIF SUR OUTZONE ######################
+                            findNext =False
+                            for nextOut in self.chip_out_wire: 
+                                #id, (c1, l1) = nextOut
+                                #outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                                
+                                if self.is_linked_to(nextOut, inFunc):
+                                    for next in nextOut:
+                                        for cow in self.chip_out:
+                                            id, pt = cow
+                                            if self.is_linked_to([next], pt):
+                                                outZone =(id,next)
+                                                print("On passe à une autre sortie...")
+                                                ######## RAPPEL RECURSIF SUR OUTZONE ######################
+                                                findNext = self.checkCloseCircuit(outZone)
+                                                break
+                        if not findIn and not findNext:
+                            self.in_outOC += [(id,inFunc)]
+        if not findOut:
+           self.in_outOC += [ioOut]    
+        if not findOut and not findNext and not findNext:
+            circuitClose = False
+
+        return circuitClose           
+                                    
+                                
         
 
     def checkCircuit(self):
@@ -675,6 +696,7 @@ class Menus:
         self.pwrM, self.pwrP, self.wireNotUsed, self.pwrCC = [], [], [], []
         self.io_inCC, self.io_outCC = [], []
         self.chip_out_wire, self.chip_outCC = [], []
+        self.in_outOC = []
 
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
@@ -685,12 +707,14 @@ class Menus:
                 for io in component["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
                     # ioIN, ioOut = [], []
                     ioIn = [
-                        (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
+                        # (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
+                        # for numPin in io[0]
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
                         for numPin in io[0]
                     ]
                     
                     ioOut = [
-                        (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
                         for numPin in io[1]
                     ]
                     self.func += [(id, ioIn, component["symbScript"], ioOut)]
@@ -846,7 +870,7 @@ class Menus:
                                 self.wireNotUsed.remove(wused)
                                 again = True
                         elif  self.is_linked_to(cow, (cu2, lu2)):  
-                                self.pwrP += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                                cow += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
                                 self.wireNotUsed.remove(wused)
                                 again = True
             self.chip_out_wire += [cow]
@@ -865,3 +889,5 @@ class Menus:
         print(f"chip_ioOK : {self.chip_ioOK}")
         print(f"io_outCC : {self.io_outCC}")
         print(f"chip_outCC : {self.chip_outCC}")
+        print(f"in_outOC : {self.in_outOC}")
+        print(f"chip_out_wire : {self.chip_out_wire}")

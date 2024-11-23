@@ -521,5 +521,5 @@ class Sidebar:
             self.initialize_chip_data(self.current_dict_circuit, self.chip_images_path)
             self.on_search(None)
             print("Sidebar refreshed with updated chips.")
-        else:
-            print("No changes detected. Sidebar not refreshed.")
+        #else: 
+            #print("No changes detected. Sidebar not refreshed.")

@@ -1,0 +1,362 @@
+{
+    "_chip_0": {
+        "XY": [
+            145.5,
+            161.5
+        ],
+        "pinUL_XY": [
+            147.5,
+            152.5
+        ],
+        "chipWidth": 2.4,
+        "pinCount": 14,
+        "label": "74HC00",
+        "type": "74HC00",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ],
+        "symbScript": "NandGate",
+        "io": [
+            [
+                [
+                    1,
+                    2
+                ],
+                [
+                    3
+                ]
+            ],
+            [
+                [
+                    4,
+                    5
+                ],
+                [
+                    6
+                ]
+            ],
+            [
+                [
+                    9,
+                    10
+                ],
+                [
+                    8
+                ]
+            ],
+            [
+                [
+                    12,
+                    13
+                ],
+                [
+                    11
+                ]
+            ]
+        ],
+        "pwr": [
+            [
+                14,
+                "+"
+            ],
+            [
+                7,
+                "-"
+            ]
+        ],
+        "logicFunctionName": "NandGate",
+        "occupied_holes": [
+            "6,7",
+            "6,8",
+            "7,7",
+            "7,8",
+            "8,7",
+            "8,8",
+            "9,7",
+            "9,8",
+            "10,7",
+            "10,8",
+            "11,7",
+            "11,8",
+            "12,7",
+            "12,8"
+        ]
+    },
+    "_io_0": {
+        "coord": [
+            [
+                6,
+                12
+            ]
+        ],
+        "XY": [
+            97.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_0",
+        "tag": "pin_io__io_0"
+    },
+    "_io_1": {
+        "coord": [
+            [
+                7,
+                10
+            ]
+        ],
+        "XY": [
+            112.5,
+            217.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_1",
+        "tag": "pin_io__io_1"
+    },
+    "_io_2": {
+        "coord": [
+            [
+                9,
+                12
+            ]
+        ],
+        "XY": [
+            142.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_2",
+        "tag": "pin_io__io_2"
+    },
+    "_io_3": {
+        "coord": [
+            [
+                10,
+                12
+            ]
+        ],
+        "XY": [
+            157.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_3",
+        "tag": "pin_io__io_3"
+    },
+    "_io_4": {
+        "coord": [
+            [
+                7,
+                5
+            ]
+        ],
+        "XY": [
+            112.5,
+            112.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_4",
+        "tag": "pin_io__io_4"
+    },
+    "_io_5": {
+        "coord": [
+            [
+                8,
+                3
+            ]
+        ],
+        "XY": [
+            127.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_5",
+        "tag": "pin_io__io_5"
+    },
+    "_io_6": {
+        "coord": [
+            [
+                10,
+                3
+            ]
+        ],
+        "XY": [
+            157.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_6",
+        "tag": "pin_io__io_6"
+    },
+    "_io_7": {
+        "coord": [
+            [
+                11,
+                3
+            ]
+        ],
+        "XY": [
+            172.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#ffd478",
+        "outline_tag": "pin_io_outline__io_7",
+        "tag": "pin_io__io_7"
+    },
+    "_wire_0": {
+        "mode": 0,
+        "coord": [
+            [
+                6,
+                2,
+                6,
+                3
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            38,
+            0
+        ],
+        "wire_body_tag": "_wire_0_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    147.5,
+                    47.5
+                ],
+                "tag": "_wire_0_start"
+            },
+            "end": {
+                "position": [
+                    147.5,
+                    47.5
+                ],
+                "tag": "_wire_0_end"
+            }
+        }
+    },
+    "_wire_1": {
+        "mode": 0,
+        "coord": [
+            [
+                12,
+                9,
+                13,
+                1
+            ]
+        ],
+        "multipoints": [
+            201,
+            203
+        ],
+        "color": [
+            0,
+            0,
+            0
+        ],
+        "wire_body_tag": "_wire_1_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    237.5,
+                    212.5
+                ],
+                "tag": "_wire_1_start"
+            },
+            "end": {
+                "position": [
+                    237.5,
+                    212.5
+                ],
+                "tag": "_wire_1_end"
+            }
+        }
+    },
+    "_io_9": {
+        "coord": [
+            [
+                9,
+                6
+            ]
+        ],
+        "XY": [
+            142.5,
+            127.5
+        ],
+        "controller_pin": "IO",
+        "type": 1,
+        "color": "#8df900",
+        "outline_tag": "pin_io_outline__io_9",
+        "tag": "pin_io__io_9"
+    },
+    "_io_10": {
+        "coord": [
+            [
+                12,
+                6
+            ]
+        ],
+        "XY": [
+            187.5,
+            127.5
+        ],
+        "controller_pin": "IO",
+        "type": 1,
+        "color": "#8df900",
+        "outline_tag": "pin_io_outline__io_10",
+        "tag": "pin_io__io_10"
+    },
+    "_io_11": {
+        "coord": [
+            [
+                11,
+                12
+            ]
+        ],
+        "XY": [
+            172.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 1,
+        "color": "#479dff",
+        "outline_tag": "pin_io_outline__io_11",
+        "tag": "pin_io__io_11"
+    },
+    "_io_12": {
+        "coord": [
+            [
+                8,
+                12
+            ]
+        ],
+        "XY": [
+            127.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 1,
+        "color": "#8df900",
+        "outline_tag": "pin_io_outline__io_12",
+        "tag": "pin_io__io_12"
+    }
+}
