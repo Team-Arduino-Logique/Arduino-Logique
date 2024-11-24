@@ -647,10 +647,19 @@ class Menus:
                 #if out not in chip_out_checked:
                     if self.is_linked_to(ioZone, out): 
                         findOut = True
+                        self.script += "( "
                         #chip_out_checked += [out]
-                        for inFunc in inLst:
+                        for n,inFunc in enumerate(inLst):
                             findIn = False
                             if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
+                                if self.is_linked_to(self.pwrP, inFunc):
+                                        if n == 0:
+                                              self.script += f"1 " 
+                                        else: self.script += f"{fName} 1 "
+                                else:   
+                                        if n == 0:
+                                              self.script += f"0 " 
+                                        else: self.script += f"{fName} 0 "
                                 findIn = True
                                 print("connecté à pwr")
                             if not findIn:
@@ -681,11 +690,13 @@ class Menus:
                             if not findIn and not findNext:
                                 self.in_outOC += [(id,inFunc)]
                                 circuitClose = False
+                        if findIn or findNext:
+                            self.script += ") "
         if not findOut:
             self.in_outOC += [ioOut]   
             circuitClose = False 
-        if not findOut and not findIn and not findNext:
-            circuitClose = False
+        # if  not findIn and not findNext:
+        #     circuitClose = False
 
         return circuitClose           
                                     
@@ -886,9 +897,12 @@ class Menus:
         if not self.pwrCC and not self.pwrChip["pwrMissConnected"] and not self.chip_ioCC \
                         and not self.io_outCC and not self.chip_outCC:
             print("vérification du circuit fermé")
+            self.script = ""
             for ioOut in self.io_out:
+               self.script += f"O{ioOut[0][4:]} = "
                if  self.checkCloseCircuit(ioOut):
                         print(f"le circuit est fermée sur la sortie {ioOut}")
+                        self.script += f"; "
                else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
                                     
         print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
@@ -902,3 +916,4 @@ class Menus:
         print(f"chip_outCC : {self.chip_outCC}")
         print(f"in_outOC : {self.in_outOC}")
         print(f"chip_out_wire : {self.chip_out_wire}")
+        print(f"script : {self.script}")
