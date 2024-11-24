@@ -634,6 +634,42 @@ class Menus:
                 break
         return res
     
+    def decodeFunc(self,inVar, funcName):
+        if funcName == "NandGate":
+            s = f"! ( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"& {v} "
+            s += ") "
+        elif funcName == "AndGate":
+            s = f"( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"& {v} "
+            s += ") "   
+        elif funcName == "NorGate":
+            s = f"! ( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"| {v} "
+            s += ") "         
+        elif funcName == "OrGate":
+            s = f"( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"| {v} "
+            s += ") "         
+        elif funcName == "NotGate":
+            s = f"! {inVar[0]} "
+        elif funcName == "XorGate":
+            s = f"( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"^ {v} "
+            s += ") "  
+        elif funcName == "XnorGate":
+            s = f"! ( {inVar[0]} "
+            for v in inVar[1:]:
+                s += f"| {v} "
+            s += ") "    
+
+        return s                   
+    
     def checkCloseCircuit(self, ioOut):
         id, (c1,l1,c2,l2)  = ioOut 
         ioZone = [(c1,l1,c2,l2)]
@@ -647,25 +683,22 @@ class Menus:
                 #if out not in chip_out_checked:
                     if self.is_linked_to(ioZone, out): 
                         findOut = True
-                        self.script += "( "
+                        #self.script += "( "
                         #chip_out_checked += [out]
+                        inFuncConst = []
                         for n,inFunc in enumerate(inLst):
                             findIn = False
                             if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
                                 if self.is_linked_to(self.pwrP, inFunc):
-                                        if n == 0:
-                                              self.script += f"1 " 
-                                        else: self.script += f"{fName} 1 "
-                                else:   
-                                        if n == 0:
-                                              self.script += f"0 " 
-                                        else: self.script += f"{fName} 0 "
+                                        inFuncConst += ["1"]
+                                else:   inFuncConst += ["0"]
                                 findIn = True
                                 print("connecté à pwr")
                             if not findIn:
                                 for io_inZone in self.io_in:
                                     id, zone = io_inZone
                                     if self.is_linked_to([zone], inFunc):
+                                        inFuncConst += [f"I{id[4:]}"]
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE")
                             if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
@@ -691,7 +724,8 @@ class Menus:
                                 self.in_outOC += [(id,inFunc)]
                                 circuitClose = False
                         if findIn or findNext:
-                            self.script += ") "
+                            #self.script += ") "
+                            self.script += self.decodeFunc(inFuncConst, fName) 
         if not findOut:
             self.in_outOC += [ioOut]   
             circuitClose = False 
