@@ -675,10 +675,11 @@ class Menus:
         ioZone = [(c1,l1,c2,l2)]
         findOut = False
         circuitClose = True
+        #script = ""
         #chip_out_checked = []
         
         for f in self.func:
-            id, inLst, fName, outLst = f
+            idOut, inLst, fName, outLst = f
             for out in outLst:
                 #if out not in chip_out_checked:
                     if self.is_linked_to(ioZone, out): 
@@ -717,22 +718,25 @@ class Menus:
                                                     ######## RAPPEL RECURSIF SUR OUTZONE ######################
                                                     if outZone not in self.chip_out_checked:
                                                         self.chip_out_checked += [outZone]
-                                                        findNext = self.checkCloseCircuit(outZone)
-                                                    else: findNext = True
+                                                        findNext, s = self.checkCloseCircuit(outZone)
+                                                        inFuncConst += [s]
+                                                    else: 
+                                                         # il faut voir si une sortie io n'existe pas sinon var temp
+                                                         findNext = True
                                                     break
                             if not findIn and not findNext:
                                 self.in_outOC += [(id,inFunc)]
                                 circuitClose = False
                         if findIn or findNext:
                             #self.script += ") "
-                            self.script += self.decodeFunc(inFuncConst, fName) 
+                            script = self.decodeFunc(inFuncConst, fName) 
         if not findOut:
             self.in_outOC += [ioOut]   
             circuitClose = False 
         # if  not findIn and not findNext:
         #     circuitClose = False
 
-        return circuitClose           
+        return circuitClose, script        
                                     
                                 
         
@@ -934,9 +938,10 @@ class Menus:
             self.script = ""
             for ioOut in self.io_out:
                self.script += f"O{ioOut[0][4:]} = "
-               if  self.checkCloseCircuit(ioOut):
+               circuitClose, script = self.checkCloseCircuit(ioOut)
+               if circuitClose :
                         print(f"le circuit est fermée sur la sortie {ioOut}")
-                        self.script += f"; "
+                        self.script += f"{script}; "
                else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
                                     
         print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
