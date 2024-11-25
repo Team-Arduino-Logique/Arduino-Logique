@@ -9,7 +9,6 @@ from dataclasses import dataclass
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import json
-import os
 import subprocess
 import platform
 from typing import Callable
