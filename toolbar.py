@@ -73,7 +73,7 @@ class Toolbar:
 
         # Create buttons in the left frame
         self.create_button("Connection", left_frame, images)
-        self.create_button("Power", left_frame, images)
+        # self.create_button("Power", left_frame, images) # à ajouter après si besoin
         self.create_button("Input", left_frame, images)
         self.create_button("Output", left_frame, images)
 
