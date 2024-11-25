@@ -675,7 +675,7 @@ class Menus:
         ioZone = [(c1,l1,c2,l2)]
         findOut = False
         circuitClose = True
-        #script = ""
+        script = ""
         #chip_out_checked = []
         
         for f in self.func:
@@ -702,6 +702,16 @@ class Menus:
                                         inFuncConst += [f"I{id[4:]}"]
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE")
+                                        break
+                            if not findIn:
+                                for io_chipInZone in self.chip_in_wire:
+                                    id, zone = io_chipInZone
+                                    if self.is_linked_to(zone, inFunc):
+                                        inFuncConst += [f"I{id[4:]}"]
+                                        findIn = True
+                                        print("connecté à une ENTRÉE EXTERNE")
+                                        break
+                                    
                             if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
                                 findNext =False
                                 for nextOut in self.chip_out_wire: 
@@ -718,11 +728,32 @@ class Menus:
                                                     ######## RAPPEL RECURSIF SUR OUTZONE ######################
                                                     if outZone not in self.chip_out_checked:
                                                         self.chip_out_checked += [outZone]
-                                                        findNext, s = self.checkCloseCircuit(outZone)
-                                                        inFuncConst += [s]
+                                                        isPinOut = False
+                                                        for pinOut in self.io_out:
+                                                            id, pinZoneOut = pinOut
+                                                            if self.is_linked_to([pinZoneOut], pt):
+                                                                isPinOut = True
+                                                                inFuncConst += [f"O{id[4:]} "] 
+                                                                findNext = True
+                                                        if not isPinOut:
+                                                            findNext, s = self.checkCloseCircuit(outZone)
+                                                            inFuncConst += [s]
+                                                            self.chip_out_script += [(s,outZone)]
                                                     else: 
-                                                         # il faut voir si une sortie io n'existe pas sinon var temp
-                                                         findNext = True
+                                                        # il faut voir si une sortie io n'existe pas sinon var temp
+                                                        isPinOut = False
+                                                        for pinOut in self.io_out:
+                                                            id, pinZoneOut = pinOut
+                                                            if self.is_linked_to([pinZoneOut], pt):
+                                                                isPinOut = True
+                                                                inFuncConst += [f"O{id[4:]} "] 
+                                                        if not isPinOut:
+                                                            for coc in self.chip_out_script:
+                                                                if coc[1] == outZone:
+                                                                    exp = coc[0]
+                                                                    inFuncConst += [exp] 
+                                                                    break
+                                                        findNext = True
                                                     break
                             if not findIn and not findNext:
                                 self.in_outOC += [(id,inFunc)]
@@ -753,8 +784,10 @@ class Menus:
         self.pwrM, self.pwrP, self.wireNotUsed, self.pwrCC = [], [], [], []
         self.io_inCC, self.io_outCC = [], []
         self.chip_out_wire, self.chip_outCC = [], []
+        self.chip_in_wire = []
         self.in_outOC = []
         self.chip_out_checked = []
+        self.chip_out_script = []
 
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
@@ -900,12 +933,31 @@ class Menus:
      ###############   Verification des io_in sur pwr #####################
         for ioin in self.io_in:
             c1, l1 = ioin[1][0], ioin[1][1]
+            inChipInWire = False
             if self.is_linked_to(self.pwrM, (c1, l1)):
+                inChipInWire = True
                 if ioin[0] not in self.io_outCC:
                     self.io_outCC += [ioin[0]]
             elif self.is_linked_to(self.pwrP, (c1, l1)): 
+                inChipInWire = True
                 if ioin[0] not in self.io_outCC:
                     self.io_outCC += [ioin[0]]
+            if not inChipInWire:
+                ciw = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                again = True
+                while again and len(self.wireNotUsed)>0:
+                    again = False
+                    for wused in self.wireNotUsed[:]:
+                        id,cu1,lu1,cu2,lu2 = wused
+                        if self.is_linked_to(ciw, (cu1, lu1)):
+                                ciw += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
+                                self.wireNotUsed.remove(wused)
+                                again = True
+                        elif  self.is_linked_to(ciw, (cu2, lu2)):  
+                                ciw += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                                self.wireNotUsed.remove(wused)
+                                again = True
+            self.chip_in_wire += [(ioin[0], ciw)]
                     
         ###############   Verification des self.chip_out sur chip_out #####################
         for chipio in self.chip_out:
@@ -933,7 +985,7 @@ class Menus:
                                 again = True
             self.chip_out_wire += [cow]
         if not self.pwrCC and not self.pwrChip["pwrMissConnected"] and not self.chip_ioCC \
-                        and not self.io_outCC and not self.chip_outCC:
+                        and not self.io_outCC and not self.chip_outCC and not self.in_outOC:
             print("vérification du circuit fermé")
             self.script = ""
             for ioOut in self.io_out:
@@ -955,4 +1007,5 @@ class Menus:
         print(f"chip_outCC : {self.chip_outCC}")
         print(f"in_outOC : {self.in_outOC}")
         print(f"chip_out_wire : {self.chip_out_wire}")
+        print(f"chip_in_wire : {self.chip_in_wire}")
         print(f"script : {self.script}")
