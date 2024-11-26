@@ -6,6 +6,7 @@ The menu bar includes options for file operations, controller selection, port co
 from copy import deepcopy
 
 from dataclasses import dataclass
+import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import json
@@ -553,13 +554,13 @@ class Menus:
 
     def open_documentation(self):
         """Handler for the 'Documentation' menu item."""
-        file_path = "_internal/Assets/ArduinoLogique_Document_utilisateur.pdf" 
-        if platform.system() == "Windows": 
-            subprocess.Popen(['start', file_path], shell=True) 
-        elif platform.system() == "Darwin": # macOS 
-            subprocess.Popen(['open', file_path]) 
-        else: # Linux and other Unix-like systems 
-            subprocess.Popen(['xdg-open', file_path]) 
+        file_path = os.path.join(os.path.dirname(__file__), "Assets", "ArduinoLogique_Document_utilisateur.pdf")
+        if platform.system() == "Windows":
+            subprocess.Popen(["start", file_path], shell=True)
+        elif platform.system() == "Darwin":  # macOS
+            subprocess.Popen(["open", file_path])
+        else:  # Linux and other Unix-like systems
+            subprocess.Popen(["xdg-open", file_path])
 
     def about(self):
         """Handler for the 'About' menu item."""
