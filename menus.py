@@ -79,7 +79,6 @@ class Menus:
         parent (tk.Tk | tk.Frame): The main window or parent frame.
         canvas (tk.Canvas): The canvas widget for drawing circuits.
         board (Breadboard): The Breadboard instance.
-        model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
         com_port (str | None): The selected COM port.
     """
@@ -122,10 +121,7 @@ class Menus:
         menus = {
             "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
             "Microcontrôleur": ["Choisir un microcontrôleur", "Table de correspondance", "Configurer le port série"],
-            "Exporter": [
-                "Vérifier",
-                "Téléverser",
-            ],
+            "Exporter": ["Vérifier", "Téléverser"],
             "Aide": ["Documentation", "À propos"],
         }
 
@@ -143,6 +139,16 @@ class Menus:
 
         for menu_name, options in menus.items():
             self.create_menu(menu_name, options, menu_commands)
+
+        # Display selected microcontroller label
+        self.microcontroller_label = tk.Label(
+            self.menu_bar,
+            text="(Aucun microcontrôleur n'est choisi)",
+            bg="#333333",
+            fg="white",
+            font=("FiraCode-Bold", 12),
+        )
+        self.microcontroller_label.pack(side="right", padx=10)
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
@@ -171,6 +177,8 @@ class Menus:
             print(f"Selected option: {selected_option}")
             self.selected_microcontroller = selected_option
             print(f"{selected_option} selected.")
+            # Update the label text
+            self.microcontroller_label.config(text=self.selected_microcontroller)
             dialog.destroy()
 
         confirm_button = tk.Button(dialog, text="Confirmer", command=confirm_selection)
