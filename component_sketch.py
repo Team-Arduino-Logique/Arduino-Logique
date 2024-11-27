@@ -2582,18 +2582,19 @@ class ComponentSketcher:
             label_x = (x_distance + x_origin + 5 * scale,)
             label_y = (y_distance + y_origin - 17 * scale,)
 
-            label_tag = f"{element_id}_label"
-            text_id = self.canvas.create_text(
-                label_x,
-                label_y,
-                text=pin_number,
-                font=("FiraCode-Bold", int(7 * scale)),
-                fill="#000000",
-                anchor="center",
-                tags=(element_id, label_tag),
-            )
-            params["label_tag"] = label_tag
-            params["tags"].append(text_id)
+            if element_type != CLOCK:
+                label_tag = f"{element_id}_label"
+                text_id = self.canvas.create_text(
+                    label_x,
+                    label_y,
+                    text=pin_number,
+                    font=("FiraCode-Bold", int(7 * scale)),
+                    fill="#000000",
+                    anchor="center",
+                    tags=(element_id, label_tag),
+                )
+                params["label_tag"] = label_tag
+                params["tags"].append(text_id)
 
             if element_type == INPUT:
                 # Arrow pointing down
@@ -2648,7 +2649,7 @@ class ComponentSketcher:
 
             elif element_type == CLOCK:
                 x_start = x_distance + x_origin + 0 * scale
-                y_start = y_distance + y_origin - 7 * scale
+                y_start = y_distance + y_origin - 13 * scale
 
 
                 l1 = 5 * scale 
