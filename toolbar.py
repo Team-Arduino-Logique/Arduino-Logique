@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import messagebox, colorchooser
 import os
 from component_sketch import ComponentSketcher
-from dataCDLT import INPUT, OUTPUT, FREE
+from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
 
@@ -76,6 +76,7 @@ class Toolbar:
         # self.create_button("Power", left_frame, images) # à ajouter après si besoin
         self.create_button("Input", left_frame, images)
         self.create_button("Output", left_frame, images)
+        self.create_button("Clock", left_frame, images)
 
         # Create the color chooser and Delete button in the right frame
         self.color_button = tk.Button(
@@ -96,7 +97,7 @@ class Toolbar:
         """
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
-        icon_names = ["connection", "power", "input", "output", "delete"]
+        icon_names = ["connection", "power", "input", "output", "delete", "clock"]
         icons_folder = Path(resource_path("Assets/Icons")).resolve()
         images: dict[str, tk.PhotoImage | None] = {}
         for name in icon_names:
@@ -337,19 +338,26 @@ class Toolbar:
                 self.sketcher.wire_drag_data["creating_wire"] = False
                 print("Wire placement completed.")
 
-        elif self.tool_mode in ("Input", "Output") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
+        elif self.tool_mode in ("Input", "Output", "Clock") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
             # pin_io placement logic
-            type_const = INPUT if self.tool_mode == "Input" else OUTPUT
-            model_pin_io = [
-                (
-                    self.sketcher.draw_pin_io,
-                    1,
-                    {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": self.sketcher.matrix},
-                )
-            ]
-            self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
-            # Optionally deactivate after placement
-            # self.cancel_pin_io_placement()
+            type_const = None
+            if self.tool_mode == "Clock":
+                type_const = CLOCK
+            elif self.tool_mode == "Output":
+                type_const = OUTPUT
+            elif self.tool_mode == "Input":
+                type_const = INPUT
+            if type_const is not None:
+                model_pin_io = [
+                    (
+                        self.sketcher.draw_pin_io,
+                        1,
+                        {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": self.sketcher.matrix},
+                    )
+                ]
+                self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
+                # Optionally deactivate after placement
+                # self.cancel_pin_io_placement()
 
     def cancel_placement(self, _=None):
         """

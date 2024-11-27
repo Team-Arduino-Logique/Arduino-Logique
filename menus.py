@@ -14,7 +14,7 @@ import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
-from dataCDLT import INPUT, OUTPUT, USED
+from dataCDLT import INPUT, OUTPUT, USED, CLOCK
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -190,11 +190,17 @@ class Menus:
         # Gather pin_io objects from current_dict_circuit
         pin_ios = [value for key, value in self.current_dict_circuit.items() if key.startswith("_io_")]
 
-        # Separate pin_ios into inputs and outputs
+        # Separate pin_ios into inputs, outputs, and clocks
         input_pin_ios = [pin for pin in pin_ios if pin["type"] == INPUT]
         output_pin_ios = [pin for pin in pin_ios if pin["type"] == OUTPUT]
+        clock_pin_ios = [pin for pin in pin_ios if pin["type"] == CLOCK]
 
-        # Check if we have more pin_ios than available pins
+        # Ensure only one CLOCK type
+        if len(clock_pin_ios) > 1:
+            messagebox.showerror("Clock Error", "Only one CLOCK is allowed.")
+            return
+
+        # Check pin counts
         if len(input_pin_ios) > len(input_pins):
             messagebox.showerror(
                 "Too Many Inputs",
@@ -213,21 +219,21 @@ class Menus:
         # Create a new window for the correspondence table
         table_window = tk.Toplevel(self.parent)
         table_window.title("Correspondence Table")
-        table_window.geometry("400x300")
+        table_window.geometry("500x350")
 
         # Create a Treeview widget for the table
-        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=10)
+        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=15)
         tree.pack(expand=True, fill="both", padx=10, pady=10)
 
         # Define columns and headings
         tree.column("ID", anchor="center", width=120)
-        tree.column("Type", anchor="center", width=80)
+        tree.column("Type", anchor="center", width=120)
         tree.column("MCU Pin", anchor="center", width=120)
         tree.heading("ID", text="Pin IO ID")
         tree.heading("Type", text="Type")
         tree.heading("MCU Pin", text="MCU Pin")
 
-        # Populate the table with input and output pin mappings
+        # Populate the table with input, output, and clock pin mappings
         for idx, pin_io in enumerate(input_pin_ios):
             mcu_pin = input_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
@@ -237,6 +243,11 @@ class Menus:
             mcu_pin = output_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
             tree.insert("", "end", values=(pin_number, "Output", mcu_pin))
+
+        if clock_pin_ios:
+            clock_pin = pin_mappings["clock_pin"]
+            pin_number = clock_pin_ios[0]["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "clk input", clock_pin))
 
         # Add a scrollbar if the list gets too long
         scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
