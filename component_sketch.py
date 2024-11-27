@@ -26,6 +26,7 @@ from dataCDLT import (
     USED,
     INPUT,
     OUTPUT,
+    CLOCK,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 from utils import resource_path
@@ -2644,6 +2645,45 @@ class ComponentSketcher:
                     tags=(element_id, interactive_tag, outline_tag),
                 )
                 params["tags"].append(arrow_head_id)
+
+            elif element_type == CLOCK:
+                x_start = x_distance + x_origin + 0 * scale
+                y_start = y_distance + y_origin - 7 * scale
+
+
+                l1 = 5 * scale 
+                h  = 5 * scale 
+                l2 = 5 * scale 
+
+                # Draw the first horizontal line '_'
+                line1_id = self.canvas.create_line(
+                    x_start, y_start,
+                    x_start + l1, y_start,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line1_id)
+
+                # Draw the vertical line '|'
+                line2_id = self.canvas.create_line(
+                    x_start + l1, y_start,
+                    x_start + l1, y_start - h,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line2_id)
+
+                # Draw the second horizontal line '_'
+                line3_id = self.canvas.create_line(
+                    x_start + l1, y_start - h,
+                    x_start + l1 + l2, y_start - h,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line3_id)
 
             self.current_dict_circuit[element_id] = params
 
