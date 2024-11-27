@@ -21,7 +21,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install PyInstaller
-        run: pip install pyinstaller pyserial
+        run: pip install pyinstaller pyserial tkmacosx
 
       - name: Build with PyInstaller
         run: pyinstaller arduino_logique.spec

@@ -7,7 +7,6 @@ bar to filter chips, and includes a button to manage components.
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
-from tkinter import messagebox, font
 import os
 from typing import Callable, Tuple
 import subprocess
@@ -17,6 +16,12 @@ from toolbar import Toolbar
 from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
+
+if os.name == "darwin":
+    from tkinter import messagebox, font
+    from tkmacosx import Button # type: ignore
+else:
+    from tkinter import Button, messagebox, font
 
 
 @dataclass
@@ -217,7 +222,7 @@ class Sidebar:
         for index, (chip, chip_image) in enumerate(display_chips):
             row = index // self.sidebar_grid.columns
             col = index % self.sidebar_grid.columns
-            btn = tk.Button(
+            btn = Button(
                 self.chips_inner_frame,
                 image=chip_image,
                 text=chip.chip_type,
@@ -257,7 +262,7 @@ class Sidebar:
         """
         Creates the 'Manage Components' button at the bottom of the sidebar without an icon.
         """
-        manage_button = tk.Button(
+        manage_button = Button(
             sidebar_frame,
             text="Manage Components",
             bg="#333333",  # Matching the sidebar's background to simulate transparency
