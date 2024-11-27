@@ -113,7 +113,7 @@ class Toolbar:
                 images[name] = image
             except tk.TclError:
                 messagebox.showerror(
-                    "Image Load Error", f"Failed to load {path}. Ensure the file exists and is a valid PNG image."
+                    "Erreur de chargement d'image", f"Échec du chargement de {path}. Assurez-vous que le fichier existe et est une image PNG valide."
                 )
                 images[name] = None  # Fallback if image fails to load
 

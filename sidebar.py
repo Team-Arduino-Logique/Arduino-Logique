@@ -117,7 +117,7 @@ class Sidebar:
         images_dict: dict[str, tk.PhotoImage] = {}
 
         if not os.path.isdir(img_path):
-            messagebox.showerror("Error", f"Chip images directory '{img_path}' not found.")
+            messagebox.showerror("Erreur", f"Répertoire des images de puces '{img_path}' introuvable.")
             return images_dict
 
         supported_formats = (".png", ".gif", ".ppm", ".pgm")
@@ -134,7 +134,7 @@ class Sidebar:
                     print(f"Loaded and scaled chip image: {filename}")
                 except (tk.TclError, FileNotFoundError) as e:
                     print(f"Error loading image '{filename}': {e}")
-                    messagebox.showwarning("Image Load Error", f"Failed to load '{filename}'.")
+                    messagebox.showwarning("Erreur de chargement d'image", f"Échec du chargement de '{filename}'.")
         return images_dict
 
     def create_search_bar(self, sidebar_frame):
@@ -147,7 +147,7 @@ class Sidebar:
 
         # Search label
         search_label = tk.Label(
-            search_frame, text="Search Chips", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
+            search_frame, text="Rechercher des composants", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
         )
         search_label.pack(anchor="w")
 
@@ -169,7 +169,7 @@ class Sidebar:
 
         # Chips label
         chips_label = tk.Label(
-            chips_label_frame, text="Available Chips", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
+            chips_label_frame, text="Composants disponibles", bg="#333333", fg="#479dff", font=("Arial", 10, "bold")
         )
         chips_label.pack(anchor="w")
 
@@ -259,7 +259,7 @@ class Sidebar:
         """
         manage_button = tk.Button(
             sidebar_frame,
-            text="Manage Components",
+            text="Gérer les composants",
             bg="#333333",  # Matching the sidebar's background to simulate transparency
             fg="white",
             activebackground="#333333",
@@ -400,7 +400,7 @@ class Sidebar:
         print(f"Nearest grid point: {nearest_x}, {nearest_y}, Column: {column}, Line: {line}")
 
         if column is None or line is None:
-            messagebox.showerror("Placement Error", "No grid point found nearby.")
+            messagebox.showerror("Erreur de placement", "Aucun point de grille trouvé à proximité.")
             return
 
         try:
@@ -409,7 +409,7 @@ class Sidebar:
                 raise IndexError()
         except IndexError as e:
             print(f"Error: {e}")
-            messagebox.showerror("Error", f"Unknown chip: {chip_name}")
+            messagebox.showerror("Erreur", f"Puces inconnues : {chip_name}")
             return
 
         chip_dict["internalFunc"] = self.sketcher.internal_func
@@ -491,7 +491,7 @@ class Sidebar:
             with subprocess.Popen(["open", path] if sys.platform == "darwin" else ["xdg-open", path]):
                 pass
         else:
-            messagebox.showerror("Error", "Unsupported operating system.")
+            messagebox.showerror("Erreur", "Système d'exploitation non pris en charge.")
 
     def on_search(self, _):
         """

@@ -173,18 +173,18 @@ class Menus:
             print(f"{selected_option} selected.")
             dialog.destroy()
 
-        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button = tk.Button(dialog, text="Confirmer", command=confirm_selection)
         confirm_button.pack(pady=10)
 
     def show_correspondence_table(self):
         """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
         if self.selected_microcontroller is None:
-            messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
+            messagebox.showwarning("Aucun microcontrôleur sélectionné", "Veuillez d'abord sélectionner un microcontrôleur.")
             return
 
         pin_mappings = MICROCONTROLLER_PINS.get(self.selected_microcontroller)
         if not pin_mappings:
-            messagebox.showerror("Error", f"No pin mappings found for {self.selected_microcontroller}.")
+            messagebox.showerror("Erreur", f"Aucun mappage de broches trouvé pour {self.selected_microcontroller}.")
             return
 
         input_pins = pin_mappings["input_pins"]
@@ -200,22 +200,22 @@ class Menus:
 
         # Ensure only one CLOCK type
         if len(clock_pin_ios) > 1:
-            messagebox.showerror("Clock Error", "Only one CLOCK is allowed.")
+            messagebox.showerror("Erreur d'horloge", "Une seule HORLOGE est autorisée.")
             return
 
         # Check pin counts
         if len(input_pin_ios) > len(input_pins):
             messagebox.showerror(
-                "Too Many Inputs",
-                f"You have {len(input_pin_ios)} input pin_ios but only "
-                f"{len(input_pins)} available input pins on the microcontroller.",
+                "Trop d'entrées",
+                f"Vous avez {len(input_pin_ios)} broches d'entrée, mais seulement "
+                f"{len(input_pins)} broches d'entrée disponibles sur le microcontrôleur.",
             )
             return
         if len(output_pin_ios) > len(output_pins):
             messagebox.showerror(
-                "Too Many Outputs",
-                f"You have {len(output_pin_ios)} output pin_ios but only "
-                f"{len(output_pins)} available output pins on the microcontroller.",
+                "Trop de sorties",
+                f"Vous avez {len(output_pin_ios)} broches de sortie, mais seulement "
+                f"{len(output_pins)} broches de sortie disponibles sur le microcontrôleur.",
             )
             return
 
@@ -395,7 +395,7 @@ class Menus:
         self.board.draw_blank_board_model()
 
         print("New file created.")
-        messagebox.showinfo("New File", "A new circuit has been created.")
+        messagebox.showinfo("Nouveau fichier", "Un nouveau circuit a été créé.")
 
     def open_file(self):
         """Handler for the 'Open' menu item."""
@@ -440,10 +440,10 @@ class Menus:
                     else:
 
                         print(f"Unspecified component: {key}")
-                messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
+                messagebox.showinfo("Ouvrir un fichier", f"Circuit chargé depuis {file_path}")
             except Exception as e:
                 print(f"Error loading file: {e}")
-                messagebox.showerror("Open Error", f"An error occurred while opening the file:\n{e}")
+                messagebox.showerror("Erreur d'ouverture", f"Une erreur s'est produite lors de l'ouverture du fichier:\n{e}")
                 raise e
         else:
             print("Open file cancelled.")
@@ -528,10 +528,10 @@ class Menus:
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
                 print(f"Circuit saved to {file_path}")
-                messagebox.showinfo("Save Successful", f"Circuit saved to {file_path}")
+                messagebox.showinfo("Sauvegarde réussie", f"Circuit sauvegardé dans {file_path}")
             except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
-                messagebox.showerror("Save Error", f"An error occurred while saving the file:\n{e}")
+                messagebox.showerror("Erreur de sauvegarde", f"Une erreur s'est produite lors de la sauvegarde du fichier:\n{e}")
         else:
             print("Save file cancelled.")
 
@@ -542,7 +542,7 @@ class Menus:
         if len(options) == 0:
             message = "No COM ports available. Please connect a device and try again."
             print(message)
-            messagebox.showwarning("No COM Ports", message)
+            messagebox.showwarning("Pas de ports COM", message)
         else:
             dialog = tk.Toplevel(self.parent)
             dialog.title("Configure Ports")
@@ -576,7 +576,7 @@ class Menus:
     def about(self):
         """Handler for the 'About' menu item."""
         print("About this software")
-        messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
+        messagebox.showinfo("À propos", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
 
     def open_port(self):
         """Handler for the 'Open Port' menu item."""
