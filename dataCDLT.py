@@ -8,6 +8,7 @@ FREE = 0
 USED = 1
 INPUT = 0
 OUTPUT = 1
+CLOCK = 2
 NO = 0
 YES = 1
 LEFT = 0
