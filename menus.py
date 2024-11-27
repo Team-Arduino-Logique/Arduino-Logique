@@ -8,16 +8,20 @@ from copy import deepcopy
 from dataclasses import dataclass
 import os
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
 import json
 import subprocess
 import platform
-from typing import Callable
 import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
-from dataCDLT import INPUT, OUTPUT, USED
+from dataCDLT import INPUT, OUTPUT
+
+if os.name == "darwin":
+    from tkinter import messagebox, filedialog, ttk
+    from tkmacosx import Button # type: ignore
+else:
+    from tkinter import Button, messagebox, filedialog, ttk
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -173,7 +177,7 @@ class Menus:
             print(f"{selected_option} selected.")
             dialog.destroy()
 
-        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
         confirm_button.pack(pady=10)
 
     def show_correspondence_table(self):
@@ -260,7 +264,7 @@ class Menus:
         - options (list): List of options under the menu.
         """
         # Create the menu button
-        btn = tk.Button(
+        btn = Button(
             self.menu_bar,
             text=menu_name,
             bg="#333333",
@@ -293,7 +297,7 @@ class Menus:
 
         # Populate the dropdown with menu options
         for option in options:
-            option_btn = tk.Button(
+            option_btn = Button(
                 dropdown,
                 text=option,
                 bg="#333333",
@@ -324,7 +328,7 @@ class Menus:
         - menu_name (str): The name of the menu to toggle.
         """
         for child in self.menu_bar.winfo_children():
-            if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+            if isinstance(child, Button) and hasattr(child, "dropdown"):
                 if child["text"] == menu_name:
                     if child.dropdown.winfo_ismapped():
                         child.dropdown.place_forget()
@@ -368,11 +372,11 @@ class Menus:
             and not any(
                 self.is_descendant(event.widget, child.dropdown)
                 for child in self.menu_bar.winfo_children()
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+                if isinstance(child, Button) and hasattr(child, "dropdown")
             )
         ):
             for child in self.menu_bar.winfo_children():
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+                if isinstance(child, Button) and hasattr(child, "dropdown"):
                     child.dropdown.place_forget()
 
     # Menu Handler Functions
@@ -549,7 +553,7 @@ class Menus:
                 self.serial_port.com_port = selected_option
                 dialog.destroy()
 
-            confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+            confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
             confirm_button.pack(pady=10)
 
     def open_documentation(self):
