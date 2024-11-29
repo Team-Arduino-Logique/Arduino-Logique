@@ -173,6 +173,7 @@ class Menus:
         available_microcontrollers = list(MICROCONTROLLER_PINS.keys())
         # Create a combobox with the options
         combobox = ttk.Combobox(dialog, values=available_microcontrollers)
+        combobox.set(self.selected_microcontroller if self.selected_microcontroller else "Choisir un microcontrôleur")
         combobox.pack(pady=10)
 
         # Create a button to confirm the selection
