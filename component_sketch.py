@@ -2024,6 +2024,10 @@ class ComponentSketcher:
         dim["chipWidth"] = kwargs.get("chipWidth", dim["chipWidth"])
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
+        dim["io_select"] = kwargs.get("io_select", None)
+        dim["io_out_inv"] = kwargs.get("io_out_inv", None)
+        dim["io_enable"] = kwargs.get("io_enable", None)
+        dim["io_enable_inv"] = kwargs.get("io_enable_inv", None)
         dim["pwr"] = kwargs.get("pwr", None)
 
         logic_function_name = kwargs.get("logicFunctionName", None)
@@ -2072,6 +2076,10 @@ class ComponentSketcher:
             params["pwr"] = pwr
             params["logicFunctionName"] = logic_function_name
             params["pwr"] = dim["pwr"]
+            params["io_select"] = dim["io_select"] 
+            params["io_out_inv"] = dim["io_out_inv"] 
+            params["io_enable"] = dim["io_enable"] 
+            params["io_enable_inv"] = dim["io_enable_inv"]
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id
             tag_menu = "menu" + chip_id

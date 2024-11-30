@@ -11,6 +11,7 @@ from tkinter import messagebox, filedialog, ttk
 import json
 from typing import Callable
 import serial.tools.list_ports  # type: ignore
+from tkmacosx import Button
 
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
@@ -182,7 +183,9 @@ class Menus:
         # Create a combobox with the options
         combobox = ttk.Combobox(dialog, values=available_microcontrollers)
         combobox.pack(pady=10)
-
+        
+        default_option = "Arduino Mega"  # Changez ceci selon votre choix
+        combobox.set(default_option)   # Définit l'option par défaut
         # Create a button to confirm the selection
         def confirm_selection():
             selected_option = combobox.get()
@@ -191,10 +194,26 @@ class Menus:
             print(f"{selected_option} selected.")
             dialog.destroy()
 
-        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
         confirm_button.pack(pady=10)
+        
+    # def map_mcu_pin(self, treeview=None, input_pin_ios, output_pin_ios, input_pins, output_pins):
+    #     # Populate the table with input and output pin mappings
+    #     self.mcu_pin= {}
+    #     for idx, pin_io in enumerate(input_pin_ios):
+    #         mcu_pin = input_pins[idx]
+    #         pin_number = pin_io["id"].split("_")[-1]
+    #         treeview.insert("", "end", values=(pin_number, "Input", mcu_pin))
+    #         self.mcu_pin.update({f"I{pin_number}":f"I{mcu_pin}"})
+            
 
-    def show_correspondence_table(self):
+    #     for idx, pin_io in enumerate(output_pin_ios):
+    #         mcu_pin = output_pins[idx]
+    #         pin_number = pin_io["id"].split("_")[-1]
+    #         treeview.insert("", "end", values=(pin_number, "Output", mcu_pin))
+    #         self.mcu_pin.update({f"O{pin_number}":f"O{mcu_pin}"})
+            
+    def show_correspondence_table(self, show=True):
         """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
         if self.selected_microcontroller is None:
             messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
@@ -233,9 +252,11 @@ class Menus:
 
         # Create a new window for the correspondence table
         table_window = tk.Toplevel(self.parent)
+        table_window.withdraw()
         table_window.title("Correspondence Table")
         table_window.geometry("400x300")
 
+        # if show:
         # Create a Treeview widget for the table
         tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=10)
         tree.pack(expand=True, fill="both", padx=10, pady=10)
@@ -248,26 +269,34 @@ class Menus:
         tree.heading("Type", text="Type")
         tree.heading("MCU Pin", text="MCU Pin")
 
+        #self.map_mcu_pin(tree, input_pin_ios, output_pin_ios, input_pins, output_pins)
         # Populate the table with input and output pin mappings
+        self.mcu_pin= {}
         for idx, pin_io in enumerate(input_pin_ios):
             mcu_pin = input_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
+            # if show:
             tree.insert("", "end", values=(pin_number, "Input", mcu_pin))
+            self.mcu_pin.update({f"I{pin_number}":f"I{mcu_pin}"})
+            
 
         for idx, pin_io in enumerate(output_pin_ios):
             mcu_pin = output_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
             tree.insert("", "end", values=(pin_number, "Output", mcu_pin))
+            self.mcu_pin.update({f"O{pin_number}":f"O{mcu_pin}"})
 
-        # Add a scrollbar if the list gets too long
-        scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
-        tree.configure(yscroll=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+        if show:
+            table_window.deiconify() 
+            # Add a scrollbar if the list gets too long
+            scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
+            tree.configure(yscroll=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
 
-        # Show the table in the new window
-        table_window.transient(self.parent)  # Set to be on top of the parent window
-        table_window.grab_set()  # Prevent interaction with the main window until closed
-        table_window.mainloop()
+            # Show the table in the new window
+            table_window.transient(self.parent)  # Set to be on top of the parent window
+            table_window.grab_set()  # Prevent interaction with the main window until closed
+            table_window.mainloop()
 
     def create_menu(self, menu_name, options, menu_commands):
         """
@@ -278,7 +307,7 @@ class Menus:
         - options (list): List of options under the menu.
         """
         # Create the menu button
-        btn = tk.Button(
+        btn = Button(
             self.menu_bar,
             text=menu_name,
             bg="#333333",
@@ -313,7 +342,7 @@ class Menus:
 
         # Populate the dropdown with menu options
         for option in options:
-            option_btn = tk.Button(
+            option_btn = Button(
                 dropdown,
                 text=option,
                 bg="#333333",
@@ -346,7 +375,7 @@ class Menus:
         - menu_name (str): The name of the menu to toggle.
         """
         for child in self.menu_bar.winfo_children():
-            if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+            if isinstance(child, Button) and hasattr(child, "dropdown"):
                 if child["text"] == menu_name:
                     if child.dropdown.winfo_ismapped():
                         child.dropdown.place_forget()
@@ -390,11 +419,11 @@ class Menus:
             and not any(
                 self.is_descendant(event.widget, child.dropdown)
                 for child in self.menu_bar.winfo_children()
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+                if isinstance(child, Button) and hasattr(child, "dropdown")
             )
         ):
             for child in self.menu_bar.winfo_children():
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+                if isinstance(child, Button) and hasattr(child, "dropdown"):
                     child.dropdown.place_forget()
 
     # Menu Handler Functions
@@ -571,7 +600,7 @@ class Menus:
                 self.serial_port.com_port = selected_option
                 dialog.destroy()
 
-            confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+            confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
             confirm_button.pack(pady=10)
 
     def open_documentation(self):
@@ -636,43 +665,59 @@ class Menus:
     
     def decodeFunc(self,inVar, funcName):
         if funcName == "NandGate":
-            s = f"! ( {inVar[0]} "
+            s = f"! ( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"& {v} "
+                s += f"& {v["val"]} "
             s += ") "
         elif funcName == "AndGate":
-            s = f"( {inVar[0]} "
+            s = f"( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"& {v} "
+                s += f"& {v["val"]} "
             s += ") "   
         elif funcName == "NorGate":
-            s = f"! ( {inVar[0]} "
+            s = f"! ( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"| {v} "
+                s += f"| {v["val"]} "
             s += ") "         
         elif funcName == "OrGate":
-            s = f"( {inVar[0]} "
+            s = f"( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"| {v} "
+                s += f"| {v["val"]} "
             s += ") "         
         elif funcName == "NotGate":
-            s = f"! {inVar[0]} "
+            s = f"! {inVar[0]["val"]} "
         elif funcName == "XorGate":
-            s = f"( {inVar[0]} "
+            s = f"( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"^ {v} "
+                s += f"^ {v["val"]} "
             s += ") "  
         elif funcName == "XnorGate":
-            s = f"! ( {inVar[0]} "
+            s = f"! ( {inVar[0]["val"]} "
             for v in inVar[1:]:
-                s += f"| {v} "
-            s += ") "    
+                s += f"| {v["val"]} "
+            s += ") "  
+        elif funcName == "Mux":  
+            e =["( ","( ","( ","( ","( ","( ","( ","( "]
+            for v in range(8):
+                v2, v1, v0  = (v & 1)^1, ((v & 2) >> 1)^1, ((v & 4) >> 2)^1
+                e[v] += inVar[v]["val"] + " & " + inVar[11]["einv"] + " & " + \
+                        v0*" ! " + inVar[8]["sel"] + " & " + v1*" ! " + inVar[9]["sel"] + " & " + v2*" ! " + inVar[10]["sel"] + " ) "
+            s = " ( " + e[0]
+            for et in e[1:]:
+                s += "| " + et
+            s += " ) "
+            
 
         return s                   
     
-    def checkCloseCircuit(self, ioOut):
+    def checkCloseCircuit(self, ioOut, params={}):
         id, (c1,l1,c2,l2)  = ioOut 
         ioZone = [(c1,l1,c2,l2)]
+        chip_select = params.get("chip_select", [])
+        chip_out_inv =  params.get("chip_out_inv", [])
+        chip_in_enable = params.get("chip_in_enable", [])
+        chip_in_enable_inv =  params.get("chip_in_enable_inv", [])
+        
         findOut = False
         circuitClose = True
         script = ""
@@ -680,6 +725,25 @@ class Menus:
         
         for f in self.func:
             idOut, inLst, fName, outLst = f
+            if chip_select:
+                  chipSel = chip_select  
+                  [chipSel] = [list(chipS[1:]) for chipS in chipSel if chipS[0] == idOut]
+            else: chipSel = []
+            if chip_in_enable_inv:
+                  chipEnInv = chip_in_enable_inv  
+                  [chipEnInv] = [list(chipEI[1:]) for chipEI in chipEnInv if chipEI[0] == idOut]
+            else: chipEnInv = []
+            if chip_in_enable:
+                  chipEn = chip_in_enable  
+                  [chipEn] = [list(chipE[1:]) for chipE in chipEn if chipE[0] == idOut]
+            else: chipEn = []
+            if chip_out_inv:
+                  chipOutInv = chip_out_inv 
+                  [chipOutInv] = [list(chipOI[1:]) for chipOI in chipOutInv if chipOI[0] == idOut]
+            else: chipOutInv = []
+            
+            inLst += chipSel  + chipEnInv + chipEn
+            outLst += chipOutInv
             for out in outLst:
                 #if out not in chip_out_checked:
                     if self.is_linked_to(ioZone, out): 
@@ -690,16 +754,38 @@ class Menus:
                         for n,inFunc in enumerate(inLst):
                             findIn = False
                             if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
+                                constKey = "val"
+                                pos, neg = "1", "0"
+                                for c in chipSel:
+                                    if c == inFunc:
+                                        constKey = "sel"
+                                for c in chipEnInv:
+                                    if c == inFunc:
+                                        constKey = "einv"
+                                        pos, neg = "0", "1"
+                                for c in chipEn:
+                                    if c == inFunc:
+                                        constKey = "enb"
                                 if self.is_linked_to(self.pwrP, inFunc):
-                                        inFuncConst += ["1"]
-                                else:   inFuncConst += ["0"]
+                                        inFuncConst += [{constKey:pos, "num":n}]
+                                else:   inFuncConst += [{constKey:neg, "num":n}]
                                 findIn = True
                                 print("connecté à pwr")
                             if not findIn:
                                 for io_inZone in self.io_in:
                                     id, zone = io_inZone
                                     if self.is_linked_to([zone], inFunc):
-                                        inFuncConst += [f"I{id[4:]}"]
+                                        constKey = "val"
+                                        for c in chipSel:
+                                            if c == inFunc:
+                                                constKey = "sel"
+                                        for c in chipEnInv:
+                                            if c == inFunc:
+                                                constKey = "einv"
+                                        for c in chipEn:
+                                            if c == inFunc:
+                                                constKey = "enb"
+                                        inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE")
                                         break
@@ -707,9 +793,19 @@ class Menus:
                                 for io_chipInZone in self.chip_in_wire:
                                     id, zone = io_chipInZone
                                     if self.is_linked_to(zone, inFunc):
-                                        inFuncConst += [f"I{id[4:]}"]
+                                        constKey = "val"
+                                        for c in chipSel:
+                                            if c == inFunc:
+                                                constKey = "sel"
+                                        for c in chipEnInv:
+                                            if c == inFunc:
+                                                constKey = "einv"
+                                        for c in chipEn:
+                                            if c == inFunc:
+                                                constKey = "enb"
+                                        inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n}]
                                         findIn = True
-                                        print("connecté à une ENTRÉE EXTERNE")
+                                        print("connecté à une ENTRÉE EXTERNE par cable") # ici ajouter n {"val":self.mcu_pin[f"I{id[4:]}"], "num":n}
                                         break
                                     
                             if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
@@ -732,12 +828,42 @@ class Menus:
                                                         for pinOut in self.io_out:
                                                             id, pinZoneOut = pinOut
                                                             if self.is_linked_to([pinZoneOut], pt):
+                                                                outPrev = self.mcu_pin[f"O{id[4:]}"]
+                                                                constKey = "val"
+                                                                for c in chipSel:
+                                                                    if c == inFunc:
+                                                                        constKey = "sel"
+                                                                for c in chipEnInv:
+                                                                    if c == inFunc:
+                                                                        constKey = "einv"
+                                                                for c in chipEn:
+                                                                    if c == inFunc:
+                                                                        constKey = "enb"
+                                                                
+                                                                for c in chipOutInv:
+                                                                    if c == pt:
+                                                                        outPrev = "! " + outPrev
                                                                 isPinOut = True
-                                                                inFuncConst += [f"O{id[4:]} "] 
+                                                                inFuncConst += [{constKey:outPrev, "num":n}] # [self.mcu_pin[f"O{id[4:]}"]] 
                                                                 findNext = True
                                                         if not isPinOut:
                                                             findNext, s = self.checkCloseCircuit(outZone)
-                                                            inFuncConst += [s]
+                                                            constKey = "val"
+                                                            for c in chipSel:
+                                                                if c == inFunc:
+                                                                    constKey = "sel"
+                                                            for c in chipEnInv:
+                                                                if c == inFunc:
+                                                                    constKey = "einv"
+                                                            for c in chipEn:
+                                                                if c == inFunc:
+                                                                    constKey = "enb"
+                                                            
+                                                            for c in chipOutInv:
+                                                                if c == pt:
+                                                                    s = "! " + s 
+                                                                    
+                                                            inFuncConst += [{constKey:s, "num":n}]
                                                             self.chip_out_script += [(s,outZone)]
                                                     else: 
                                                         # il faut voir si une sortie io n'existe pas sinon var temp
@@ -746,12 +872,43 @@ class Menus:
                                                             id, pinZoneOut = pinOut
                                                             if self.is_linked_to([pinZoneOut], pt):
                                                                 isPinOut = True
-                                                                inFuncConst += [f"O{id[4:]} "] 
+                                                                outPrev = self.mcu_pin[f"O{id[4:]}"]
+                                                                constKey = "val"
+                                                                for c in chipSel:
+                                                                    if c == inFunc:
+                                                                        constKey = "sel"
+                                                                for c in chipEnInv:
+                                                                    if c == inFunc:
+                                                                        constKey = "einv"
+                                                                for c in chipEn:
+                                                                    if c == inFunc:
+                                                                        constKey = "enb"
+                                                                        
+                                                                for c in chipOutInv:
+                                                                    if c == pt:
+                                                                        outPrev = "! " + outPrev
+                                                                        
+                                                                inFuncConst += [{constKey:outPrev, "num":n}]
                                                         if not isPinOut:
                                                             for coc in self.chip_out_script:
                                                                 if coc[1] == outZone:
                                                                     exp = coc[0]
-                                                                    inFuncConst += [exp] 
+                                                                    constKey = "val"
+                                                                    for c in chipSel:
+                                                                        if c == inFunc:
+                                                                            constKey = "sel"
+                                                                    for c in chipEnInv:
+                                                                        if c == inFunc:
+                                                                            constKey = "einv"
+                                                                    for c in chipEn:
+                                                                        if c == inFunc:
+                                                                            constKey = "enb"
+                                                                            
+                                                                    for c in chipOutInv:
+                                                                        if c == pt:
+                                                                            exp = "! " + exp
+                                                                            
+                                                                    inFuncConst += [{constKey:exp, "num":n}] 
                                                                     break
                                                         findNext = True
                                                     break
@@ -776,10 +933,15 @@ class Menus:
         print("Lancer la vérification")
         self.func = []
         self.wire = []
-        self.pwrs = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
+        (xBatNeg, yBatNeg) = self.current_dict_circuit['_battery_neg_wire']["end"]
+        (xBatPos, yBatPos) = self.current_dict_circuit['_battery_pos_wire']["end"]
+        (_, _),(colBatNeg, lineBatNeg) = self.sketcher.find_nearest_grid_point(xBatNeg, yBatNeg)
+        (_, _),(colBatPos, lineBatPos) = self.sketcher.find_nearest_grid_point(xBatPos, yBatPos)
+        #self.pwrs = [(61, 1, "-"), (61, 2, "+")]  # [(col, line, "+" ou "-"), ...]
+        self.pwrs = [(colBatNeg, lineBatNeg, "-"), (colBatPos, lineBatPos, "+")]  # [(col, line, "+" ou "-"), ...]
         self.pwrChip = {"+": [], "-": [], "pwrConnected":[], "pwrNotConnected": [], "pwrMissConnected": []}  # , "pwrNOTUSED": [], "pwrCC": []
         self.io_in, self.io_out = [], []
-        self.chip_in, self.chip_out = [], []
+        self.chip_in, self.chip_out = [], [] 
         self.chip_ioCC, self.chip_ioOK = [], []
         self.pwrM, self.pwrP, self.wireNotUsed, self.pwrCC = [], [], [], []
         self.io_inCC, self.io_outCC = [], []
@@ -788,14 +950,21 @@ class Menus:
         self.in_outOC = []
         self.chip_out_checked = []
         self.chip_out_script = []
+        
+        chip_select = []
+        chip_out_inv = []
+        chip_in_enable = []
+        chip_in_enable_inv = []
 
+        self.show_correspondence_table(False)
         for id, component in self.current_dict_circuit.items():
             if id[:6] == "_chip_":
                 (x, y) = component["pinUL_XY"]
                 numPinBR = component["pinCount"] // 2
                 (real_x, real_y), (col, line) = self.sketcher.find_nearest_grid_chip(x, y)
-                ioIn, ioOut = [], []
+                #ioIn, ioOut = [], []
                 for io in component["io"]:  #  [([(ce1, le1), ...], "&", [(cs1, ls1), (cs2, ls2), ...]), ...]
+                    #io = component["io"]
                     # ioIN, ioOut = [], []
                     ioIn = [
                         # (col + (numPin % numPinBR) - 1 + (numPin // numPinBR), line + 1 - (numPin // numPinBR))
@@ -809,12 +978,14 @@ class Menus:
                         for numPin in io[1]
                     ]
                     self.func += [(id, ioIn, component["symbScript"], ioOut)]
-                    self.chip_in += [(id, *ioIn)]
-                    self.chip_out += [(id, *ioOut)]
-                    # print(f"ioIN  = {ioIn}")
-                    # print(f"ioOUT = {ioOut}")
-                    # print(f"self.func= {self.func}")
-                    # print(f"ce1-ce2, self.func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
+                    if ioIn:
+                        self.chip_in += [(id, *ioIn)]
+                    if ioOut:
+                        self.chip_out += [(id, *ioOut)]
+                # print(f"ioIN  = {ioIn}")
+                # print(f"ioOUT = {ioOut}")
+                # print(f"self.func= {self.func}")
+                # print(f"ce1-ce2, self.func, cs1:({io[0][0]}-{io[0][1]} , {chip["symbScript"]} , {io[1][0]})")
                 for pwr in component["pwr"]:
                     numPin, polarity = pwr[0], pwr[1]
                     col_pin = col + numPin - 1 if numPin <= numPinBR else col + (component["pinCount"] - numPin)
@@ -823,6 +994,51 @@ class Menus:
                         (id, col_pin, line_pin)
                     ]
                     # print(f"pwrChip= {self.pwrChip}")
+                ############### gestion des MUX DEMUX #################
+                    #### les sélecteurs ###
+                ioSel = component.get("io_select", [])
+                if ioSel:    
+                    ioS = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
+                        for numPin in ioSel[0]
+                    ]
+                    if ioS:
+                        chip_select += [(id, *ioS)]
+                        self.chip_in += [(id, *ioS)]
+                    
+                    #### les sorties inversées ###
+                ioOutInv = component.get("io_out_inv", [])
+                if ioOutInv:
+                    ioOI = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
+                        for numPin in ioOutInv[0]
+                    ]
+                    if ioOI:
+                        chip_out_inv += [(id, *ioOI)]
+                        self.chip_out += [(id, *ioOI)]
+                
+                    #### les entrées enable ###
+                ioInEnable = component.get("io_enable", [])
+                if ioInEnable:
+                    ioIEn = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
+                        for numPin in ioInEnable[0]
+                    ]
+                    if ioIEn:
+                        chip_in_enable += [(id, *ioIEn)]
+                        self.chip_in += [(id, *ioIEn)]
+                    
+                    #### les entrées enable inverse ###
+                ioInEnableInv = component.get("io_enable_inv", [])
+                if ioInEnableInv:
+                    ioIEnInv = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR))
+                        for numPin in ioInEnableInv[0]
+                    ]
+                    if ioIEnInv:
+                        chip_in_enable_inv += [(id, *ioIEnInv)]
+                        self.chip_in += [(id, *ioIEnInv)]
+                    
             elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
                 self.wire += [(id, *component["coord"][0])]
             elif id[:4] == "_io_":  # [(col1, line1,col2,line2), ...]
@@ -988,9 +1204,11 @@ class Menus:
                         and not self.io_outCC and not self.chip_outCC and not self.in_outOC:
             print("vérification du circuit fermé")
             self.script = ""
+            params ={"chip_select":chip_select, "chip_out_inv":chip_out_inv, 
+                     "chip_in_enable":chip_in_enable, "chip_in_enable_inv": chip_in_enable_inv}
             for ioOut in self.io_out:
-               self.script += f"O{ioOut[0][4:]} = "
-               circuitClose, script = self.checkCloseCircuit(ioOut)
+               self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "
+               circuitClose, script = self.checkCloseCircuit(ioOut,params)
                if circuitClose :
                         print(f"le circuit est fermée sur la sortie {ioOut}")
                         self.script += f"{script}; "
@@ -1008,4 +1226,9 @@ class Menus:
         print(f"in_outOC : {self.in_outOC}")
         print(f"chip_out_wire : {self.chip_out_wire}")
         print(f"chip_in_wire : {self.chip_in_wire}")
+        print(f"chip_select : {chip_select}")
+        print(f"chip_out_inv : {chip_out_inv}")
+        print(f"chip_in_enable : {chip_in_enable}")
+        print(f"chip_in_enable_inv : {chip_in_enable_inv}")
+        print(f"map pin mcu : {self.mcu_pin}")
         print(f"script : {self.script}")

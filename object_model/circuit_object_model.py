@@ -272,7 +272,32 @@ class Chip:
             attr_dict["io"] = [
                 ([pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins])
                 for func in self.functions
-                if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, LogicalFunction) or  isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["io_select"] = [
+                [pin.pin_num for pin in func.select_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["io_out_inv"] = [
+                [pin.pin_num for pin in func.inv_output_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["io_enable"] = [
+                [pin.pin_num for pin in func.enable_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["io_enable_inv"] = [
+                [pin.pin_num for pin in func.inv_enable_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
             ]
         return attr_dict
 
