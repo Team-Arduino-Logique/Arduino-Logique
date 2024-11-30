@@ -40,7 +40,9 @@ You can install the packages using pip:
 pip install pyserial tkmacosx
 ```
 
-To download the source code, you can clone the repository using git. Open a terminal and run the following command:
+To download the source code, click on the green `<> Code` button at the top of this page and select "Download Zip".
+
+You can also clone the repository using git. Open a terminal and run the following command:
 
 ```sh
 git clone https://github.com/Team-Arduino-Logique/Arduino-Logique.git
@@ -50,11 +52,7 @@ This will create a local copy of the repository on your machine.
 
 #### Running `arduino_logique.py` on MacOS
 
-After installing the prerequisites, you can run the `arduino_logique.py` script by navigating to the directory where the script is located and executing the following command in the terminal:
-
-```sh
-python arduino_logique.py
-```
+After installing the prerequisites, you can run the `arduino_logique.py` script.
 
 ### Windows installation
 
@@ -83,7 +81,9 @@ Vous pouvez installer les packages en utilisant pip :
 pip install pyserial tkmacosx
 ```
 
-Pour télécharger le code source, vous pouvez cloner le dépôt en utilisant git. Ouvrez un terminal et exécutez la commande suivante :
+Pour télécharger le code source, cliquez sur le bouton vert `<> Code` en haut de cette page et choisir "Download Zip".
+
+Vous pouvez aussi cloner le dépôt en utilisant git. Ouvrez un terminal et exécutez la commande suivante :
 
 ```sh
 git clone https://github.com/Team-Arduino-Logique/Arduino-Logique.git
@@ -93,11 +93,7 @@ Cela créera une copie locale du dépôt sur votre machine.
 
 #### Exécution de `arduino_logique.py` sur MacOS
 
-Après avoir installé les prérequis, vous pouvez exécuter le script `arduino_logique.py` en naviguant vers le répertoire où le script est situé et en exécutant la commande suivante dans le terminal :
-
-```sh
-python arduino_logique.py
-```
+Après avoir installé les prérequis, vous pouvez exécuter le script `arduino_logique.py`.
 
 ### Installation sur Windows
 
