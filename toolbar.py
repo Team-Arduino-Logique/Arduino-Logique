@@ -5,16 +5,20 @@ The toolbar includes buttons for various actions (e.g., Connection, Power, Input
 for selecting connection colors. The Toolbar class manages the state and behavior of these buttons and handles user
 interactions for placing wires and pin_ios on a canvas.
 """
-
+import os
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
-from tkinter import messagebox, colorchooser
-import os
+
 from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
+if os.name == "darwin":
+    from tkinter import messagebox, colorchooser
+    from tkmacosx import Button # type: ignore
+else:
+    from tkinter import Button, messagebox, colorchooser
 
 @dataclass
 class WirePlacementInfo:
@@ -45,7 +49,7 @@ class Toolbar:
         self.sketcher = sketcher
         self.current_dict_circuit = current_dict_circuit
         self.selected_color = "#479dff"
-        self.buttons: dict[str, tk.Button] = {}
+        self.buttons: dict[str, Button] = {}
         self.tool_mode = None
         self.wire_info: WirePlacementInfo = WirePlacementInfo(0, None, None)
         self.cursor_indicator_id = None
@@ -79,7 +83,7 @@ class Toolbar:
         self.create_button("Clock", left_frame, images)
 
         # Create the color chooser and Delete button in the right frame
-        self.color_button = tk.Button(
+        self.color_button = Button(
             right_frame,
             bg=self.selected_color,
             width=2,
@@ -129,7 +133,7 @@ class Toolbar:
         """
         image = images.get(action.lower())
         if image:
-            btn = tk.Button(
+            btn = Button(
                 parent_frame,
                 image=image,
                 bg="#505050",  # Inactive background
@@ -145,7 +149,7 @@ class Toolbar:
             btn.image = image  # type: ignore
         else:
             # Fallback button with text if image is not available
-            btn = tk.Button(
+            btn = Button(
                 parent_frame,
                 text=action,
                 bg="#505050",  # Inactive background
