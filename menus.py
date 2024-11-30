@@ -8,16 +8,20 @@ from copy import deepcopy
 from dataclasses import dataclass
 import os
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
 import json
 import subprocess
 import platform
-from typing import Callable
 import serial.tools.list_ports  # type: ignore
 
 from breadboard import Breadboard
 
-from dataCDLT import INPUT, OUTPUT, USED, CLOCK
+from dataCDLT import INPUT, OUTPUT, CLOCK
+
+if os.name == "darwin":
+    from tkinter import messagebox, filedialog, ttk
+    from tkmacosx import Button  # type: ignore
+else:
+    from tkinter import Button, messagebox, filedialog, ttk
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -169,6 +173,7 @@ class Menus:
         available_microcontrollers = list(MICROCONTROLLER_PINS.keys())
         # Create a combobox with the options
         combobox = ttk.Combobox(dialog, values=available_microcontrollers)
+        combobox.set(self.selected_microcontroller if self.selected_microcontroller else "Choisir un microcontrôleur")
         combobox.pack(pady=10)
 
         # Create a button to confirm the selection
@@ -181,13 +186,15 @@ class Menus:
             self.microcontroller_label.config(text=self.selected_microcontroller)
             dialog.destroy()
 
-        confirm_button = tk.Button(dialog, text="Confirmer", command=confirm_selection)
+        confirm_button = Button(dialog, text="Confirmer", command=confirm_selection)
         confirm_button.pack(pady=10)
 
     def show_correspondence_table(self):
         """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
         if self.selected_microcontroller is None:
-            messagebox.showwarning("Aucun microcontrôleur sélectionné", "Veuillez d'abord sélectionner un microcontrôleur.")
+            messagebox.showwarning(
+                "Aucun microcontrôleur sélectionné", "Veuillez d'abord sélectionner un microcontrôleur."
+            )
             return
 
         pin_mappings = MICROCONTROLLER_PINS.get(self.selected_microcontroller)
@@ -279,7 +286,7 @@ class Menus:
         - options (list): List of options under the menu.
         """
         # Create the menu button
-        btn = tk.Button(
+        btn = Button(
             self.menu_bar,
             text=menu_name,
             bg="#333333",
@@ -312,7 +319,7 @@ class Menus:
 
         # Populate the dropdown with menu options
         for option in options:
-            option_btn = tk.Button(
+            option_btn = Button(
                 dropdown,
                 text=option,
                 bg="#333333",
@@ -343,7 +350,7 @@ class Menus:
         - menu_name (str): The name of the menu to toggle.
         """
         for child in self.menu_bar.winfo_children():
-            if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+            if isinstance(child, Button) and hasattr(child, "dropdown"):
                 if child["text"] == menu_name:
                     if child.dropdown.winfo_ismapped():
                         child.dropdown.place_forget()
@@ -387,11 +394,11 @@ class Menus:
             and not any(
                 self.is_descendant(event.widget, child.dropdown)
                 for child in self.menu_bar.winfo_children()
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown")
+                if isinstance(child, Button) and hasattr(child, "dropdown")
             )
         ):
             for child in self.menu_bar.winfo_children():
-                if isinstance(child, tk.Button) and hasattr(child, "dropdown"):
+                if isinstance(child, Button) and hasattr(child, "dropdown"):
                     child.dropdown.place_forget()
 
     # Menu Handler Functions
@@ -424,9 +431,9 @@ class Menus:
 
                 for key, val in circuit_data.items():
                     if key == "_battery_pos_wire":
-                        battery_pos_wire_end = val['end']
+                        battery_pos_wire_end = val["end"]
                     elif key == "_battery_neg_wire":
-                        battery_neg_wire_end = val['end']
+                        battery_neg_wire_end = val["end"]
 
                 self.board.draw_blank_board_model(
                     x_o,
@@ -451,7 +458,9 @@ class Menus:
                 messagebox.showinfo("Ouvrir un fichier", f"Circuit chargé depuis {file_path}")
             except Exception as e:
                 print(f"Error loading file: {e}")
-                messagebox.showerror("Erreur d'ouverture", f"Une erreur s'est produite lors de l'ouverture du fichier:\n{e}")
+                messagebox.showerror(
+                    "Erreur d'ouverture", f"Une erreur s'est produite lors de l'ouverture du fichier:\n{e}"
+                )
                 raise e
         else:
             print("Open file cancelled.")
@@ -529,7 +538,7 @@ class Menus:
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
                     if key == "_battery":
                         comp_data.pop("battery_rect", None)
                 # Save the data to a JSON file
@@ -539,7 +548,9 @@ class Menus:
                 messagebox.showinfo("Sauvegarde réussie", f"Circuit sauvegardé dans {file_path}")
             except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
-                messagebox.showerror("Erreur de sauvegarde", f"Une erreur s'est produite lors de la sauvegarde du fichier:\n{e}")
+                messagebox.showerror(
+                    "Erreur de sauvegarde", f"Une erreur s'est produite lors de la sauvegarde du fichier:\n{e}"
+                )
         else:
             print("Save file cancelled.")
 
@@ -568,7 +579,7 @@ class Menus:
                 self.serial_port.com_port = selected_option
                 dialog.destroy()
 
-            confirm_button = tk.Button(dialog, text="Confirm", command=confirm_selection)
+            confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
             confirm_button.pack(pady=10)
 
     def open_documentation(self):
