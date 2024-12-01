@@ -472,7 +472,7 @@ class Demux(ChipFunction):
     """
     Represents an demultiplexer in a digital circuit.
     Attributes:
-        address_pins (list[int]): A tuple containing the address pins.
+        input_pins (list[int]): A tuple containing the address pins.
         output_pins (list[int]): A tuple containing the output pins.
         enable_pins (list[int]): A tuple containing the active HIGH enable pins.
         inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
@@ -480,7 +480,7 @@ class Demux(ChipFunction):
 
     def __init__(
         self,
-        address_pins: list[int],
+        input_pins: list[int],
         output_pins: list[int],
         enable_pins: list[int],
         inv_enable_pins: list[int],
@@ -488,7 +488,7 @@ class Demux(ChipFunction):
         """
         Initializes a DEMUX with the specified input and output pins.
         Args:
-            address_pins (list[int]): A tuple containing the address pins.
+            input_pins (list[int]): A tuple containing the address pins.
             output_pins (list[int]): A tuple containing the output pins.
             enable_pins (list[int]): A tuple containing the active HIGH enable pins.
             inv_enable_pins (list[int]): A tuple containing the active LOW enable pins.
@@ -498,25 +498,25 @@ class Demux(ChipFunction):
             ValueError: If the number of address pins is not equal to log2(num output pins).
         """
         super().__init__()
-        self.address_pins: list[Pin] = [Pin(pin_num, None) for pin_num in address_pins]
+        self.input_pins: list[Pin] = [Pin(pin_num, None) for pin_num in input_pins]
         self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
         self.enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in enable_pins]
         self.inv_enable_pins: list[Pin] = [Pin(pin_num, None) for pin_num in inv_enable_pins]
 
-        self.all_pins = self.address_pins + self.output_pins + self.enable_pins + self.inv_enable_pins
+        self.all_pins = self.input_pins + self.output_pins + self.enable_pins + self.inv_enable_pins
 
         if len(self.output_pins) < 2:
             raise ValueError("DEMUX must have at least two input pins.")
-        if len(self.address_pins) < 1:
+        if len(self.input_pins) < 1:
             raise ValueError("DEMUX must have at least one address pin.")
-        if len(self.address_pins) != log2(len(self.output_pins)):
+        if len(self.input_pins) != log2(len(self.output_pins)):
             raise ValueError("DEMUX must have log2(num output_pins) address pins.")
 
         if (
             len(self.enable_pins) != 1
             or len(self.inv_enable_pins) != 2
             or len(self.output_pins) != 8
-            or len(self.address_pins) != 3
+            or len(self.input_pins) != 3
         ):
             raise ValueError("Arbitrary DEMUX size not supported yet")
 
@@ -527,7 +527,7 @@ class Demux(ChipFunction):
             str: A string describing the DEMUX with its input and output pins.
         """
         return (
-            f"DEMUX:\n\t\tAddress Pins: {self.address_pins},"
+            f"DEMUX:\n\t\tAddress Pins: {self.input_pins},"
             f"\n\t\tOutput Pins: {self.output_pins},"
             f"\n\t\tEnable Pins: {self.enable_pins},"
             f"\n\t\tInverted Enable Pins: {self.inv_enable_pins}"
@@ -540,7 +540,7 @@ class Demux(ChipFunction):
         """
         input_pin_pos = [
             pin.connection_point
-            for pin in self.inv_enable_pins + self.enable_pins + self.address_pins
+            for pin in self.inv_enable_pins + self.enable_pins + self.input_pins
             if pin is not None and pin.connection_point is not None
         ]
         output_pin_pos = [pin.connection_point for pin in self.output_pins if pin.connection_point is not None]

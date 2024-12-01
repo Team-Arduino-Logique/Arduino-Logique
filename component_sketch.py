@@ -2025,6 +2025,8 @@ class ComponentSketcher:
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
         dim["io_select"] = kwargs.get("io_select", None)
+        # if not dim["io_select"] :
+        #     dim["io_select"]  = kwargs.get("address_pins", None)
         dim["io_out_inv"] = kwargs.get("io_out_inv", None)
         dim["io_enable"] = kwargs.get("io_enable", None)
         dim["io_enable_inv"] = kwargs.get("io_enable_inv", None)
