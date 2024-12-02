@@ -665,7 +665,7 @@ class Menus:
     
     def decodeFunc(self,inVar, funcName):
         if funcName == "NandGate":
-            s = f"! ( {inVar[0]["val"]} "
+            s = f"!( {inVar[0]["val"]} "
             for v in inVar[1:]:
                 s += f"& {v["val"]} "
             s += ") "
@@ -701,7 +701,7 @@ class Menus:
             for v in range(8):
                 v2, v1, v0  = (v & 1)^1, ((v & 2) >> 1)^1, ((v & 4) >> 2)^1
                 e[v] += inVar[v]["val"] + " & " + inVar[11]["einv"] + " & " + \
-                        v0*" ! " + inVar[8]["sel"] + " & " + v1*" ! " + inVar[9]["sel"] + " & " + v2*" ! " + inVar[10]["sel"] + " ) "
+                        v0*" !" + inVar[8]["sel"] + " & " + v1*" !" + inVar[9]["sel"] + " & " + v2*" !" + inVar[10]["sel"] + " ) "
             s = " ( " + e[0]
             for et in e[1:]:
                 s += "| " + et
@@ -710,7 +710,7 @@ class Menus:
             s ="("
             out = inVar[0]["numO"]
             v2, v1, v0  = (out & 1)^1, ((out & 2) >> 1)^1, ((out & 4) >> 2)^1
-            s += v0*" ! " + inVar[0]["val"] + " & " + v1*"! " + inVar[1]["val"] + " & " + v2*"! " + inVar[2]["val"] + \
+            s += v0*" !" + inVar[0]["val"] + " & " + v1*"!" + inVar[1]["val"] + " & " + v2*"!" + inVar[2]["val"] + \
                  " & " + inVar[3]["einv"] + " & " + inVar[4]["einv"] + " & " + inVar[5]["enb"]
             s += " ) "
             
@@ -802,7 +802,8 @@ class Menus:
                                         for c in chipEn:
                                             if c == inFunc:
                                                 constKey = "enb"
-                                        inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
+                                        #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
+                                        inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE")
                                         break
@@ -820,7 +821,8 @@ class Menus:
                                         for c in chipEn:
                                             if c == inFunc:
                                                 constKey = "enb"
-                                        inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
+                                        #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
+                                        inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}]
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE par cable") # ici ajouter n {"val":self.mcu_pin[f"I{id[4:]}"], "num":n}
                                         break
@@ -832,20 +834,41 @@ class Menus:
                                     #outZone = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
                                     
                                     if self.is_linked_to(nextOut, inFunc):
-                                        for next in nextOut:
+                                        #for next in nextOut:
                                             for cow in self.chip_out:
-                                                id, pt = cow
-                                                if self.is_linked_to([next], pt):
-                                                    outZone =(id,[[next]])
-                                                    print("On passe à une autre sortie...")
-                                                    ######## RAPPEL RECURSIF SUR OUTZONE ######################
-                                                    if outZone not in self.chip_out_checked:
-                                                        self.chip_out_checked += [outZone]
-                                                        isPinOut = False
-                                                        for pinOut in self.io_out:
-                                                            id, [pinZoneOut] = pinOut
-                                                            if self.is_linked_to(pinZoneOut, pt):
-                                                                outPrev = self.mcu_pin[f"O{id[4:]}"]
+                                                id, pts = cow[0], cow[1:]
+                                                for pt in pts:
+                                                    if self.is_linked_to(nextOut, pt):
+                                                        outZone =(id,[nextOut])
+                                                        print("On passe à une autre sortie...")
+                                                        ######## RAPPEL RECURSIF SUR OUTZONE ######################
+                                                        if outZone not in self.chip_out_checked:
+                                                            self.chip_out_checked += [outZone]
+                                                            isPinOut = False
+                                                            for pinOut in self.io_out:
+                                                                id, [pinZoneOut] = pinOut
+                                                                if self.is_linked_to(pinZoneOut, pt):
+                                                                    #outPrev = self.mcu_pin[f"O{id[4:]}"]
+                                                                    outPrev = f"O{no+1}"
+                                                                    constKey = "val"
+                                                                    for c in chipSel:
+                                                                        if c == inFunc:
+                                                                            constKey = "sel"
+                                                                    for c in chipEnInv:
+                                                                        if c == inFunc:
+                                                                            constKey = "einv"
+                                                                    for c in chipEn:
+                                                                        if c == inFunc:
+                                                                            constKey = "enb"
+                                                                    
+                                                                    for c in chipOutInv:
+                                                                        if c == pt:
+                                                                            outPrev = "! " + outPrev
+                                                                    isPinOut = True
+                                                                    inFuncConst += [{constKey:outPrev, "num":n, "numO":no}] # [self.mcu_pin[f"O{id[4:]}"]] 
+                                                                    findNext = True
+                                                            if not isPinOut:
+                                                                findNext, s = self.checkCloseCircuit(outZone,params)
                                                                 constKey = "val"
                                                                 for c in chipSel:
                                                                     if c == inFunc:
@@ -859,57 +882,19 @@ class Menus:
                                                                 
                                                                 for c in chipOutInv:
                                                                     if c == pt:
-                                                                        outPrev = "! " + outPrev
-                                                                isPinOut = True
-                                                                inFuncConst += [{constKey:outPrev, "num":n, "numO":no}] # [self.mcu_pin[f"O{id[4:]}"]] 
-                                                                findNext = True
-                                                        if not isPinOut:
-                                                            findNext, s = self.checkCloseCircuit(outZone)
-                                                            constKey = "val"
-                                                            for c in chipSel:
-                                                                if c == inFunc:
-                                                                    constKey = "sel"
-                                                            for c in chipEnInv:
-                                                                if c == inFunc:
-                                                                    constKey = "einv"
-                                                            for c in chipEn:
-                                                                if c == inFunc:
-                                                                    constKey = "enb"
-                                                            
-                                                            for c in chipOutInv:
-                                                                if c == pt:
-                                                                    s = "! " + s 
-                                                                    
-                                                            inFuncConst += [{constKey:s, "num":n, "numO":no}]
-                                                            self.chip_out_script += [(s,outZone)]
-                                                    else: 
-                                                        # il faut voir si une sortie io n'existe pas sinon var temp
-                                                        isPinOut = False
-                                                        for pinOut in self.io_out:
-                                                            id, pinZoneOut = pinOut
-                                                            if self.is_linked_to(pinZoneOut, pt):
-                                                                isPinOut = True
-                                                                outPrev = self.mcu_pin[f"O{id[4:]}"]
-                                                                constKey = "val"
-                                                                for c in chipSel:
-                                                                    if c == inFunc:
-                                                                        constKey = "sel"
-                                                                for c in chipEnInv:
-                                                                    if c == inFunc:
-                                                                        constKey = "einv"
-                                                                for c in chipEn:
-                                                                    if c == inFunc:
-                                                                        constKey = "enb"
+                                                                        s = "! " + s 
                                                                         
-                                                                for c in chipOutInv:
-                                                                    if c == pt:
-                                                                        outPrev = "! " + outPrev
-                                                                        
-                                                                inFuncConst += [{constKey:outPrev, "num":n, "numO":no}]
-                                                        if not isPinOut:
-                                                            for coc in self.chip_out_script:
-                                                                if coc[1] == outZone:
-                                                                    exp = coc[0]
+                                                                inFuncConst += [{constKey:s, "num":n, "numO":no}]
+                                                                self.chip_out_script += [(s,outZone)]
+                                                        else: 
+                                                            # il faut voir si une sortie io n'existe pas sinon var temp
+                                                            isPinOut = False
+                                                            for pinOut in self.io_out:
+                                                                id, [pinZoneOut] = pinOut
+                                                                if self.is_linked_to(pinZoneOut, pt):
+                                                                    isPinOut = True
+                                                                    #outPrev = self.mcu_pin[f"O{id[4:]}"]
+                                                                    outPrev = f"O{no+1}"
                                                                     constKey = "val"
                                                                     for c in chipSel:
                                                                         if c == inFunc:
@@ -923,12 +908,32 @@ class Menus:
                                                                             
                                                                     for c in chipOutInv:
                                                                         if c == pt:
-                                                                            exp = "! " + exp
+                                                                            outPrev = "! " + outPrev
                                                                             
-                                                                    inFuncConst += [{constKey:exp, "num":n, "numO":no}] 
-                                                                    break
-                                                        findNext = True
-                                                    break
+                                                                    inFuncConst += [{constKey:outPrev, "num":n, "numO":no}]
+                                                            if not isPinOut:
+                                                                for coc in self.chip_out_script:
+                                                                    if coc[1] == outZone:
+                                                                        exp = coc[0]
+                                                                        constKey = "val"
+                                                                        for c in chipSel:
+                                                                            if c == inFunc:
+                                                                                constKey = "sel"
+                                                                        for c in chipEnInv:
+                                                                            if c == inFunc:
+                                                                                constKey = "einv"
+                                                                        for c in chipEn:
+                                                                            if c == inFunc:
+                                                                                constKey = "enb"
+                                                                                
+                                                                        for c in chipOutInv:
+                                                                            if c == pt:
+                                                                                exp = "! " + exp
+                                                                                
+                                                                        inFuncConst += [{constKey:exp, "num":n, "numO":no}] 
+                                                                        break
+                                                            findNext = True
+                                                        break
                             if not findIn and not findNext:
                                 self.in_outOC += [(id,inFunc)]
                                 circuitClose = False
@@ -1207,7 +1212,7 @@ class Menus:
                                 ciw += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
                                 self.wireNotUsed.remove(wused)
                                 again = True
-            self.chip_in_wire += [(ioin[0], ciw)]
+                        self.chip_in_wire += [(ioin[0], ciw)]
                     
         ###############   Verification des self.chip_out sur chip_out #####################
         for chipAllio in self.chip_out:
@@ -1220,22 +1225,22 @@ class Menus:
                         inChipOutWire = True
                         if chipio not in self.chip_outCC:
                             self.chip_outCC += [(id,chipio)] 
-            if not inChipOutWire:
-                cow = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
-                again = True
-                while again and len(self.wireNotUsed)>0:
-                    again = False
-                    for wused in self.wireNotUsed[:]:
-                        id,cu1,lu1,cu2,lu2 = wused
-                        if self.is_linked_to(cow, (cu1, lu1)):
-                                cow += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
-                                self.wireNotUsed.remove(wused)
-                                again = True
-                        elif  self.is_linked_to(cow, (cu2, lu2)):  
-                                cow += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
-                                self.wireNotUsed.remove(wused)
-                                again = True
-                self.chip_out_wire += [cow]
+                if not inChipOutWire:
+                    cow = deepcopy(self.board.sketcher.matrix[f"{c1},{l1}"]["link"])
+                    again = True
+                    while again and len(self.wireNotUsed)>0:
+                        again = False
+                        for wused in self.wireNotUsed[:]:
+                            id,cu1,lu1,cu2,lu2 = wused
+                            if self.is_linked_to(cow, (cu1, lu1)):
+                                    cow += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
+                                    self.wireNotUsed.remove(wused)
+                                    again = True
+                            elif  self.is_linked_to(cow, (cu2, lu2)):  
+                                    cow += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
+                                    self.wireNotUsed.remove(wused)
+                                    again = True
+                            self.chip_out_wire += [cow]
                 
         ################# Redefinir les zones des io_out avec les cables non utilisés ##############
         for n,ioOut in enumerate(self.io_out):
@@ -1243,13 +1248,20 @@ class Menus:
             c1,l1,c2,l2 = ioOutZone[0]
             ioOutZoneWire = []
             inIoOutZoneWire = False
-            for cow in self.chip_out_wire:
+            for cow in self.wireNotUsed:   # self.chip_out_wire
+                cow = [(cow[1:])]
                 if self.is_linked_to(cow, (c1, l1)):
                     inIoOutZoneWire = True
                     ioOutZoneWire += [cow]
             if inIoOutZoneWire:
                 self.io_out[n] =  (id,ioOutZoneWire)
                 
+        # ################ Redefinir les zones des chip_out avec les cables non utilisés ##############
+        # for chipO in self.chip_out:
+        #     id = chipO[0]
+        #     for co in chipO[1:]:
+        #         for        
+
         if not self.pwrCC and not self.pwrChip["pwrMissConnected"] and not self.chip_ioCC \
                         and not self.io_outCC and not self.chip_outCC and not self.in_outOC:
             print("vérification du circuit fermé")
@@ -1257,14 +1269,16 @@ class Menus:
             params ={"chip_select":chip_select, "chip_out_inv":chip_out_inv, 
                      "chip_in_enable":chip_in_enable, "chip_in_enable_inv": chip_in_enable_inv, }
                     # "chip_in_address_pins":chip_in_address_pins}
-            for ioOut in self.io_out:
-               self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "
+            for no,ioOut in enumerate(self.io_out):
+               #self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "  # f"O{no+1}"
+               self.script += f"O{no+1}" + " = "
                circuitClose, script = self.checkCloseCircuit(ioOut,params)
                if circuitClose :
                         print(f"le circuit est fermée sur la sortie {ioOut}")
                         self.script += f"{script}; "
                         print(f"script temp : {self.script}")
                else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
+
                                     
         print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
         print(f"pwrChipNotConnected : {self.pwrChip['pwrNotConnected']}")
