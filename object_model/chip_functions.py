@@ -808,8 +808,8 @@ class JKFlipFlop(ChipFunction):
             f"\n\t\tInverted Reset Pin: {self.inv_reset_pin},"
             f"\n\t\tSet Pin: {self.set_pin},"
             f"\n\t\tInverted Set Pin: {self.inv_set_pin},"
-            f"\n\t\tJ Input Pin: {self.j_input_pin},"
-            f"\n\t\tInverted J Input Pin: {self.inv_j_input_pin},"
+            f"\n\t\tJ Input Pin: {self.input_pins},"
+            # f"\n\t\tInverted J Input Pin: {self.inv_j_input_pin},"
             f"\n\t\tK Input Pin: {self.k_input_pin},"
             f"\n\t\tInverted K Input Pin: {self.inv_k_input_pin},"
             f"\n\t\tOutput Pin: {self.output_pin},"
@@ -820,49 +820,50 @@ class JKFlipFlop(ChipFunction):
         """
         Returns a FunctionRepresentation object representing the internal function of the JK Flip Flop
         """
-        input_pin_pos = [
-            pin.connection_point
-            for pin in [
-                self.inv_set_pin,
-                self.set_pin,
-                self.inv_reset_pin,
-                self.reset_pin,
-                self.clock_pin,
-                self.inv_j_input_pin,
-                self.j_input_pin,
-                self.inv_k_input_pin,
-                self.k_input_pin,
-            ]
-            if pin is not None and pin.connection_point is not None
-        ]
-        output_pin_pos = [
-            pin.connection_point for pin in [self.output_pin, self.inv_output_pin] if pin.connection_point is not None
-        ]
+        # input_pin_pos = [
+        #     pin.connection_point
+        #     for pin in [
+        #         self.inv_set_pin,
+        #         self.set_pin,
+        #         self.inv_reset_pin,
+        #         self.reset_pin,
+        #         self.clock_pin,
+        #         self.inv_j_input_pin,
+        #         self.j_input_pin,
+        #         self.inv_k_input_pin,
+        #         self.k_input_pin,
+        #     ]
+        #     if pin is not None and pin.connection_point is not None
+        # ]
+        # output_pin_pos = [
+        #     pin.connection_point for pin in [self.output_pin, self.inv_output_pin] if pin.connection_point is not None
+        # ]
 
-        # Handle inverted inputs
-        hi_set = "H" if self.set_pin is not None else "L"
-        lo_set = "L" if self.set_pin is not None else "H"
-        hi_reset = "H" if self.reset_pin is not None else "L"
-        lo_reset = "L" if self.reset_pin is not None else "H"
-        clock_symb = "R" if self.clock_type == "RISING_EDGE" else "F"
-        hi_j = "H" if self.j_input_pin is not None else "L"
-        lo_j = "L" if self.j_input_pin is not None else "H"
-        hi_k = "H" if self.k_input_pin is not None else "L"
-        lo_k = "L" if self.k_input_pin is not None else "H"
+        # # Handle inverted inputs
+        # hi_set = "H" if self.set_pin is not None else "L"
+        # lo_set = "L" if self.set_pin is not None else "H"
+        # hi_reset = "H" if self.reset_pin is not None else "L"
+        # lo_reset = "L" if self.reset_pin is not None else "H"
+        # clock_symb = "R" if self.clock_type == "RISING_EDGE" else "F"
+        # hi_j = "H" if self.j_input_pin is not None else "L"
+        # lo_j = "L" if self.j_input_pin is not None else "H"
+        # hi_k = "H" if self.k_input_pin is not None else "L"
+        # lo_k = "L" if self.k_input_pin is not None else "H"
 
-        truth_table = TruthTable(
-            [
-                TruthTableRow([hi_set, lo_reset, "X", "X", "X"], ["H", "L"]),
-                TruthTableRow([lo_set, hi_reset, "X", "X", "X"], ["L", "H"]),
-                TruthTableRow([hi_set, hi_reset, clock_symb, "X", "X"], ["H", "H"]),
-                TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, hi_k], ["nQ", "Q"]),
-                TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, hi_k], ["L", "H"]),
-                TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, lo_k], ["H", "L"]),
-                TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, lo_k], ["Q", "nQ"]),
-            ]
-        )
+        # truth_table = TruthTable(
+        #     [
+        #         TruthTableRow([hi_set, lo_reset, "X", "X", "X"], ["H", "L"]),
+        #         TruthTableRow([lo_set, hi_reset, "X", "X", "X"], ["L", "H"]),
+        #         TruthTableRow([hi_set, hi_reset, clock_symb, "X", "X"], ["H", "H"]),
+        #         TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, hi_k], ["nQ", "Q"]),
+        #         TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, hi_k], ["L", "H"]),
+        #         TruthTableRow([lo_set, lo_reset, clock_symb, hi_j, lo_k], ["H", "L"]),
+        #         TruthTableRow([lo_set, lo_reset, clock_symb, lo_j, lo_k], ["Q", "nQ"]),
+        #     ]
+        # )
 
-        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
+        # return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
+        return FunctionRepresentation([], [], TruthTable([]))
 
 
 class BinaryCounter(ChipFunction):
