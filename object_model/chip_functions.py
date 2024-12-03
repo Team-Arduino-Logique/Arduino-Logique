@@ -751,39 +751,37 @@ class JKFlipFlop(ChipFunction):
             ValueError: If the JK Flip Flop has both reset and inverted reset pins.
         """
         super().__init__()
-        self.clock_pin: Pin = Pin(clock_pin, None)
+        self.clock_pin: list[Pin] = [Pin(clock_pin, None)]
         self.clock_type: str = clock_type
-        self.reset_pin: Pin = Pin(reset_pin, None) if reset_pin is not None else None
-        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None) if inv_reset_pin is not None else None
-        self.set_pin: Pin = Pin(set_pin, None) if set_pin is not None else None
-        self.inv_set_pin: Pin = Pin(inv_set_pin, None) if inv_set_pin is not None else None
-        self.j_input_pin: Pin = Pin(j_input_pin, None) if j_input_pin is not None else None
-        self.inv_j_input_pin: Pin = Pin(inv_j_input_pin, None) if inv_j_input_pin is not None else None
-        self.k_input_pin: Pin = Pin(k_input_pin, None) if k_input_pin is not None else None
-        self.inv_k_input_pin: Pin = Pin(inv_k_input_pin, None) if inv_k_input_pin is not None else None
-        self.output_pin: Pin = Pin(output_pin, None)
-        self.inv_output_pin: Pin = Pin(inv_output_pin, None)
+        self.reset_pin: list[Pin] = [Pin(reset_pin, None) if reset_pin is not None else None]
+        self.inv_reset_pin: list[Pin] = [Pin(inv_reset_pin, None) if inv_reset_pin is not None else None]
+        self.set_pin: list[Pin] = [Pin(set_pin, None) if set_pin is not None else None]
+        self.inv_set_pin: list[Pin] = [Pin(inv_set_pin, None) if inv_set_pin is not None else None]
+        # self.j_input_pin: list[Pin] = [Pin(j_input_pin, None) if j_input_pin is not None else None]
+        # self.inv_j_input_pin: list[Pin] = [Pin(inv_j_input_pin, None) if inv_j_input_pin is not None else None]
+        self.input_pins: list[Pin] = [Pin(k_input_pin, None) if j_input_pin is not None else None] # input pins = j_input_pin
+        self.k_input_pin: list[Pin] = [Pin(k_input_pin, None) if k_input_pin is not None else None]
+        self.inv_k_input_pin: list[Pin] = [Pin(inv_k_input_pin, None) if inv_k_input_pin is not None else None]
+        self.output_pin: list[Pin] = [Pin(output_pin, None)]
+        self.inv_output_pin: list[Pin] = [Pin(inv_output_pin, None)]
 
-        self.all_pins = [
-            self.clock_pin,
-            self.reset_pin,
-            self.inv_reset_pin,
-            self.set_pin,
-            self.inv_set_pin,
-            self.j_input_pin,
-            self.inv_j_input_pin,
-            self.k_input_pin,
-            self.inv_k_input_pin,
-            self.output_pin,
-            self.inv_output_pin,
-        ]
+        self.all_pins = self.clock_pin + \
+            self.reset_pin +\
+            self.inv_reset_pin +\
+            self.set_pin +\
+            self.inv_set_pin +\
+            self.input_pins +\
+            self.k_input_pin +\
+            self.inv_k_input_pin +\
+            self.output_pin +\
+            self.inv_output_pin
 
         if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
             raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
-        if self.j_input_pin is None and self.inv_j_input_pin is None:
-            raise ValueError("JK Flip Flop must have either J or inverted J input pin.")
-        if self.j_input_pin is not None and self.inv_j_input_pin is not None:
-            raise ValueError("JK Flip Flop cannot have both J and inverted J input pins.")
+        # if self.j_input_pin is None and self.inv_j_input_pin is None:
+        #     raise ValueError("JK Flip Flop must have either J or inverted J input pin.")
+        # if self.j_input_pin is not None and self.inv_j_input_pin is not None:
+        #     raise ValueError("JK Flip Flop cannot have both J and inverted J input pins.")
         if self.k_input_pin is None and self.inv_k_input_pin is None:
             raise ValueError("JK Flip Flop must have either K or inverted K input pin.")
         if self.k_input_pin is not None and self.inv_k_input_pin is not None:
