@@ -11,7 +11,7 @@
             "clock_type": "RISING_EDGE",
             "reset_pin": null,
             "inv_reset_pin": 1,
-            "count_enable_pin": 7,
+            "count_enable_pin": 10,
             "inv_count_enable_pin": null,
             "load_enable_pin": null,
             "inv_load_enable_pin": 9,

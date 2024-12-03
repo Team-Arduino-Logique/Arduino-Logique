@@ -946,7 +946,7 @@ class BinaryCounter(ChipFunction):
         )]
         self.terminal_count_pin: list[Pin] = [Pin(terminal_count_pin, None)]
         self.ripple_clock_output_pin: list[Pin] = [Pin(ripple_clock_output_pin, None)]
-        self.data_pins: list[Pin] = [Pin(pin_num, None) for pin_num in data_pins]
+        self.input_pins: list[Pin] = [Pin(pin_num, None) for pin_num in data_pins] # input pins = data pins
         self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
 
         # self.all_pins = (
@@ -1002,7 +1002,7 @@ class BinaryCounter(ChipFunction):
             f"\n\t\tUp/Down Input Pin: {self.up_down_input_pin},"
             f"\n\t\tTerminal Count Pin: {self.terminal_count_pin},"
             f"\n\t\tRipple Clock Output Pin: {self.ripple_clock_output_pin},"
-            f"\n\t\tData Pins: {self.data_pins},"
+            f"\n\t\tData Pins: {self.input_pins},"
             f"\n\t\tOutput Pins: {self.output_pins}"
         )
 
