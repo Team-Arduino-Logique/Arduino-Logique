@@ -217,6 +217,8 @@ class Chip:
             "BINARY_COUNTER": lambda data: BinaryCounter(
                 data["clock_pin"],
                 data["clock_type"],
+                data["reset_pin"],
+                data["inv_reset_pin"],
                 data["count_enable_pin"],
                 data["inv_count_enable_pin"],
                 data["load_enable_pin"],

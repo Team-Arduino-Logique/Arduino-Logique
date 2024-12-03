@@ -776,24 +776,24 @@ class JKFlipFlop(ChipFunction):
             self.output_pin +\
             self.inv_output_pin
 
-        if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
-            raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
+        # if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
+        #     raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
         # if self.j_input_pin is None and self.inv_j_input_pin is None:
         #     raise ValueError("JK Flip Flop must have either J or inverted J input pin.")
         # if self.j_input_pin is not None and self.inv_j_input_pin is not None:
         #     raise ValueError("JK Flip Flop cannot have both J and inverted J input pins.")
-        if self.k_input_pin is None and self.inv_k_input_pin is None:
-            raise ValueError("JK Flip Flop must have either K or inverted K input pin.")
-        if self.k_input_pin is not None and self.inv_k_input_pin is not None:
-            raise ValueError("JK Flip Flop cannot have both K and inverted K input pins.")
-        if self.inv_set_pin is None and self.set_pin is None:
-            raise ValueError("JK Flip Flop must have either set or inverted set pin.")
-        if self.inv_set_pin is not None and self.set_pin is not None:
-            raise ValueError("JK Flip Flop cannot have both set and inverted set pins.")
-        if self.inv_reset_pin is None and self.reset_pin is None:
-            raise ValueError("JK Flip Flop must have either reset or inverted reset pin.")
-        if self.inv_reset_pin is not None and self.reset_pin is not None:
-            raise ValueError("JK Flip Flop cannot have both reset and inverted reset pins.")
+        # if self.k_input_pin is None and self.inv_k_input_pin is None:
+        #     raise ValueError("JK Flip Flop must have either K or inverted K input pin.")
+        # if self.k_input_pin is not None and self.inv_k_input_pin is not None:
+        #     raise ValueError("JK Flip Flop cannot have both K and inverted K input pins.")
+        # if self.inv_set_pin is None and self.set_pin is None:
+        #     raise ValueError("JK Flip Flop must have either set or inverted set pin.")
+        # if self.inv_set_pin is not None and self.set_pin is not None:
+        #     raise ValueError("JK Flip Flop cannot have both set and inverted set pins.")
+        # if self.inv_reset_pin is None and self.reset_pin is None:
+        #     raise ValueError("JK Flip Flop must have either reset or inverted reset pin.")
+        # if self.inv_reset_pin is not None and self.reset_pin is not None:
+        #     raise ValueError("JK Flip Flop cannot have both reset and inverted reset pins.")
 
     def __str__(self):
         """
@@ -891,6 +891,8 @@ class BinaryCounter(ChipFunction):
         self,
         clock_pin: int,
         clock_type: str,
+        reset_pin: int,
+        inv_reset_pin: int,
         count_enable_pin: int,
         inv_count_enable_pin: int,
         load_enable_pin: int,
@@ -908,6 +910,8 @@ class BinaryCounter(ChipFunction):
             clock_pin (int): The clock pin.
             clock_type (str): The type of the clock signal (e.g., rising, falling, etc.).
             count_enable_pin (int): The count enable pin.
+            reset_pin (int): The reset pin.
+            inv_reset_pin (int): The inverted reset pin (Active LOW).
             inv_count_enable_pin (int): The inverted count enable pin (Active LOW).
             load_enable_pin (int): The load enable pin.
             inv_load_enable_pin (int): The inverted load enable pin (Active LOW).
@@ -928,57 +932,59 @@ class BinaryCounter(ChipFunction):
             ValueError: If the number of data pins is not equal to the number of output pins.
         """
         super().__init__()
-        self.clock_pin: Pin = Pin(clock_pin, None)
+        self.clock_pin: list[Pin] = [Pin(clock_pin, None)]
         self.clock_type: str = clock_type
-        self.count_enable_pin: Pin = Pin(count_enable_pin, None) if count_enable_pin is not None else None
-        self.inv_count_enable_pin: Pin = Pin(inv_count_enable_pin, None) if inv_count_enable_pin is not None else None
-        self.load_enable_pin: Pin = Pin(load_enable_pin, None) if load_enable_pin is not None else None
-        self.inv_load_enable_pin: Pin = Pin(inv_load_enable_pin, None) if inv_load_enable_pin is not None else None
-        self.up_down_input_pin: Pin = Pin(up_down_input_pin, None) if up_down_input_pin is not None else None
-        self.inv_up_down_input_pin: Pin = (
+        self.reset_pin: list[Pin] = [Pin(reset_pin, None) if reset_pin is not None else None]
+        self.inv_reset_pin: list[Pin] = [Pin(inv_reset_pin, None) if inv_reset_pin is not None else None]
+        self.count_enable_pin: list[Pin] = [Pin(count_enable_pin, None) if count_enable_pin is not None else None]
+        self.inv_count_enable_pin: list[Pin] = [Pin(inv_count_enable_pin, None) if inv_count_enable_pin is not None else None]
+        self.load_enable_pin: list[Pin] = [Pin(load_enable_pin, None) if load_enable_pin is not None else None]
+        self.inv_load_enable_pin: list[Pin] = [Pin(inv_load_enable_pin, None) if inv_load_enable_pin is not None else None]
+        self.up_down_input_pin: list[Pin] = [Pin(up_down_input_pin, None) if up_down_input_pin is not None else None]
+        self.inv_up_down_input_pin: list[Pin] = [(
             Pin(inv_up_down_input_pin, None) if inv_up_down_input_pin is not None else None
-        )
-        self.terminal_count_pin: Pin = Pin(terminal_count_pin, None)
-        self.ripple_clock_output_pin: Pin = Pin(ripple_clock_output_pin, None)
+        )]
+        self.terminal_count_pin: list[Pin] = [Pin(terminal_count_pin, None)]
+        self.ripple_clock_output_pin: list[Pin] = [Pin(ripple_clock_output_pin, None)]
         self.data_pins: list[Pin] = [Pin(pin_num, None) for pin_num in data_pins]
         self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
 
-        self.all_pins = (
-            [
-                self.clock_pin,
-                self.count_enable_pin,
-                self.inv_count_enable_pin,
-                self.load_enable_pin,
-                self.inv_load_enable_pin,
-                self.up_down_input_pin,
-                self.inv_up_down_input_pin,
-                self.terminal_count_pin,
-                self.ripple_clock_output_pin,
-            ]
-            + self.data_pins
-            + self.output_pins
-        )
+        # self.all_pins = (
+        #     [
+        #         self.clock_pin,
+        #         self.count_enable_pin,
+        #         self.inv_count_enable_pin,
+        #         self.load_enable_pin,
+        #         self.inv_load_enable_pin,
+        #         self.up_down_input_pin,
+        #         self.inv_up_down_input_pin,
+        #         self.terminal_count_pin,
+        #         self.ripple_clock_output_pin,
+        #     ]
+        #     + self.data_pins
+        #     + self.output_pins
+        # )
 
-        if self.count_enable_pin is not None and self.inv_count_enable_pin is not None:
-            raise ValueError("Binary Counter cannot have both count enable and inverted count enable pins.")
-        if self.load_enable_pin is not None and self.inv_load_enable_pin is not None:
-            raise ValueError("Binary Counter cannot have both load enable and inverted load enable pins.")
-        if self.up_down_input_pin is not None and self.inv_up_down_input_pin is not None:
-            raise ValueError("Binary Counter cannot have both up/down input and inverted up/down input pins.")
-        if self.inv_count_enable_pin is None and self.count_enable_pin is None:
-            raise ValueError("Binary Counter must have either count enable or inverted count enable pin.")
-        if self.inv_load_enable_pin is None and self.load_enable_pin is None:
-            raise ValueError("Binary Counter must have either load enable or inverted load enable pin.")
-        if self.inv_up_down_input_pin is None and self.up_down_input_pin is None:
-            raise ValueError("Binary Counter must have either up/down input or inverted up/down input pin.")
+        # if self.count_enable_pin is not None and self.inv_count_enable_pin is not None:
+        #     raise ValueError("Binary Counter cannot have both count enable and inverted count enable pins.")
+        # if self.load_enable_pin is not None and self.inv_load_enable_pin is not None:
+        #     raise ValueError("Binary Counter cannot have both load enable and inverted load enable pins.")
+        # if self.up_down_input_pin is not None and self.inv_up_down_input_pin is not None:
+        #     raise ValueError("Binary Counter cannot have both up/down input and inverted up/down input pins.")
+        # if self.inv_count_enable_pin is None and self.count_enable_pin is None:
+        #     raise ValueError("Binary Counter must have either count enable or inverted count enable pin.")
+        # if self.inv_load_enable_pin is None and self.load_enable_pin is None:
+        #     raise ValueError("Binary Counter must have either load enable or inverted load enable pin.")
+        # if self.inv_up_down_input_pin is None and self.up_down_input_pin is None:
+        #     raise ValueError("Binary Counter must have either up/down input or inverted up/down input pin.")
 
-        if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
-            raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
-        if len(self.data_pins) != len(self.output_pins):
-            raise ValueError("Number of data pins must be equal to number of output pins.")
+        # if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
+        #     raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
+        # if len(self.data_pins) != len(self.output_pins):
+        #     raise ValueError("Number of data pins must be equal to number of output pins.")
 
-        if len(self.data_pins) != 4:
-            raise ValueError("Arbitrary Binary Counter not supported yet")
+        # if len(self.data_pins) != 4:
+        #     raise ValueError("Arbitrary Binary Counter not supported yet")
 
     def __str__(self):
         """
@@ -1006,112 +1012,113 @@ class BinaryCounter(ChipFunction):
         Some of the outputs are also inputs for the counter.
         Only supports 4 bit counter.
         """
-        # TODO figure out a better way, I hate this
-        input_pin_pos = [
-            pin.connection_point
-            for pin in [
-                self.inv_load_enable_pin,
-                self.load_enable_pin,
-                self.inv_up_down_input_pin,
-                self.up_down_input_pin,
-                self.inv_count_enable_pin,
-                self.count_enable_pin,
-                self.clock_pin,
-            ]
-            + self.data_pins
-            + self.output_pins
-            if pin is not None and pin.connection_point is not None
-        ]
-        output_pin_pos = [
-            pin.connection_point
-            for pin in self.output_pins + [self.terminal_count_pin, self.ripple_clock_output_pin]
-            if pin.connection_point is not None
-        ]
+        # # TODO figure out a better way, I hate this
+        # input_pin_pos = [
+        #     pin.connection_point
+        #     for pin in [
+        #         self.inv_load_enable_pin,
+        #         self.load_enable_pin,
+        #         self.inv_up_down_input_pin,
+        #         self.up_down_input_pin,
+        #         self.inv_count_enable_pin,
+        #         self.count_enable_pin,
+        #         self.clock_pin,
+        #     ]
+        #     + self.data_pins
+        #     + self.output_pins
+        #     if pin is not None and pin.connection_point is not None
+        # ]
+        # output_pin_pos = [
+        #     pin.connection_point
+        #     for pin in self.output_pins + [self.terminal_count_pin, self.ripple_clock_output_pin]
+        #     if pin.connection_point is not None
+        # ]
 
-        # Handle inverted outputs
-        hi_load = "H" if self.load_enable_pin is not None else "L"
-        lo_load = "L" if self.load_enable_pin is not None else "H"
-        hi_up_down = "H" if self.up_down_input_pin is not None else "L"
-        lo_up_down = "L" if self.up_down_input_pin is not None else "H"
-        hi_count = "H" if self.count_enable_pin is not None else "L"
-        lo_count = "L" if self.count_enable_pin is not None else "H"
-        clock_symb = "R" if self.clock_type == "RISING_EDGE" else "F"
+        # # Handle inverted outputs
+        # hi_load = "H" if self.load_enable_pin is not None else "L"
+        # lo_load = "L" if self.load_enable_pin is not None else "H"
+        # hi_up_down = "H" if self.up_down_input_pin is not None else "L"
+        # lo_up_down = "L" if self.up_down_input_pin is not None else "H"
+        # hi_count = "H" if self.count_enable_pin is not None else "L"
+        # lo_count = "L" if self.count_enable_pin is not None else "H"
+        # clock_symb = "R" if self.clock_type == "RISING_EDGE" else "F"
 
-        x_dq = ["X"] * len(self.data_pins) # Don't care values for data pins/output pins
-        c00 = ["L", "L", "L", "L"]
-        c01 = ["L", "L", "L", "H"]
-        c02 = ["L", "L", "H", "L"]
-        c03 = ["L", "L", "H", "H"]
-        c04 = ["L", "H", "L", "L"]
-        c05 = ["L", "H", "L", "H"]
-        c06 = ["L", "H", "H", "L"]
-        c07 = ["L", "H", "H", "H"]
-        c08 = ["H", "L", "L", "L"]
-        c09 = ["H", "L", "L", "H"]
-        c10 = ["H", "L", "H", "L"]
-        c11 = ["H", "L", "H", "H"]
-        c12 = ["H", "H", "L", "L"]
-        c13 = ["H", "H", "L", "H"]
-        c14 = ["H", "H", "H", "L"]
-        c15 = ["H", "H", "H", "H"]
+        # x_dq = ["X"] * len(self.data_pins) # Don't care values for data pins/output pins
+        # c00 = ["L", "L", "L", "L"]
+        # c01 = ["L", "L", "L", "H"]
+        # c02 = ["L", "L", "H", "L"]
+        # c03 = ["L", "L", "H", "H"]
+        # c04 = ["L", "H", "L", "L"]
+        # c05 = ["L", "H", "L", "H"]
+        # c06 = ["L", "H", "H", "L"]
+        # c07 = ["L", "H", "H", "H"]
+        # c08 = ["H", "L", "L", "L"]
+        # c09 = ["H", "L", "L", "H"]
+        # c10 = ["H", "L", "H", "L"]
+        # c11 = ["H", "L", "H", "H"]
+        # c12 = ["H", "H", "L", "L"]
+        # c13 = ["H", "H", "L", "H"]
+        # c14 = ["H", "H", "H", "L"]
+        # c15 = ["H", "H", "H", "H"]
 
 
-        truth_table = TruthTable(
-            [
-                # Load states
-                TruthTableRow([hi_load, "X", "X", "X"] + c00 + x_dq, c00 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c01 + x_dq, c01 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c02 + x_dq, c02 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c03 + x_dq, c03 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c04 + x_dq, c04 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c05 + x_dq, c05 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c06 + x_dq, c06 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c07 + x_dq, c07 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c08 + x_dq, c08 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c09 + x_dq, c09 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c10 + x_dq, c10 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c11 + x_dq, c11 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c12 + x_dq, c12 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c13 + x_dq, c13 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c14 + x_dq, c14 + ["L", "H"]),
-                TruthTableRow([hi_load, "X", "X", "X"] + c15 + x_dq, c15 + ["L", "H"]),
-                # Hold state
-                TruthTableRow([lo_load, "X", lo_count, "X", "X", "X", "X", "X"], ["Q", "Q", "Q", "Q", "Q", "Q"]),
-                # Count UP states
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c00, c01 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c01, c02 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c02, c03 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c03, c04 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c04, c05 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c05, c06 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c06, c07 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c07, c08 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c08, c09 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c09, c10 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c10, c11 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c11, c12 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c12, c13 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c13, c14 + ["L", "H"]),
-                TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c14, c15 + ["L", "H"]),
-                # TODO add limit states when terminal count is reached
-                # Count DOWN states
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c15, c14 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c14, c13 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c13, c12 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c12, c11 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c11, c10 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c10, c09 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c09, c08 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c08, c07 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c07, c06 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c06, c05 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c05, c04 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c04, c03 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c03, c02 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c02, c01 + ["L", "H"]),
-                TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c01, c00 + ["L", "H"]),
-                # TODO add limit states when terminal count is reached
-            ]
-        )
+        # truth_table = TruthTable(
+        #     [
+        #         # Load states
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c00 + x_dq, c00 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c01 + x_dq, c01 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c02 + x_dq, c02 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c03 + x_dq, c03 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c04 + x_dq, c04 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c05 + x_dq, c05 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c06 + x_dq, c06 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c07 + x_dq, c07 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c08 + x_dq, c08 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c09 + x_dq, c09 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c10 + x_dq, c10 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c11 + x_dq, c11 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c12 + x_dq, c12 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c13 + x_dq, c13 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c14 + x_dq, c14 + ["L", "H"]),
+        #         TruthTableRow([hi_load, "X", "X", "X"] + c15 + x_dq, c15 + ["L", "H"]),
+        #         # Hold state
+        #         TruthTableRow([lo_load, "X", lo_count, "X", "X", "X", "X", "X"], ["Q", "Q", "Q", "Q", "Q", "Q"]),
+        #         # Count UP states
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c00, c01 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c01, c02 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c02, c03 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c03, c04 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c04, c05 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c05, c06 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c06, c07 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c07, c08 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c08, c09 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c09, c10 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c10, c11 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c11, c12 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c12, c13 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c13, c14 + ["L", "H"]),
+        #         TruthTableRow([lo_load, hi_up_down, hi_count, clock_symb] + x_dq + c14, c15 + ["L", "H"]),
+        #         # TODO add limit states when terminal count is reached
+        #         # Count DOWN states
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c15, c14 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c14, c13 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c13, c12 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c12, c11 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c11, c10 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c10, c09 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c09, c08 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c08, c07 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c07, c06 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c06, c05 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c05, c04 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c04, c03 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c03, c02 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c02, c01 + ["L", "H"]),
+        #         TruthTableRow([lo_load, lo_up_down, hi_count, clock_symb] + x_dq + c01, c00 + ["L", "H"]),
+        #         # TODO add limit states when terminal count is reached
+        #     ]
+        # )
 
-        return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
+        # return FunctionRepresentation(input_pin_pos, output_pin_pos, truth_table)
+        return FunctionRepresentation([], [], TruthTable([]))
