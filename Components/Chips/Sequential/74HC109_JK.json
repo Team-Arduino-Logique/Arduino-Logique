@@ -17,8 +17,8 @@
             "inv_j_input_pin": null,
             "k_input_pin": null,
             "inv_k_input_pin": 3,
-            "output_pin": 6,
-            "inv_output_pin": 7
+            "output_pins": 6,
+            "inv_output_pins": 7
         },
         {
             "func_type": "JK_FLIP_FLOP",
@@ -32,8 +32,8 @@
             "inv_j_input_pin": null,
             "k_input_pin": null,
             "inv_k_input_pin": 13,
-            "output_pin": 10,
-            "inv_output_pin": 9
+            "output_pins": 10,
+            "inv_output_pins": 9
         }
     ],
     "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15527/PHILIPS/74HC109.html"

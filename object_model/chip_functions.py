@@ -574,22 +574,32 @@ class DFlipFlop(ChipFunction):
         inv_reset_pin (Pin): The inverted reset pin (Active LOW).
         set_pin (Pin): The set pin.
         inv_set_pin (Pin): The inverted set pin (Active LOW).
-        data_pin (Pin): The data pin.
-        output_pin (Pin): The output pin.
-        inv_output_pin (Pin): The inverted output pin (Active LOW
+        input_pins (Pin): The data pin.
+        output_pins (Pin): The output pin.
+        inv_output_pins (Pin): The inverted output pin (Active LOW
     """
 
     def __init__(
         self,
-        clock_pin: int,
+        # clock_pin: int,
+        # clock_type: str,
+        # reset_pin: int,
+        # inv_reset_pin: int,
+        # set_pin: int,
+        # inv_set_pin: int,
+        # input_pins: int,
+        # output_pins: int,
+        # inv_output_pins: int,
+        
+        clock_pin: list[int],
         clock_type: str,
-        reset_pin: int,
-        inv_reset_pin: int,
-        set_pin: int,
-        inv_set_pin: int,
-        data_pin: int,
-        output_pin: int,
-        inv_output_pin: int,
+        reset_pin: list[int],
+        inv_reset_pin: list[int],
+        set_pin: list[int],
+        inv_set_pin: list[int],
+        input_pins: list[int],
+        output_pins:list[int],
+        inv_output_pins:list[int],
     ):
         """
         Initializes a D Flip Flop with the specified input and output pins.
@@ -600,37 +610,48 @@ class DFlipFlop(ChipFunction):
             inv_reset_pin (Pin): The inverted reset pin (Active LOW).
             set_pin (Pin): The set pin.
             inv_set_pin (Pin): The inverted set pin (Active LOW).
-            data_pin (Pin): The data pin.
-            output_pin (Pin): The output pin.
-            inv_output_pin (Pin): The inverted output pin (Active LOW).
+            input_pins (Pin): The data pin.
+            output_pins (Pin): The output pin.
+            inv_output_pins (Pin): The inverted output pin (Active LOW).
         Raises:
             ValueError: If the D Flip Flop does not have either set or inverted set pin.
             ValueError: If the D Flip Flop has both set and inverted set pins.
             ValueError: If the D Flip Flop does not have either reset or inverted reset pin.
             ValueError: If the D Flip Flop has both reset and inverted reset pins.
         """
-        super().__init__()
-        self.clock_pin: Pin = Pin(clock_pin, None)
+        super().__init__()  # 
+        # self.clock_pin: Pin = Pin(clock_pin, None)
+        # self.clock_type: str = clock_type
+        # self.reset_pin: Pin = Pin(reset_pin, None) if reset_pin is not None else None
+        # self.inv_reset_pin: Pin = Pin(inv_reset_pin, None) if inv_reset_pin is not None else None
+        # self.set_pin: Pin = Pin(set_pin, None) if set_pin is not None else None
+        # self.inv_set_pin: Pin = Pin(inv_set_pin, None) if inv_set_pin is not None else None
+        # self.input_pins: Pin = Pin(input_pins, None)
+        # self.output_pins: Pin = Pin(output_pins, None)
+        # self.inv_output_pins: Pin = Pin(inv_output_pins, None)
+
+        self.clock_pin: list[Pin] = [Pin(pin_num, None) for pin_num in clock_pin]
         self.clock_type: str = clock_type
         self.reset_pin: Pin = Pin(reset_pin, None) if reset_pin is not None else None
-        self.inv_reset_pin: Pin = Pin(inv_reset_pin, None) if inv_reset_pin is not None else None
+        self.inv_reset_pin: list[Pin] = [Pin(pin_num, None) for pin_num in inv_reset_pin]
         self.set_pin: Pin = Pin(set_pin, None) if set_pin is not None else None
-        self.inv_set_pin: Pin = Pin(inv_set_pin, None) if inv_set_pin is not None else None
-        self.data_pin: Pin = Pin(data_pin, None)
-        self.output_pin: Pin = Pin(output_pin, None)
-        self.inv_output_pin: Pin = Pin(inv_output_pin, None)
+        self.inv_set_pin: list[Pin] = [Pin(pin_num, None) for pin_num in inv_set_pin]
+        self.input_pins: list[Pin] = [Pin(pin_num, None) for pin_num in input_pins]
+        self.output_pins: list[Pin] = [Pin(pin_num, None) for pin_num in output_pins]
+        self.inv_output_pins:list[Pin] = [Pin(pin_num, None) for pin_num in inv_output_pins]
 
-        self.all_pins = [
-            self.clock_pin,
-            self.reset_pin,
-            self.inv_reset_pin,
-            self.set_pin,
-            self.inv_set_pin,
-            self.data_pin,
-            self.output_pin,
-            self.inv_output_pin,
-        ]
-
+        # self.all_pins = [
+        #     self.clock_pin,
+        #     self.reset_pin,
+        #     self.inv_reset_pin,
+        #     self.set_pin,
+        #     self.inv_set_pin,
+        #     self.input_pins,
+        #     self.output_pins,
+        #     self.inv_output_pins,
+        # ]
+        self.all_pins = self.clock_pin + self.inv_reset_pin  + self.inv_set_pin + \
+                        self.input_pins + self.output_pins + self.inv_output_pins
         if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
             raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
 
@@ -659,9 +680,9 @@ class DFlipFlop(ChipFunction):
             f"\n\t\tInverted Reset Pin: {self.inv_reset_pin},"
             f"\n\t\tSet Pin: {self.set_pin},"
             f"\n\t\tInverted Set Pin: {self.inv_set_pin},"
-            f"\n\t\tData Pin: {self.data_pin},"
-            f"\n\t\tOutput Pin: {self.output_pin},"
-            f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
+            f"\n\t\tData Pin: {self.input_pins},"
+            f"\n\t\tOutput Pin: {self.output_pins},"
+            f"\n\t\tInverted Output Pin: {self.inv_output_pins}"
         )
 
     def chip_internal_function(self) -> FunctionRepresentation:
@@ -672,11 +693,11 @@ class DFlipFlop(ChipFunction):
         """
         input_pin_pos = [
             pin.connection_point
-            for pin in [self.inv_set_pin, self.inv_reset_pin, self.clock_pin, self.data_pin]
+            for pin in [self.inv_set_pin, self.inv_reset_pin, self.clock_pin, self.input_pins]
             if pin is not None and pin.connection_point is not None
         ]
         output_pin_pos = [
-            pin.connection_point for pin in [self.output_pin, self.inv_output_pin] if pin.connection_point is not None
+            pin.connection_point for pin in [self.output_pins, self.inv_output_pins] if pin.connection_point is not None
         ]
 
         truth_table = TruthTable(
@@ -706,8 +727,8 @@ class JKFlipFlop(ChipFunction):
         inv_j_input_pin (Pin): The inverted J input pin (Active LOW).
         k_input_pin (Pin): The K input pin.
         inv_k_input_pin (Pin): The inverted K input pin (Active LOW).
-        output_pin (Pin): The output pin.
-        inv_output_pin (Pin): The inverted output pin (Active LOW).
+        output_pins (Pin): The output pin.
+        inv_output_pins (Pin): The inverted output pin (Active LOW).
     """
 
     def __init__(
@@ -722,8 +743,8 @@ class JKFlipFlop(ChipFunction):
         inv_j_input_pin: int,
         k_input_pin: int,
         inv_k_input_pin: int,
-        output_pin: int,
-        inv_output_pin: int,
+        output_pins: int,
+        inv_output_pins: int,
     ):
         """
         Initializes a JK Flip Flop with the specified input and output pins.
@@ -738,8 +759,8 @@ class JKFlipFlop(ChipFunction):
             inv_j_input_pin (Pin): The inverted J input pin (Active LOW).
             k_input_pin (Pin): The K input pin.
             inv_k_input_pin (Pin): The inverted K input pin (Active LOW).
-            output_pin (Pin): The output pin.
-            inv_output_pin (Pin): The inverted output pin (Active LOW).
+            output_pins (Pin): The output pin.
+            inv_output_pins (Pin): The inverted output pin (Active LOW).
         Raises:
             ValueError: If the JK Flip Flop does not have either J or inverted J input pin.
             ValueError: If the JK Flip Flop has both J and inverted J input pins.
@@ -757,13 +778,13 @@ class JKFlipFlop(ChipFunction):
         self.inv_reset_pin: list[Pin] = [Pin(inv_reset_pin, None) if inv_reset_pin is not None else None]
         self.set_pin: list[Pin] = [Pin(set_pin, None) if set_pin is not None else None]
         self.inv_set_pin: list[Pin] = [Pin(inv_set_pin, None) if inv_set_pin is not None else None]
-        # self.j_input_pin: list[Pin] = [Pin(j_input_pin, None) if j_input_pin is not None else None]
-        # self.inv_j_input_pin: list[Pin] = [Pin(inv_j_input_pin, None) if inv_j_input_pin is not None else None]
-        self.input_pins: list[Pin] = [Pin(k_input_pin, None) if j_input_pin is not None else None] # input pins = j_input_pin
+        self.j_input_pin: list[Pin] = [Pin(j_input_pin, None) if j_input_pin is not None else None]
+        self.inv_j_input_pin: list[Pin] = [Pin(inv_j_input_pin, None) if inv_j_input_pin is not None else None]
+        self.input_pins: list[Pin] = [Pin(j_input_pin, None) if j_input_pin is not None else None] # input pins = j_input_pin
         self.k_input_pin: list[Pin] = [Pin(k_input_pin, None) if k_input_pin is not None else None]
         self.inv_k_input_pin: list[Pin] = [Pin(inv_k_input_pin, None) if inv_k_input_pin is not None else None]
-        self.output_pin: list[Pin] = [Pin(output_pin, None)]
-        self.inv_output_pin: list[Pin] = [Pin(inv_output_pin, None)]
+        self.output_pins: list[Pin] = [Pin(output_pins, None)]
+        self.inv_output_pins: list[Pin] = [Pin(inv_output_pins, None)]
 
         self.all_pins = self.clock_pin + \
             self.reset_pin +\
@@ -773,8 +794,8 @@ class JKFlipFlop(ChipFunction):
             self.input_pins +\
             self.k_input_pin +\
             self.inv_k_input_pin +\
-            self.output_pin +\
-            self.inv_output_pin
+            self.output_pins +\
+            self.inv_output_pins
 
         # if self.clock_type not in ["RISING_EDGE", "FALLING_EDGE"]:
         #     raise ValueError("Clock type must be either RISING_EDGE or FALLING_EDGE.")
@@ -812,8 +833,8 @@ class JKFlipFlop(ChipFunction):
             # f"\n\t\tInverted J Input Pin: {self.inv_j_input_pin},"
             f"\n\t\tK Input Pin: {self.k_input_pin},"
             f"\n\t\tInverted K Input Pin: {self.inv_k_input_pin},"
-            f"\n\t\tOutput Pin: {self.output_pin},"
-            f"\n\t\tInverted Output Pin: {self.inv_output_pin}"
+            f"\n\t\tOutput Pin: {self.output_pins},"
+            f"\n\t\tInverted Output Pin: {self.inv_output_pins}"
         )
 
     def chip_internal_function(self) -> FunctionRepresentation:
