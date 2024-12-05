@@ -89,6 +89,14 @@ class SerialPort:
     connection: serial.Serial | None
     """The serial connection object."""
 
+    def connect(self):
+        """Open the serial connection."""
+        try:
+            self.connection = serial.Serial(port=self.com_port, baudrate=self.baud_rate, timeout=self.timeout)
+            print(f"Serial port {self.com_port} opened successfully.")
+        except serial.SerialException as e:
+            print(f"Error opening port {self.com_port}: {e}")
+
 
 class Menus:
     """
@@ -127,8 +135,7 @@ class Menus:
         self.current_dict_circuit: dict = current_dict_circuit
         """The current circuit data."""
         self.sketcher = sketcher
-        self.com_port: str | None = None
-        """The selected COM port."""
+
         self.script = ""
         
         self.selected_microcontroller = None
@@ -328,10 +335,10 @@ class Menus:
         tree.configure(yscroll=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
 
-            # Show the table in the new window
-            table_window.transient(self.parent)  # Set to be on top of the parent window
-            table_window.grab_set()  # Prevent interaction with the main window until closed
-            table_window.mainloop()
+        # Show the table in the new window
+        table_window.transient(self.parent)  # Set to be on top of the parent window
+        table_window.grab_set()  # Prevent interaction with the main window until closed
+        table_window.mainloop()
 
     def create_menu(self, menu_name, options, menu_commands):
         """
@@ -657,26 +664,14 @@ class Menus:
         print("About this software")
         messagebox.showinfo("À propos", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
 
-    def open_port(self):
-        """Handler for the 'Open Port' menu item."""
-        try:
-            self.serial_conn = serial.Serial(
-                port=self.com_port,
-                baudrate=self.baud_rate,
-                timeout=self.timeout
-            )
-            print(f"Port série {self.com_port} ouvert avec succès.")
-        except serial.SerialException as e:
-            print(f"Erreur lors de l'ouverture du port {self.com_port}: {e}")
-
     def send_data(self, data):
         """
         Send a string of data to the microcontroller through the serial port.
         """
-        if self.serial_conn and self.serial_conn.is_open:
+        if self.serial_port.connection and self.serial_port.connection.is_open:
             try:
                 # Convertir la chaîne en bytes et l'envoyer
-                self.serial_conn.write(data.encode('utf-8'))
+                self.serial_port.connection.write(data.encode('utf-8'))
                 print(f"Données envoyées: {data}")
             except serial.SerialException as e:
                 print(f"Erreur lors de l'envoi des données: {e}")
@@ -685,15 +680,15 @@ class Menus:
 
     def close_port(self):
         """Upload the script to the microcontroller through the serial port."""
-        if self.serial_conn and self.serial_conn.is_open:
-            self.serial_conn.close()
-            print(f"Port série {self.com_port} fermé.")
+        if self.serial_port.connection and self.serial_port.connection.is_open:
+            self.serial_port.connection.close()
+            print(f"Port série {self.serial_port.com_port} fermé.")
         else:
             print("Le port série est déjà fermé.")
             
     def download_script(self):
         self.checkCircuit()
-        self.open_port()
+        self.serial_port.connect()
         self.send_data(self.script)
         self.close_port()
         
@@ -709,42 +704,42 @@ class Menus:
     
     def decodeFunc(self,inVar, funcName):
         if funcName == "NandGate":
-            s = f"!( {inVar[0]["val"]} "
+            s = f"!( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"& {v["val"]} "
+                s += f"& {v['val']} "
             s += ") "
         elif funcName == "AndGate":
-            s = f"( {inVar[0]["val"]} "
+            s = f"( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"& {v["val"]} "
+                s += f"& {v['val']} "
             s += ") "   
         elif funcName == "NorGate":
-            s = f"! ( {inVar[0]["val"]} "
+            s = f"! ( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"| {v["val"]} "
+                s += f"| {v['val']} "
             s += ") "         
         elif funcName == "OrGate":
-            s = f"( {inVar[0]["val"]} "
+            s = f"( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"| {v["val"]} "
+                s += f"| {v['val']} "
             s += ") "         
         elif funcName == "NotGate":
-            s = f"! {inVar[0]["val"]} "
+            s = f"! {inVar[0]['val']} "
         elif funcName == "XorGate":
-            s = f"( {inVar[0]["val"]} "
+            s = f"( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"^ {v["val"]} "
+                s += f"^ {v['val']} "
             s += ") "  
         elif funcName == "XnorGate":
-            s = f"! ( {inVar[0]["val"]} "
+            s = f"! ( {inVar[0]['val']} "
             for v in inVar[1:]:
-                s += f"| {v["val"]} "
+                s += f"| {v['val']} "
             s += ") "  
         elif funcName == "Mux":  
             e =["( ","( ","( ","( ","( ","( ","( ","( "]
             for v in range(8):
                 v2, v1, v0  = (v & 1)^1, ((v & 2) >> 1)^1, ((v & 4) >> 2)^1
-                e[v] += inVar[v]["val"] + " & " + inVar[11]["einv"] + " & " + \
+                e[v] += inVar[v]['val'] + " & " + inVar[11]["einv"] + " & " + \
                         v0*" !" + inVar[8]["sel"] + " & " + v1*" !" + inVar[9]["sel"] + " & " + v2*" !" + inVar[10]["sel"] + " ) "
             s = " ( " + e[0]
             for et in e[1:]:
@@ -754,16 +749,16 @@ class Menus:
             s ="("
             out = inVar[0]["numO"]
             v2, v1, v0  = (out & 1)^1, ((out & 2) >> 1)^1, ((out & 4) >> 2)^1
-            s += v0*" !" + inVar[0]["val"] + " & " + v1*"!" + inVar[1]["val"] + " & " + v2*"!" + inVar[2]["val"] + \
+            s += v0*" !" + inVar[0]['val'] + " & " + v1*"!" + inVar[1]['val'] + " & " + v2*"!" + inVar[2]['val'] + \
                  " & " + inVar[3]["einv"] + " & " + inVar[4]["einv"] + " & " + inVar[5]["enb"]
             s += " ) "
         elif funcName == "DFlipFlop":  
             s ="("
-            s += inVar[0]["val"] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
+            s += inVar[0]['val'] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
             s += " ) "
         elif funcName == "JKFlipFlop":  
             s ="("
-            s += inVar[0]["val"] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
+            s += inVar[0]['val'] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
             s += " ) "
             
 
@@ -866,7 +861,7 @@ class Menus:
                         for n,inFunc in enumerate(inLst):
                             findIn = False
                             if  self.is_linked_to(self.pwrP, inFunc) or self.is_linked_to(self.pwrM, inFunc):
-                                constKey = "val"
+                                constKey = 'val'
                                 pos, neg = "1", "0"
                                 for c in chipSel:
                                     if c == inFunc:
@@ -906,7 +901,7 @@ class Menus:
                                 for io_inZone in self.io_in:
                                     id, [zone] = io_inZone
                                     if self.is_linked_to(zone, inFunc):
-                                        constKey = "val"
+                                        constKey = 'val'
                                         for c in chipSel:
                                             if c == inFunc:
                                                 constKey = "sel"
@@ -947,7 +942,7 @@ class Menus:
                                 for io_chipInZone in self.chip_in_wire:
                                     id, zone = io_chipInZone
                                     if self.is_linked_to(zone, inFunc):
-                                        constKey = "val"
+                                        constKey = 'val'
                                         for c in chipSel:
                                             if c == inFunc:
                                                 constKey = "sel"
@@ -982,7 +977,7 @@ class Menus:
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
                                         inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}]
                                         findIn = True
-                                        print("connecté à une ENTRÉE EXTERNE par cable") # ici ajouter n {"val":self.mcu_pin[f"I{id[4:]}"], "num":n}
+                                        print("connecté à une ENTRÉE EXTERNE par cable") # ici ajouter n {'val':self.mcu_pin[f"I{id[4:]}"], "num":n}
                                         break
                                     
                             if not findIn:      ## recherche d'une sortie de chip connectée à l'entrée actuelle de la chip
@@ -1008,7 +1003,7 @@ class Menus:
                                                                 if self.is_linked_to(pinZoneOut, pt):
                                                                     #outPrev = self.mcu_pin[f"O{id[4:]}"]
                                                                     outPrev = f"O{no+1}"
-                                                                    constKey = "val"
+                                                                    constKey = 'val'
                                                                     for c in chipSel:
                                                                         if c == inFunc:
                                                                             constKey = "sel"
@@ -1027,7 +1022,7 @@ class Menus:
                                                                     findNext = True
                                                             if not isPinOut:
                                                                 findNext, s = self.checkCloseCircuit(outZone,params)
-                                                                constKey = "val"
+                                                                constKey = 'val'
                                                                 for c in chipSel:
                                                                     if c == inFunc:
                                                                         constKey = "sel"
@@ -1053,7 +1048,7 @@ class Menus:
                                                                     isPinOut = True
                                                                     #outPrev = self.mcu_pin[f"O{id[4:]}"]
                                                                     outPrev = f"O{no+1}"
-                                                                    constKey = "val"
+                                                                    constKey = 'val'
                                                                     for c in chipSel:
                                                                         if c == inFunc:
                                                                             constKey = "sel"
@@ -1073,7 +1068,7 @@ class Menus:
                                                                 for coc in self.chip_out_script:
                                                                     if coc[1] == outZone:
                                                                         exp = coc[0]
-                                                                        constKey = "val"
+                                                                        constKey = 'val'
                                                                         for c in chipSel:
                                                                             if c == inFunc:
                                                                                 constKey = "sel"
