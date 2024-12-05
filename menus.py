@@ -6,12 +6,12 @@ The menu bar includes options for file operations, controller selection, port co
 from copy import deepcopy
 
 from dataclasses import dataclass
+import os
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
 import json
-from typing import Callable
+import subprocess
+import platform
 import serial.tools.list_ports  # type: ignore
-from tkmacosx import Button
 
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
@@ -28,8 +28,14 @@ from dataCDLT import (
     USED,
     INPUT,
     OUTPUT,
+    CLOCK,
 )
-from dataCDLT import INPUT, OUTPUT, USED
+
+if os.name == "darwin":
+    from tkinter import messagebox, filedialog, ttk
+    from tkmacosx import Button  # type: ignore
+else:
+    from tkinter import Button, messagebox, filedialog, ttk
 
 MICROCONTROLLER_PINS = {
     "Arduino Mega": {
@@ -91,7 +97,6 @@ class Menus:
         parent (tk.Tk | tk.Frame): The main window or parent frame.
         canvas (tk.Canvas): The canvas widget for drawing circuits.
         board (Breadboard): The Breadboard instance.
-        model (list): The model data for the circuit.
         current_dict_circuit (dict): The current circuit data.
         com_port (str | None): The selected COM port.
     """
@@ -163,6 +168,16 @@ class Menus:
         for menu_name, options in menus.items():
             self.create_menu(menu_name, options, menu_commands)
 
+        # Display selected microcontroller label
+        self.microcontroller_label = tk.Label(
+            self.menu_bar,
+            text="(Aucun microcontrôleur n'est choisi)",
+            bg="#333333",
+            fg="white",
+            font=("FiraCode-Bold", 12),
+        )
+        self.microcontroller_label.pack(side="right", padx=10)
+
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
         self.canvas.bind("<Button-1>", self.close_dropdown, add="+")
@@ -182,6 +197,7 @@ class Menus:
         available_microcontrollers = list(MICROCONTROLLER_PINS.keys())
         # Create a combobox with the options
         combobox = ttk.Combobox(dialog, values=available_microcontrollers)
+        combobox.set(self.selected_microcontroller if self.selected_microcontroller else "Choisir un microcontrôleur")
         combobox.pack(pady=10)
         
         default_option = "Arduino Mega"  # Changez ceci selon votre choix
@@ -192,9 +208,11 @@ class Menus:
             print(f"Selected option: {selected_option}")
             self.selected_microcontroller = selected_option
             print(f"{selected_option} selected.")
+            # Update the label text
+            self.microcontroller_label.config(text=self.selected_microcontroller)
             dialog.destroy()
 
-        confirm_button = Button(dialog, text="Confirm", command=confirm_selection)
+        confirm_button = Button(dialog, text="Confirmer", command=confirm_selection)
         confirm_button.pack(pady=10)
         
     # def map_mcu_pin(self, treeview=None, input_pin_ios, output_pin_ios, input_pins, output_pins):
@@ -216,12 +234,14 @@ class Menus:
     def show_correspondence_table(self, show=True):
         """Displays the correspondence table between pin_io objects and microcontroller pins in a table format."""
         if self.selected_microcontroller is None:
-            messagebox.showwarning("No Microcontroller Selected", "Please select a microcontroller first.")
+            messagebox.showwarning(
+                "Aucun microcontrôleur sélectionné", "Veuillez d'abord sélectionner un microcontrôleur."
+            )
             return
 
         pin_mappings = MICROCONTROLLER_PINS.get(self.selected_microcontroller)
         if not pin_mappings:
-            messagebox.showerror("Error", f"No pin mappings found for {self.selected_microcontroller}.")
+            messagebox.showerror("Erreur", f"Aucun mappage de broches trouvé pour {self.selected_microcontroller}.")
             return
 
         input_pins = pin_mappings["input_pins"]
@@ -230,23 +250,29 @@ class Menus:
         # Gather pin_io objects from current_dict_circuit
         pin_ios = [value for key, value in self.current_dict_circuit.items() if key.startswith("_io_")]
 
-        # Separate pin_ios into inputs and outputs
+        # Separate pin_ios into inputs, outputs, and clocks
         input_pin_ios = [pin for pin in pin_ios if pin["type"] == INPUT]
         output_pin_ios = [pin for pin in pin_ios if pin["type"] == OUTPUT]
+        clock_pin_ios = [pin for pin in pin_ios if pin["type"] == CLOCK]
 
-        # Check if we have more pin_ios than available pins
+        # Ensure only one CLOCK type
+        if len(clock_pin_ios) > 1:
+            messagebox.showerror("Erreur d'horloge", "Une seule HORLOGE est autorisée.")
+            return
+
+        # Check pin counts
         if len(input_pin_ios) > len(input_pins):
             messagebox.showerror(
-                "Too Many Inputs",
-                f"You have {len(input_pin_ios)} input pin_ios but only "
-                f"{len(input_pins)} available input pins on the microcontroller.",
+                "Trop d'entrées",
+                f"Vous avez {len(input_pin_ios)} broches d'entrée, mais seulement "
+                f"{len(input_pins)} broches d'entrée disponibles sur le microcontrôleur.",
             )
             return
         if len(output_pin_ios) > len(output_pins):
             messagebox.showerror(
-                "Too Many Outputs",
-                f"You have {len(output_pin_ios)} output pin_ios but only "
-                f"{len(output_pins)} available output pins on the microcontroller.",
+                "Trop de sorties",
+                f"Vous avez {len(output_pin_ios)} broches de sortie, mais seulement "
+                f"{len(output_pins)} broches de sortie disponibles sur le microcontrôleur.",
             )
             return
 
@@ -254,16 +280,16 @@ class Menus:
         table_window = tk.Toplevel(self.parent)
         table_window.withdraw()
         table_window.title("Correspondence Table")
-        table_window.geometry("400x300")
+        table_window.geometry("500x350")
 
         # if show:
         # Create a Treeview widget for the table
-        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=10)
+        tree = ttk.Treeview(table_window, columns=("ID", "Type", "MCU Pin"), show="headings", height=15)
         tree.pack(expand=True, fill="both", padx=10, pady=10)
 
         # Define columns and headings
         tree.column("ID", anchor="center", width=120)
-        tree.column("Type", anchor="center", width=80)
+        tree.column("Type", anchor="center", width=120)
         tree.column("MCU Pin", anchor="center", width=120)
         tree.heading("ID", text="Pin IO ID")
         tree.heading("Type", text="Type")
@@ -292,6 +318,15 @@ class Menus:
             scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
             tree.configure(yscroll=scrollbar.set)
             scrollbar.pack(side="right", fill="y")
+        if clock_pin_ios:
+            clock_pin = pin_mappings["clock_pin"]
+            pin_number = clock_pin_ios[0]["id"].split("_")[-1]
+            tree.insert("", "end", values=(pin_number, "clk input", clock_pin))
+
+        # Add a scrollbar if the list gets too long
+        scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
 
             # Show the table in the new window
             table_window.transient(self.parent)  # Set to be on top of the parent window
@@ -435,7 +470,7 @@ class Menus:
         self.board.draw_blank_board_model()
 
         print("New file created.")
-        messagebox.showinfo("New File", "A new circuit has been created.")
+        messagebox.showinfo("Nouveau fichier", "Un nouveau circuit a été créé.")
 
     def open_file(self):
         """Handler for the 'Open' menu item."""
@@ -456,9 +491,9 @@ class Menus:
 
                 for key, val in circuit_data.items():
                     if key == "_battery_pos_wire":
-                        battery_pos_wire_end = val['end']
+                        battery_pos_wire_end = val["end"]
                     elif key == "_battery_neg_wire":
-                        battery_neg_wire_end = val['end']
+                        battery_neg_wire_end = val["end"]
 
                 self.board.draw_blank_board_model(
                     x_o,
@@ -480,10 +515,12 @@ class Menus:
                     else:
 
                         print(f"Unspecified component: {key}")
-                messagebox.showinfo("Open File", f"Circuit loaded from {file_path}")
+                messagebox.showinfo("Ouvrir un fichier", f"Circuit chargé depuis {file_path}")
             except Exception as e:
                 print(f"Error loading file: {e}")
-                messagebox.showerror("Open Error", f"An error occurred while opening the file:\n{e}")
+                messagebox.showerror(
+                    "Erreur d'ouverture", f"Une erreur s'est produite lors de l'ouverture du fichier:\n{e}"
+                )
                 raise e
         else:
             print("Open file cancelled.")
@@ -561,17 +598,19 @@ class Menus:
                     if "label" in comp_data:
                         comp_data["label"] = comp_data["type"]
                     if "wire" in key:
-                        comp_data.pop("XY", None) # Remove XY, will be recalculated anyway
+                        comp_data.pop("XY", None)  # Remove XY, will be recalculated anyway
                     if key == "_battery":
                         comp_data.pop("battery_rect", None)
                 # Save the data to a JSON file
                 with open(file_path, "w", encoding="utf-8") as file:
                     json.dump(circuit_data, file, indent=4)
                 print(f"Circuit saved to {file_path}")
-                messagebox.showinfo("Save Successful", f"Circuit saved to {file_path}")
+                messagebox.showinfo("Sauvegarde réussie", f"Circuit sauvegardé dans {file_path}")
             except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
-                messagebox.showerror("Save Error", f"An error occurred while saving the file:\n{e}")
+                messagebox.showerror(
+                    "Erreur de sauvegarde", f"Une erreur s'est produite lors de la sauvegarde du fichier:\n{e}"
+                )
         else:
             print("Save file cancelled.")
 
@@ -582,7 +621,7 @@ class Menus:
         if len(options) == 0:
             message = "No COM ports available. Please connect a device and try again."
             print(message)
-            messagebox.showwarning("No COM Ports", message)
+            messagebox.showwarning("Pas de ports COM", message)
         else:
             dialog = tk.Toplevel(self.parent)
             dialog.title("Configure Ports")
@@ -605,14 +644,19 @@ class Menus:
 
     def open_documentation(self):
         """Handler for the 'Documentation' menu item."""
-        print("Open Documentation")
-        messagebox.showinfo("Documentation", "Documentation not available yet.")
+        file_path = os.path.join(os.path.dirname(__file__), "Assets", "ArduinoLogique_Document_utilisateur.pdf")
+        if platform.system() == "Windows":
+            subprocess.Popen(["start", file_path], shell=True)
+        elif platform.system() == "Darwin":  # macOS
+            subprocess.Popen(["open", file_path])
+        else:  # Linux and other Unix-like systems
+            subprocess.Popen(["xdg-open", file_path])
 
     def about(self):
         """Handler for the 'About' menu item."""
         print("About this software")
-        messagebox.showinfo("About", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
-            
+        messagebox.showinfo("À propos", "ArduinoLogique v1.0\nSimulateur de circuits logiques")
+
     def open_port(self):
         """Handler for the 'Open Port' menu item."""
         try:

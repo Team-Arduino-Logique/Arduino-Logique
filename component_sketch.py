@@ -13,7 +13,6 @@ from typing import Any, Callable
 import os
 
 
-
 from dataCDLT import (
     HORIZONTAL,
     RIGHT,
@@ -27,6 +26,7 @@ from dataCDLT import (
     USED,
     INPUT,
     OUTPUT,
+    CLOCK,
 )
 from component_params import BOARD_830_PTS_PARAMS, DIP14_PARAMS
 from utils import resource_path
@@ -71,7 +71,6 @@ class ComponentSketcher:
         self.matrix: dict[str, Any] = {}
         self.id_origins = {"xyOrigin": (0, 0)}
         self.battery_wire_drag_data: dict[str, Any] = {}
-
 
     def circuit(self, x_distance=0, y_distance=0, scale=1, width=-1, direction=VERTICAL, **kwargs):
         """
@@ -345,7 +344,7 @@ class ComponentSketcher:
         """
         Event handler for when the mouse leaves the wire body.
         """
-        if not self.drag_selector and not self.wire_drag_data["creating_wire"]:
+        if not self.drag_selector and not self.wire_drag_data["creating_wire"] and not self.delete_mode_active:
             self.canvas.config(cursor="arrow")
 
     def on_wire_body_click(self, event, wire_id) -> None:
@@ -2614,18 +2613,19 @@ class ComponentSketcher:
             label_x = (x_distance + x_origin + 5 * scale,)
             label_y = (y_distance + y_origin - 17 * scale,)
 
-            label_tag = f"{element_id}_label"
-            text_id = self.canvas.create_text(
-                label_x,
-                label_y,
-                text=pin_number,
-                font=("FiraCode-Bold", int(7 * scale)),
-                fill="#000000",
-                anchor="center",
-                tags=(element_id, label_tag),
-            )
-            params["label_tag"] = label_tag
-            params["tags"].append(text_id)
+            if element_type != CLOCK:
+                label_tag = f"{element_id}_label"
+                text_id = self.canvas.create_text(
+                    label_x,
+                    label_y,
+                    text=pin_number,
+                    font=("FiraCode-Bold", int(7 * scale)),
+                    fill="#000000",
+                    anchor="center",
+                    tags=(element_id, label_tag),
+                )
+                params["label_tag"] = label_tag
+                params["tags"].append(text_id)
 
             if element_type == INPUT:
                 # Arrow pointing down
@@ -2678,6 +2678,45 @@ class ComponentSketcher:
                 )
                 params["tags"].append(arrow_head_id)
 
+            elif element_type == CLOCK:
+                x_start = x_distance + x_origin + 0 * scale
+                y_start = y_distance + y_origin - 13 * scale
+
+
+                l1 = 5 * scale 
+                h  = 5 * scale 
+                l2 = 5 * scale 
+
+                # Draw the first horizontal line '_'
+                line1_id = self.canvas.create_line(
+                    x_start, y_start,
+                    x_start + l1, y_start,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line1_id)
+
+                # Draw the vertical line '|'
+                line2_id = self.canvas.create_line(
+                    x_start + l1, y_start,
+                    x_start + l1, y_start - h,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line2_id)
+
+                # Draw the second horizontal line '_'
+                line3_id = self.canvas.create_line(
+                    x_start + l1, y_start - h,
+                    x_start + l1 + l2, y_start - h,
+                    fill="#404040",
+                    width=2,
+                    tags=(element_id, interactive_tag, outline_tag),
+                )
+                params["tags"].append(line3_id)
+
             self.current_dict_circuit[element_id] = params
 
             print("coord : " + str(coord[0][0]) + "," + str(coord[0][1]))
@@ -2697,8 +2736,6 @@ class ComponentSketcher:
         matrix[f"{coord[0][0]},{coord[0][1]}"]["state"] = USED
 
         return x_distance, y_distance
-        
-    
 
     def clear_board(self):
         """Clear the board of all drawn components."""
@@ -2712,13 +2749,20 @@ class ComponentSketcher:
         self.current_dict_circuit.clear()
         # TODO Khalid update the Circuit instance
 
-
-    
-
-    def draw_battery(self, x_distance, y_distance, scale=1, width=-1, direction='HORIZONTAL', pos_wire_end=None, neg_wire_end=None, **kwargs):
+    def draw_battery(
+        self,
+        x_distance,
+        y_distance,
+        scale=1,
+        width=-1,
+        direction="HORIZONTAL",
+        pos_wire_end=None,
+        neg_wire_end=None,
+        **kwargs,
+    ):
         """
         Draws a battery image at the given coordinates with two hanging wires on the left side.
-        
+
         Parameters:
         - x_distance (int): The x-coordinate where the battery will be drawn.
         - y_distance (int): The y-coordinate where the battery will be drawn.
@@ -2728,11 +2772,11 @@ class ComponentSketcher:
         - pos_wire_end (tuple): Coordinates where the positive wire should end.
         - neg_wire_end (tuple): Coordinates where the negative wire should end.
         - kwargs: Additional keyword arguments.
-        
+
         Returns:
         - Tuple of (x_distance, y_distance)
         """
-        battery_id = '_battery'
+        battery_id = "_battery"
 
         # Check if battery already exists
         if battery_id in self.current_dict_circuit:
@@ -2779,14 +2823,10 @@ class ComponentSketcher:
             return x_distance, y_distance
 
         battery_obj = self.canvas.create_image(
-            x_distance - 10,
-            y_distance,
-            anchor='nw',
-            image=battery_photo,
-            tags=(battery_id,)
+            x_distance - 10, y_distance, anchor="nw", image=battery_photo, tags=(battery_id,)
         )
 
-        if not hasattr(self, 'image_references'):
+        if not hasattr(self, "image_references"):
             self.image_references = []
         self.image_references.append(battery_photo)
 
@@ -2794,7 +2834,7 @@ class ComponentSketcher:
         neg_wire_offset_y = new_height * 0.2  # 20% from the top
 
         pos_wire_offset_x = 0  # Left edge
-        pos_wire_offset_y = new_height * 0.8 
+        pos_wire_offset_y = new_height * 0.8
 
         neg_wire_start_x = x_distance + neg_wire_offset_x
         neg_wire_start_y = y_distance + neg_wire_offset_y
@@ -2802,12 +2842,9 @@ class ComponentSketcher:
         pos_wire_start_x = x_distance + pos_wire_offset_x
         pos_wire_start_y = y_distance + pos_wire_offset_y
 
-        self.current_dict_circuit[battery_id] = {
-            'id': battery_id,
-            'tags': [battery_id]
-        }
+        self.current_dict_circuit[battery_id] = {"id": battery_id, "tags": [battery_id]}
 
-        neg_wire_id = '_battery_neg_wire'
+        neg_wire_id = "_battery_neg_wire"
         if neg_wire_end:
             neg_wire_end_x, neg_wire_end_y = neg_wire_end
         else:
@@ -2821,10 +2858,10 @@ class ComponentSketcher:
             end_x=neg_wire_end_x + 3,
             end_y=neg_wire_end_y + 3,
             color=(0, 0, 0),
-            terminal_type='neg'
+            terminal_type="neg",
         )
 
-        pos_wire_id = '_battery_pos_wire'
+        pos_wire_id = "_battery_pos_wire"
         if pos_wire_end:
             pos_wire_end_x, pos_wire_end_y = pos_wire_end
         else:
@@ -2838,13 +2875,13 @@ class ComponentSketcher:
             end_x=pos_wire_end_x + 3,
             end_y=pos_wire_end_y + 3,
             color=(255, 0, 0),
-            terminal_type='pos'
+            terminal_type="pos",
         )
 
         self.canvas.tag_raise(battery_id)
 
-        self.current_dict_circuit[battery_id]['tags'].extend(
-            self.current_dict_circuit[pos_wire_id]['tags'] + self.current_dict_circuit[neg_wire_id]['tags']
+        self.current_dict_circuit[battery_id]["tags"].extend(
+            self.current_dict_circuit[pos_wire_id]["tags"] + self.current_dict_circuit[neg_wire_id]["tags"]
         )
 
         return x_distance, y_distance
@@ -2864,23 +2901,11 @@ class ComponentSketcher:
 
         # shadow line
         self.canvas.create_line(
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-            fill=contour,
-            width=8 * thickness,
-            tags=(wire_id, wire_body_shadow_tag)
+            start_x, start_y, end_x, end_y, fill=contour, width=8 * thickness, tags=(wire_id, wire_body_shadow_tag)
         )
         # main line
         self.canvas.create_line(
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-            fill=encre,
-            width=4 * thickness,
-            tags=(wire_id, wire_body_tag)
+            start_x, start_y, end_x, end_y, fill=encre, width=4 * thickness, tags=(wire_id, wire_body_tag)
         )
 
         radius = 2 * self.scale_factor
@@ -2889,37 +2914,37 @@ class ComponentSketcher:
             end_y - radius,
             end_x + radius,
             end_y + radius,
-            fill='green' if terminal_type == 'pos' else 'black',
-            outline='',
-            tags=(endpoint_tag,)
+            fill="green" if terminal_type == "pos" else "black",
+            outline="",
+            tags=(endpoint_tag,),
         )
 
         self.current_dict_circuit[wire_id] = {
-            'id': wire_id,
-            'tags': [wire_id, wire_body_tag, wire_body_shadow_tag, endpoint_tag],
-            'start': (start_x, start_y),
-            'end': (end_x, end_y),
-            'color': color,
-            'terminal_type': terminal_type,
-            'endpoint_tag': endpoint_tag,
+            "id": wire_id,
+            "tags": [wire_id, wire_body_tag, wire_body_shadow_tag, endpoint_tag],
+            "start": (start_x, start_y),
+            "end": (end_x, end_y),
+            "color": color,
+            "terminal_type": terminal_type,
+            "endpoint_tag": endpoint_tag,
         }
 
         self.canvas.tag_bind(
             endpoint_tag,
             "<Button-1>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id),
         )
         self.canvas.tag_bind(
             endpoint_tag,
             "<B1-Motion>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id),
         )
         self.canvas.tag_bind(
             endpoint_tag,
             "<ButtonRelease-1>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id),
         )
-    
+
     def create_battery_wire_endpoint(self, x, y, wire_id, terminal_type):
         """
         Creates an interactive endpoint for a battery wire.
@@ -2932,28 +2957,28 @@ class ComponentSketcher:
             y - radius,
             x + radius,
             y + radius,
-            fill='green' if terminal_type == 'pos' else 'black',
-            outline='',
-            tags=(endpoint_tag,)
+            fill="green" if terminal_type == "pos" else "black",
+            outline="",
+            tags=(endpoint_tag,),
         )
 
         self.canvas.tag_bind(
             endpoint_tag,
             "<Button-1>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_click(event, wire_id),
         )
         self.canvas.tag_bind(
             endpoint_tag,
             "<B1-Motion>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_drag(event, wire_id),
         )
         self.canvas.tag_bind(
             endpoint_tag,
             "<ButtonRelease-1>",
-            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id)
+            lambda event, wire_id=wire_id: self.on_battery_wire_endpoint_release(event, wire_id),
         )
 
-        self.current_dict_circuit[wire_id]['endpoint_tag'] = endpoint_tag
+        self.current_dict_circuit[wire_id]["endpoint_tag"] = endpoint_tag
 
     def on_battery_wire_endpoint_click(self, event, wire_id):
         """
@@ -2963,9 +2988,9 @@ class ComponentSketcher:
         x, y = event.x, event.y
         _, nearest_point_coord = self.find_nearest_grid_point(x, y)
         old_col, old_line = nearest_point_coord
-        self.matrix[f'{old_col},{old_line}']['state'] = FREE
+        self.matrix[f"{old_col},{old_line}"]["state"] = FREE
         self.battery_wire_drag_data = {
-            'wire_id': wire_id,
+            "wire_id": wire_id,
         }
 
     def on_battery_wire_endpoint_drag(self, event, wire_id):
@@ -2973,11 +2998,11 @@ class ComponentSketcher:
         Handler for dragging a battery wire endpoint.
         Updates the wire's end position as it's being dragged.
         """
-        if self.battery_wire_drag_data['wire_id'] != wire_id:
+        if self.battery_wire_drag_data["wire_id"] != wire_id:
             return
 
         wire_data = self.current_dict_circuit[wire_id]
-        start_x, start_y = wire_data['start']
+        start_x, start_y = wire_data["start"]
 
         wire_body_tag = f"{wire_id}_body"
         wire_body_shadow_tag = f"{wire_id}_body_shadow"
@@ -2985,17 +3010,11 @@ class ComponentSketcher:
         self.canvas.coords(wire_body_shadow_tag, start_x, start_y, event.x, event.y)
         self.canvas.coords(wire_body_tag, start_x, start_y, event.x, event.y)
 
-        endpoint_tag = wire_data['endpoint_tag']
+        endpoint_tag = wire_data["endpoint_tag"]
         radius = 5 * self.scale_factor
-        self.canvas.coords(
-            endpoint_tag,
-            event.x - radius,
-            event.y - radius,
-            event.x + radius,
-            event.y + radius
-        )
+        self.canvas.coords(endpoint_tag, event.x - radius, event.y - radius, event.x + radius, event.y + radius)
 
-        wire_data['end'] = (event.x, event.y)
+        wire_data["end"] = (event.x, event.y)
 
     def on_battery_wire_endpoint_release(self, event, wire_id):
         """
@@ -3010,7 +3029,7 @@ class ComponentSketcher:
             return
 
         wire_data = self.current_dict_circuit[wire_id]
-        start_x, start_y = wire_data['start']
+        start_x, start_y = wire_data["start"]
         new_end_x, new_end_y = nearest_point
 
         wire_body_tag = f"{wire_id}_body"
@@ -3019,20 +3038,16 @@ class ComponentSketcher:
         self.canvas.coords(wire_body_shadow_tag, start_x, start_y, new_end_x + 3, new_end_y + 3)
         self.canvas.coords(wire_body_tag, start_x, start_y, new_end_x + 3, new_end_y + 3)
 
-        endpoint_tag = wire_data['endpoint_tag']
+        endpoint_tag = wire_data["endpoint_tag"]
         radius = 2 * self.scale_factor
         self.canvas.coords(
-            endpoint_tag,
-            new_end_x - radius + 3,
-            new_end_y - radius + 3,
-            new_end_x + radius + 3,
-            new_end_y + radius + 3
+            endpoint_tag, new_end_x - radius + 3, new_end_y - radius + 3, new_end_x + radius + 3, new_end_y + radius + 3
         )
 
-        wire_data['end'] = (new_end_x, new_end_y)
+        wire_data["end"] = (new_end_x, new_end_y)
 
         col, line = nearest_point_coord
-        self.matrix[f'{col},{line}']['state'] = USED
+        self.matrix[f"{col},{line}"]["state"] = USED
 
         self.battery_wire_drag_data = {}
 
@@ -3041,14 +3056,14 @@ class ComponentSketcher:
         Returns a list of allowed positions (x, y, col, line) for the battery wires.
         """
         allowed_positions = []
-        last_col = 61 
+        last_col = 61
         power_lines = [1, 2, 13, 14, 15, 16, 27, 28]
 
         for line in power_lines:
             col = last_col
             key = f"{col},{line}"
             if key in self.matrix:
-                x, y = self.matrix[key]['xy']
+                x, y = self.matrix[key]["xy"]
                 x += self.id_origins["xyOrigin"][0]
                 y += self.id_origins["xyOrigin"][1]
                 allowed_positions.append((x, y, col, line))
@@ -3059,12 +3074,12 @@ class ComponentSketcher:
         Find the nearest grid point among the allowed positions to the given x, y coordinates.
         Skips positions that are already USED.
         """
-        min_distance = float('inf')
+        min_distance = float("inf")
         nearest_point = (x, y)
         nearest_point_coord = None
         for grid_x, grid_y, col, line in allowed_positions:
             # Check if the hole is FREE
-            hole_state = self.matrix.get(f'{col},{line}', {}).get('state', None)
+            hole_state = self.matrix.get(f"{col},{line}", {}).get("state", None)
             if hole_state != FREE:
                 continue
             distance = math.hypot(x - grid_x, y - grid_y)

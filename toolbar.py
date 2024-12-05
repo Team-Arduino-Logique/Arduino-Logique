@@ -5,16 +5,20 @@ The toolbar includes buttons for various actions (e.g., Connection, Power, Input
 for selecting connection colors. The Toolbar class manages the state and behavior of these buttons and handles user
 interactions for placing wires and pin_ios on a canvas.
 """
-
+import os
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
-from tkinter import messagebox, colorchooser
-import os
+
 from component_sketch import ComponentSketcher
-from dataCDLT import INPUT, OUTPUT, FREE
+from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
+if os.name == "darwin":
+    from tkinter import messagebox, colorchooser
+    from tkmacosx import Button # type: ignore
+else:
+    from tkinter import Button, messagebox, colorchooser
 
 @dataclass
 class WirePlacementInfo:
@@ -45,7 +49,7 @@ class Toolbar:
         self.sketcher = sketcher
         self.current_dict_circuit = current_dict_circuit
         self.selected_color = "#479dff"
-        self.buttons: dict[str, tk.Button] = {}
+        self.buttons: dict[str, Button] = {}
         self.tool_mode = None
         self.wire_info: WirePlacementInfo = WirePlacementInfo(0, None, None)
         self.cursor_indicator_id = None
@@ -73,12 +77,13 @@ class Toolbar:
 
         # Create buttons in the left frame
         self.create_button("Connection", left_frame, images)
-        self.create_button("Power", left_frame, images)
+        # self.create_button("Power", left_frame, images) # à ajouter après si besoin
         self.create_button("Input", left_frame, images)
         self.create_button("Output", left_frame, images)
+        self.create_button("Clock", left_frame, images)
 
         # Create the color chooser and Delete button in the right frame
-        self.color_button = tk.Button(
+        self.color_button = Button(
             right_frame,
             bg=self.selected_color,
             width=2,
@@ -96,7 +101,7 @@ class Toolbar:
         """
         Loads PNG images from the 'icons' folder, scales them, and stores them in the images dictionary.
         """
-        icon_names = ["connection", "power", "input", "output", "delete"]
+        icon_names = ["connection", "power", "input", "output", "delete", "clock"]
         icons_folder = Path(resource_path("Assets/Icons")).resolve()
         images: dict[str, tk.PhotoImage | None] = {}
         for name in icon_names:
@@ -112,7 +117,7 @@ class Toolbar:
                 images[name] = image
             except tk.TclError:
                 messagebox.showerror(
-                    "Image Load Error", f"Failed to load {path}. Ensure the file exists and is a valid PNG image."
+                    "Erreur de chargement d'image", f"Échec du chargement de {path}. Assurez-vous que le fichier existe et est une image PNG valide."
                 )
                 images[name] = None  # Fallback if image fails to load
 
@@ -128,7 +133,7 @@ class Toolbar:
         """
         image = images.get(action.lower())
         if image:
-            btn = tk.Button(
+            btn = Button(
                 parent_frame,
                 image=image,
                 bg="#505050",  # Inactive background
@@ -144,7 +149,7 @@ class Toolbar:
             btn.image = image  # type: ignore
         else:
             # Fallback button with text if image is not available
-            btn = tk.Button(
+            btn = Button(
                 parent_frame,
                 text=action,
                 bg="#505050",  # Inactive background
@@ -347,19 +352,26 @@ class Toolbar:
                 self.sketcher.wire_drag_data["creating_wire"] = False
                 print("Wire placement completed.")
 
-        elif self.tool_mode in ("Input", "Output") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
+        elif self.tool_mode in ("Input", "Output", "Clock") and self.sketcher.matrix[f"{col},{line}"]["state"] == FREE:
             # pin_io placement logic
-            type_const = INPUT if self.tool_mode == "Input" else OUTPUT
-            model_pin_io = [
-                (
-                    self.sketcher.draw_pin_io,
-                    1,
-                    {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": self.sketcher.matrix},
-                )
-            ]
-            self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
-            # Optionally deactivate after placement
-            # self.cancel_pin_io_placement()
+            type_const = None
+            if self.tool_mode == "Clock":
+                type_const = CLOCK
+            elif self.tool_mode == "Output":
+                type_const = OUTPUT
+            elif self.tool_mode == "Input":
+                type_const = INPUT
+            if type_const is not None:
+                model_pin_io = [
+                    (
+                        self.sketcher.draw_pin_io,
+                        1,
+                        {"color": self.selected_color, "type": type_const, "coord": [(col, line)], "matrix": self.sketcher.matrix},
+                    )
+                ]
+                self.sketcher.circuit(x_origin, y_origin, model=model_pin_io)
+                # Optionally deactivate after placement
+                # self.cancel_pin_io_placement()
 
     def cancel_placement(self, _=None):
         """
