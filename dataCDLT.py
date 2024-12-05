@@ -1,3 +1,5 @@
+from typing import Any
+
 PERSO = 0
 HORIZONTAL = 1
 VERTICAL = 2
@@ -13,3 +15,10 @@ NO = 0
 YES = 1
 LEFT = 0
 RIGHT = 1
+
+connexion_circuit: dict[str, list[Any]] = {
+    "io": [],
+    "wire" : [],
+    "pwr" : [],
+    "func" : []
+}

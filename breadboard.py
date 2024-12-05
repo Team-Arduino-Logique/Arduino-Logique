@@ -64,7 +64,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, line_distance),
                 "state": FREE,
-                "lien": None,
+                "link": [(2 + col_distance,  line_distance, 60 + col_distance, line_distance)],
             }
             matrix[id_top_plus] = {
                 "id": ["mh", "moins haut", "2"],
@@ -74,7 +74,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 1 + line_distance),
                 "state": FREE,
-                "lien": None,
+                "link": [(2 + col_distance, 1 + line_distance, 60 + col_distance, 1 + line_distance)],
             }
             matrix[id_bot_minus] = {
                 "id": ["pb", "plus bas", "13"],
@@ -84,7 +84,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 12 + line_distance),
                 "state": FREE,
-                "lien": None,
+                "link": [(2 + col_distance, 12 + line_distance, 60 + col_distance, 12 + line_distance)],
             }
             matrix[id_bot_plus] = {
                 "id": ["mb", "moins bas", "14"],
@@ -94,7 +94,7 @@ class Breadboard:
                 ),
                 "coord": (2 + (i % 5) + col_distance + (i // 5) * 6, 13 + line_distance),
                 "state": FREE,
-                "lien": None,
+                "link": [(2 + col_distance, 13 + line_distance, 60 + col_distance, 13 + line_distance)],
             }
         for l in range(5):
             for c in range(63):
@@ -107,7 +107,7 @@ class Breadboard:
                     ),
                     "coord": (c + col_distance, l + 2 + line_distance),
                     "state": FREE,
-                    "lien": None,
+                    "link": [(c + col_distance, 2 + line_distance, c + col_distance, 6 + line_distance)],
                 }
                 id_in_matrix = str(c + col_distance) + "," + str(l + 7 + line_distance)
                 matrix[id_in_matrix] = {
@@ -118,7 +118,7 @@ class Breadboard:
                     ),
                     "coord": (c + col_distance, l + 7 + line_distance),
                     "state": FREE,
-                    "lien": None,
+                    "link": [(c + col_distance, 7 + line_distance, c + col_distance, 11 + line_distance)],
                 }
 
     def fill_matrix_1260_pts(self):

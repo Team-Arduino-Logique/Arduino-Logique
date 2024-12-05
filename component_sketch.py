@@ -2023,6 +2023,19 @@ class ComponentSketcher:
         dim["chipWidth"] = kwargs.get("chipWidth", dim["chipWidth"])
         dim["label"] = kwargs.get("label", dim["label"])
         dim["internalFunc"] = kwargs.get("internalFunc", None)
+        dim["io_select"] = kwargs.get("io_select", None)
+        # if not dim["io_select"] :
+        #     dim["io_select"]  = kwargs.get("address_pins", None)
+        dim["io_out_inv"] = kwargs.get("io_out_inv", None)
+        dim["io_enable"] = kwargs.get("io_enable", None)
+        dim["io_enable_inv"] = kwargs.get("io_enable_inv", None)
+        dim["clock_pin"] = kwargs.get("clock_pin", None)
+        dim["inv_clock_pin"] = kwargs.get("inv_clock_pin", None)
+        dim["inv_reset_pin"] = kwargs.get("inv_reset_pin", None)
+        dim["inv_set_pin"] = kwargs.get("inv_set_pin", None)
+        dim["j_input_pin"] = kwargs.get("j_input_pin", None)
+        dim["inv_k_input_pin"] = kwargs.get("inv_k_input_pin", None)
+        dim["k_input_pin"] = kwargs.get("k_input_pin", None)
         dim["pwr"] = kwargs.get("pwr", None)
 
         logic_function_name = kwargs.get("logicFunctionName", None)
@@ -2031,7 +2044,9 @@ class ComponentSketcher:
         chip_id = kwargs.get("id", None)
         tags = kwargs.get("tags", [])
         chip_type = kwargs.get("type", "chip")
-
+        io = kwargs.get("io", [])
+        symb_script = kwargs.get("symbScript", None)
+        pwr = kwargs.get("pwr", [])
         dim_line = (dim["pinCount"] - 0.30) * inter_space / 2
         dim_column = dim["chipWidth"] * inter_space
 
@@ -2064,7 +2079,23 @@ class ComponentSketcher:
             params["label"] = label
             params["type"] = chip_type
             params["btnMenu"] = [1, 1, 0]
+            params["symbScript"] = logic_function_name
+            params["io"] = io
+            params["pwr"] = pwr
+            params["logicFunctionName"] = logic_function_name
             params["pwr"] = dim["pwr"]
+            params["io_select"] = dim["io_select"] 
+            params["io_out_inv"] = dim["io_out_inv"] 
+            params["io_enable"] = dim["io_enable"] 
+            params["io_enable_inv"] = dim["io_enable_inv"]
+            params["clock_pin"] = dim["clock_pin"]
+            params["inv_reset_pin"] = dim["inv_reset_pin"]
+            params["inv_set_pin"] = dim["inv_set_pin"]
+            
+            params["inv_clock_pin"] = dim["inv_clock_pin"]
+            params["j_input_pin"] = dim["j_input_pin"]
+            params["inv_k_input_pin"] = dim["inv_k_input_pin"]
+            params["k_input_pin"] = dim["k_input_pin"]
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id
             tag_menu = "menu" + chip_id
