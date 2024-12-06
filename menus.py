@@ -138,7 +138,7 @@ class Menus:
 
         self.script = ""
         
-        self.selected_microcontroller = None
+        self.selected_microcontroller =  "Arduino Mega"
         """The selected microcontroller."""
 
         self.menu_bar = tk.Frame(parent, bg="#333333")
@@ -178,7 +178,7 @@ class Menus:
         # Display selected microcontroller label
         self.microcontroller_label = tk.Label(
             self.menu_bar,
-            text="(Aucun microcontrôleur n'est choisi)",
+            text="(Aucun microcontrôleur n'est choisi)" if not self.selected_microcontroller else self.selected_microcontroller,
             bg="#333333",
             fg="white",
             font=("FiraCode-Bold", 12),
@@ -757,12 +757,27 @@ class Menus:
             s += inVar[0]['val'] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
             s += " ) "
         elif funcName == "JKFlipFlop":  
-            s ="("
-            s += inVar[0]['val'] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
-            s += " ) "
+            if inVar[4].get("iK"): 
+                    K = f"!{inVar[4]["iK"]}"
+            else:   K = inVar[4]["K"]
+            if inVar[1].get("clk"): 
+                    CLK = f"{inVar[1]["clk"]} "
+            else:   CLK = f"!{inVar[3]["iclk"]} "
+            if inVar[3].get("iset"): 
+                    iSet = f"{inVar[3]["iset"]}"
+                    iRst = f"{inVar[2]["irst"]}"
+            else:   
+                    iSet = f"!{inVar[2]["iset"]}"
+                    iRst = f"{inVar[1]["irst"]}"
+            sT =f"T{self.varTempNum} = "
+            sT += "((" + inVar[0]['J'] + f" & T{self.varTempNum}_precedant) | (!{K} & t{self.varTempNum}_precedant)) & !{iSet} & !{iRst} & CLK | !{iSet} " 
+            sT += " ); "
+            s = inVar[0]["numO"]*" !" + f"T{self.varTempNum} "
+            self.varTempNum +=1
+            self.varScript += [sT]
             
 
-        return s                   
+        return s                 
     
     def checkCloseCircuit(self, ioOut, params={}):
         #id, (c1,l1,c2,l2)  = ioOut 
@@ -1137,6 +1152,8 @@ class Menus:
         chip_in_j = []
         chip_in_k = []
         chip_in_inv_k = []
+        self.varTempNum = 1
+        self.varScript = []
 
         self.show_correspondence_table(False)
         for id, component in self.current_dict_circuit.items():
@@ -1240,8 +1257,8 @@ class Menus:
                         for (n,numPin) in sum(ioInClockInv,[])
                     ]
                     if ioInCLKInv:
-                        chip_in_inv_clock += [(id, *ioInCLK)]
-                        self.chip_in += [(id, *ioInCLK)]
+                        chip_in_inv_clock += [(id, *ioInCLKInv)]
+                        self.chip_in += [(id, *ioInCLKInv)]
                         
                     #### l' entrée Reset Inv  ###
                 ioInResetInv = component.get("inv_reset_pin", [])
@@ -1507,10 +1524,14 @@ class Menus:
                     # "chip_in_address_pins":chip_in_address_pins}
             for no,ioOut in enumerate(self.io_out):
                #self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "  # f"O{no+1}"
-               self.script += f"O{no+1}" + " = "
+               
                circuitClose, script = self.checkCloseCircuit(ioOut,params)
                if circuitClose :
                         print(f"le circuit est fermée sur la sortie {ioOut}")
+                        for s in self.varScript:
+                            self.script += s 
+                        self.varScript = []
+                        self.script += f"O{no+1}" + " = "
                         self.script += f"{script}; "
                         print(f"script temp : {self.script}")
                else:    print(f"le circuit est ouvert sur la sortie {ioOut}")

@@ -272,7 +272,9 @@ class Chip:
         if self.functions:
             attr_dict["logicFunctionName"] = self.functions[0].__class__.__name__
             attr_dict["io"] = [
-                ([pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins])
+                (   [pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins] + \
+                    [pin.pin_num for pin in func.inv_output_pins if func.inv_output_pins]
+                )
                 for func in self.functions
                 #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
                 #if isinstance(func, LogicalFunction) or  isinstance(func, Mux) or isinstance(func, Demux) or isinstance(func, DFlipFlop)
@@ -336,7 +338,7 @@ class Chip:
                 if  isinstance(func, JKFlipFlop)
             ]
             attr_dict["inv_k_input_pin"] = [
-                [(n,pin.pin_num)for pin in func.inv_k_input_pin]
+                [(n,pin.pin_num)for pin in func.inv_k_input_pin if func.inv_k_input_pin[0] ]
                 for n,func in enumerate(self.functions)
 
                 if  isinstance(func, JKFlipFlop)
