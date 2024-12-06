@@ -31,7 +31,7 @@ from dataCDLT import (
     CLOCK,
 )
 
-if os.name == "darwin":
+if os.name == "posix" or os.name=="darwin":
     from tkinter import messagebox, filedialog, ttk
     from tkmacosx import Button  # type: ignore
 else:

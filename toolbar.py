@@ -14,7 +14,7 @@ from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
-if os.name == "darwin":
+if os.name == "posix" or os.name=="darwin":
     from tkinter import messagebox, colorchooser
     from tkmacosx import Button # type: ignore
 else:
