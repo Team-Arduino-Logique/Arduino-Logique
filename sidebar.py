@@ -17,11 +17,11 @@ from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
 
-if os.name == "posix" or os.name=="darwin":
-    from tkinter import messagebox, font
-    from tkmacosx import Button # type: ignore
-else:
-    from tkinter import Button, messagebox, font
+# if os.name == "posix" or os.name=="darwin":
+#     from tkinter import messagebox, font
+#     from tkmacosx import Button # type: ignore
+# else:
+from tkinter import Button, messagebox, font
 
 
 @dataclass

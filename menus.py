@@ -764,13 +764,15 @@ class Menus:
                     CLK = f"{inVar[1]["clk"]} "
             else:   CLK = f"!{inVar[3]["iclk"]} "
             if inVar[3].get("iset"): 
-                    iSet = f"{inVar[3]["iset"]}"
-                    iRst = f"{inVar[2]["irst"]}"
+                    set = f"!{inVar[3]["iset"]}"
+                    iset = f"{inVar[3]["iset"]}"
+                    rst = f"!{inVar[2]["irst"]}"
             else:   
-                    iSet = f"!{inVar[2]["iset"]}"
-                    iRst = f"{inVar[1]["irst"]}"
+                    set = f"!{inVar[2]["iset"]}"
+                    iset = f"{inVar[2]["iset"]}"
+                    rst = f"!{inVar[1]["irst"]}"
             sT =f"T{self.varTempNum} = "
-            sT += "((" + inVar[0]['J'] + f" & T{self.varTempNum}_precedant) | (!{K} & t{self.varTempNum}_precedant)) & !{iSet} & !{iRst} & CLK | !{iSet} " 
+            sT += "((" + inVar[0]['J'] + f" & !T{self.varTempNum}_precedant) | (!{K} & T{self.varTempNum}_precedant)) & {set} & {rst} & CLK | {iset} " 
             sT += " ); "
             s = inVar[0]["numO"]*" !" + f"T{self.varTempNum} "
             self.varTempNum +=1
@@ -1320,7 +1322,7 @@ class Menus:
             elif id[:4] == "_io_":  # [(col1, line1,col2,line2), ...]
                 (col, line) = component["coord"][0][0], component["coord"][0][1]
                 ioZone = deepcopy(self.board.sketcher.matrix[f"{col},{line}"]["link"])
-                if component["type"] == INPUT:
+                if component["type"] == INPUT or component["type"] == CLOCK:
                     self.io_in += [(id, [ioZone])]
                 else:
                     self.io_out += [(id, [ioZone])]
