@@ -325,20 +325,20 @@ class Menus:
             scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
             tree.configure(yscroll=scrollbar.set)
             scrollbar.pack(side="right", fill="y")
-        if clock_pin_ios:
-            clock_pin = pin_mappings["clock_pin"]
-            pin_number = clock_pin_ios[0]["id"].split("_")[-1]
-            tree.insert("", "end", values=(pin_number, "clk input", clock_pin))
+            if clock_pin_ios:
+                clock_pin = pin_mappings["clock_pin"]
+                pin_number = clock_pin_ios[0]["id"].split("_")[-1]
+                tree.insert("", "end", values=(pin_number, "clk input", clock_pin))
 
-        # Add a scrollbar if the list gets too long
-        scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
-        tree.configure(yscroll=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+            # Add a scrollbar if the list gets too long
+            scrollbar = ttk.Scrollbar(table_window, orient="vertical", command=tree.yview)
+            tree.configure(yscroll=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
 
-        # Show the table in the new window
-        table_window.transient(self.parent)  # Set to be on top of the parent window
-        table_window.grab_set()  # Prevent interaction with the main window until closed
-        table_window.mainloop()
+            # Show the table in the new window
+            table_window.transient(self.parent)  # Set to be on top of the parent window
+            table_window.grab_set()  # Prevent interaction with the main window until closed
+            table_window.mainloop()
 
     def create_menu(self, menu_name, options, menu_commands):
         """
