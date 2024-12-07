@@ -50,7 +50,7 @@ def main():
     # Creating the toolbar instance
     toolbar = Toolbar(parent=win, canvas=canvas, sketcher=sketcher, current_dict_circuit=sketcher.current_dict_circuit)
     # Placing the secondary top bar in row=1, column=1 (spanning only the canvas area)
-    toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=(0, 0))
+    toolbar.topbar_frame.grid(row=1, column=1, sticky="ew", padx=(0, 0), pady=(0, 0))
 
     # Set initial scale factor
     initial_scale = 1.0  # Equivalent to 10.0 / 10.0

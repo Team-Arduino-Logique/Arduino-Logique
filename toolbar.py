@@ -95,6 +95,7 @@ class Toolbar:
             borderwidth=0,
             highlightthickness=0,
         )
+        Hovertip(self.color_button, "Choisir une couleur pour les composantes", 500)
         self.color_button.pack(side=tk.LEFT, padx=2, pady=2)
         self.create_button("Delete", right_frame, images, "Supprimer un composant")
 
