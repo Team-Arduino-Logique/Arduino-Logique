@@ -68,10 +68,10 @@ class Toolbar:
 
         # Create left and right subframes
         left_frame = tk.Frame(self.topbar_frame, bg="#505050")
-        left_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        left_frame.pack(side=tk.LEFT, padx=50, pady=5)
 
         right_frame = tk.Frame(self.topbar_frame, bg="#505050")
-        right_frame.pack(side=tk.RIGHT, padx=5, pady=5)
+        right_frame.pack(after=left_frame, side=tk.LEFT, padx=100, pady=5)
 
         # Load images
         images = self.load_images()

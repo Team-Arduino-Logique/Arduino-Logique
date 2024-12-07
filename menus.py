@@ -156,7 +156,7 @@ class Menus:
             fg="white",
             font=("FiraCode-Bold", 12),
         )
-        self.microcontroller_label.pack(side="right", padx=10)
+        self.microcontroller_label.pack(side="right", fill="y", padx=175)
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
