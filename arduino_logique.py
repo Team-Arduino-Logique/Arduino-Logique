@@ -4,10 +4,9 @@ Main module for the ArduinoLogique program. This module provides a graphical int
 simulating logic circuits using Tkinter. It includes functionality to initialize a canvas, 
 draw a breadboard, etc.
 """
-
+import os
 from pathlib import Path
 import tkinter as tk
-from tkinter import font
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
 from menus import Menus
@@ -15,6 +14,11 @@ from sidebar import Sidebar
 from toolbar import Toolbar
 from utils import resource_path
 
+if os.name == "darwin" or os.name == "posix":
+    from tkinter import font
+    from tkmacosx import Button # type: ignore
+else:
+    from tkinter import Button, font
 
 def main():
     """
@@ -68,6 +72,22 @@ def main():
         current_dict_circuit=sketcher.current_dict_circuit,
         toolbar=toolbar,
     )
+
+    def toggle_sidebar():
+        sidebar.toggle_sidebar()
+        if sidebar.is_sidebar_visible:
+            toggle_sidebar_btn.config(text="<<")
+        else:
+            toggle_sidebar_btn.config(text=">>")
+
+    toggle_sidebar_btn = Button(
+        win,
+        text="<<",
+        command=toggle_sidebar,
+        bg="#333333",
+        fg="#FFFFFF",
+    )
+    toggle_sidebar_btn.grid(row=1, column=0, sticky="w")
 
     def refresh_sidebar():
         sidebar.refresh()
