@@ -9,6 +9,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
+from idlelib.tooltip import Hovertip  # type: ignore
 
 from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
@@ -67,20 +68,20 @@ class Toolbar:
 
         # Create left and right subframes
         left_frame = tk.Frame(self.topbar_frame, bg="#505050")
-        left_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        left_frame.pack(side=tk.LEFT, padx=50, pady=5)
 
         right_frame = tk.Frame(self.topbar_frame, bg="#505050")
-        right_frame.pack(side=tk.RIGHT, padx=5, pady=5)
+        right_frame.pack(after=left_frame, side=tk.LEFT, padx=100, pady=5)
 
         # Load images
         images = self.load_images()
 
         # Create buttons in the left frame
-        self.create_button("Connection", left_frame, images)
+        self.create_button("Connection", left_frame, images, "Ajouter une connexion")
         # self.create_button("Power", left_frame, images) # à ajouter après si besoin
-        self.create_button("Input", left_frame, images)
-        self.create_button("Output", left_frame, images)
-        self.create_button("Clock", left_frame, images)
+        self.create_button("Input", left_frame, images, "Ajouter une entrée")
+        self.create_button("Output", left_frame, images, "Ajouter une sortie")
+        self.create_button("Clock", left_frame, images, "Ajouter une horloge")
 
         # Create the color chooser and Delete button in the right frame
         self.color_button = Button(
@@ -94,8 +95,9 @@ class Toolbar:
             borderwidth=0,
             highlightthickness=0,
         )
+        Hovertip(self.color_button, "Choisir une couleur pour les composantes", 500)
         self.color_button.pack(side=tk.LEFT, padx=2, pady=2)
-        self.create_button("Delete", right_frame, images)
+        self.create_button("Delete", right_frame, images, "Supprimer un composant")
 
     def load_images(self) -> dict[str, tk.PhotoImage | None]:
         """
@@ -123,7 +125,7 @@ class Toolbar:
 
         return images
 
-    def create_button(self, action: str, parent_frame: tk.Frame, images: dict[str, tk.PhotoImage | None]) -> None:
+    def create_button(self, action: str, parent_frame: tk.Frame, images: dict[str, tk.PhotoImage | None], hovertext: str) -> None:
         """
         Helper method to create a button in the specified frame with an icon.
 
@@ -164,6 +166,7 @@ class Toolbar:
                 borderwidth=0,
                 highlightthickness=0,
             )
+        Hovertip(btn, hovertext, 500)
         btn.pack(side=tk.LEFT, padx=10, pady=2)  # Minimal spacing between buttons
         self.buttons[action] = btn  # Store button reference
 

@@ -147,9 +147,12 @@ class Menus:
         self.serial_port = SerialPort(None, 115200, 1, None)
         """The serial port configuration."""
 
+        self.open_file_path: str | None = None
+        """The file path for the current open file."""
+
         # Define menu items and their corresponding dropdown options
         menus = {
-            "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Quitter"],
+            "Fichier": ["Nouveau", "Ouvrir", "Enregistrer", "Enregistrer sous", "Quitter"],
             "Microcontrôleur": ["Choisir un microcontrôleur", "Table de correspondance", "Configurer le port série"],
             "Circuit": [
                 "Vérifier",
@@ -161,7 +164,8 @@ class Menus:
         menu_commands = {
             "Nouveau": self.new_file,
             "Ouvrir": self.open_file,
-            "Enregistrer": self.save_file,
+            "Enregistrer": lambda: self.save_file(False),
+            "Enregistrer sous": self.save_file,
             "Quitter": self.parent.quit,
             "Configurer le port série": self.configure_ports,
             "Table de correspondance": self.show_correspondence_table,
@@ -183,11 +187,13 @@ class Menus:
             fg="white",
             font=("FiraCode-Bold", 12),
         )
-        self.microcontroller_label.pack(side="right", padx=10)
+        self.microcontroller_label.pack(side="right", fill="y", padx=175)
 
         # Bind to parent to close dropdowns when clicking outside
         self.parent.bind("<Button-1>", self.close_dropdown, add="+")
         self.canvas.bind("<Button-1>", self.close_dropdown, add="+")
+
+        self.parent.bind("<Control-s>", lambda _: self.save_file(False), add="+")
 
     def select_microcontroller(self):
         """Handler for microcontroller selection."""
@@ -472,6 +478,7 @@ class Menus:
     def new_file(self):
         """Handler for the 'New' menu item."""
         # Clear the canvas and reset the circuit
+        self.open_file_path = None
         self.board.sketcher.clear_board()
         self.board.fill_matrix_1260_pts()
         self.board.draw_blank_board_model()
@@ -523,6 +530,7 @@ class Menus:
 
                         print(f"Unspecified component: {key}")
                 messagebox.showinfo("Ouvrir un fichier", f"Circuit chargé depuis {file_path}")
+                self.open_file_path = file_path
             except Exception as e:
                 print(f"Error loading file: {e}")
                 messagebox.showerror(
@@ -588,12 +596,15 @@ class Menus:
         ]
         self.board.sketcher.circuit(x_o, y_o, model=model_io)
 
-    def save_file(self):
+    def save_file(self, prompt_for_path: bool = True):
         """Handler for the 'Save' menu item."""
         print("Save File")
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
+        if prompt_for_path or not self.open_file_path:
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+        else:
+            file_path = self.open_file_path
         if file_path:
             try:
                 circuit_data = deepcopy(self.current_dict_circuit)
@@ -613,6 +624,7 @@ class Menus:
                     json.dump(circuit_data, file, indent=4)
                 print(f"Circuit saved to {file_path}")
                 messagebox.showinfo("Sauvegarde réussie", f"Circuit sauvegardé dans {file_path}")
+                self.open_file_path = file_path
             except (TypeError, KeyError) as e:
                 print(f"Error saving file: {e}")
                 messagebox.showerror(
