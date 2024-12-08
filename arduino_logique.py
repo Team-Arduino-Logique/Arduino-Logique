@@ -5,6 +5,7 @@ simulating logic circuits using Tkinter. It includes functionality to initialize
 draw a breadboard, etc.
 """
 import os
+import platform
 from pathlib import Path
 import tkinter as tk
 from breadboard import Breadboard
@@ -14,7 +15,7 @@ from sidebar import Sidebar
 from toolbar import Toolbar
 from utils import resource_path
 
-if os.name == "darwin" or os.name == "posix":
+if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
     from tkinter import font
     from tkmacosx import Button # type: ignore
 else:

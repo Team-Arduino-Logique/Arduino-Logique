@@ -8,6 +8,7 @@ interactions for placing wires and pin_ios on a canvas.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+import platform
 import tkinter as tk
 from idlelib.tooltip import Hovertip  # type: ignore
 
@@ -15,7 +16,7 @@ from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
-if os.name == "posix" or os.name=="darwin":
+if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
     from tkinter import messagebox, colorchooser
     from tkmacosx import Button # type: ignore
 else:
