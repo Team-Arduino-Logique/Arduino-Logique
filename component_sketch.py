@@ -2764,8 +2764,8 @@ class ComponentSketcher:
             original_width = battery_photo.width()
             original_height = battery_photo.height()
 
-            new_width = int(original_width * scale * 0.7)
-            new_height = int(original_height * scale * 0.7)
+            new_width = int(original_width * scale * 0.4)
+            new_height = int(original_height * scale * 0.4)
 
             scale_x = new_width / original_width
             scale_y = new_height / original_height
@@ -2817,8 +2817,8 @@ class ComponentSketcher:
         if neg_wire_end:
             neg_wire_end_x, neg_wire_end_y = neg_wire_end
         else:
-            neg_wire_end_x = neg_wire_start_x - 100 * scale  # Wires go to the left
-            neg_wire_end_y = neg_wire_start_y
+            neg_wire_end_x = neg_wire_start_x - 50 * scale  # Wires go to the left
+            neg_wire_end_y = neg_wire_start_y - 50 * scale  # Wires go up
 
         self.draw_battery_wire(
             wire_id=neg_wire_id,
@@ -2834,8 +2834,8 @@ class ComponentSketcher:
         if pos_wire_end:
             pos_wire_end_x, pos_wire_end_y = pos_wire_end
         else:
-            pos_wire_end_x = pos_wire_start_x - 100 * scale
-            pos_wire_end_y = pos_wire_start_y
+            pos_wire_end_x = pos_wire_start_x - 50 * scale
+            pos_wire_end_y = pos_wire_start_y + 50 * scale # Wires go down
 
         self.draw_battery_wire(
             wire_id=pos_wire_id,

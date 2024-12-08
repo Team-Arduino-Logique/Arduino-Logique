@@ -78,25 +78,34 @@ class Sidebar:
         self.saved_bindings: dict[str, Callable] = {}
 
         # Creating the sidebar frame
-        sidebar_frame = tk.Frame(parent, bg="#333333", width=275, bd=0, highlightthickness=0)
-        sidebar_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
-        sidebar_frame.grid_propagate(False)  # Preventing frame from resizing
+        self.sidebar_frame = tk.Frame(parent, bg="#333333", width=275, bd=0, highlightthickness=0)
+        self.sidebar_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)
+        self.sidebar_frame.grid_propagate(False)  # Preventing frame from resizing
+
+        self.is_sidebar_visible = True
 
         # Configuring grid weights for the sidebar
-        sidebar_frame.grid_rowconfigure(0, weight=0)  # Search bar
-        sidebar_frame.grid_rowconfigure(1, weight=0)  # Chips label
-        sidebar_frame.grid_rowconfigure(2, weight=8)  # Chips area (80%)
-        sidebar_frame.grid_rowconfigure(3, weight=0)  # Manage button
-        sidebar_frame.grid_columnconfigure(0, weight=1)
+        self.sidebar_frame.grid_rowconfigure(0, weight=0)  # Search bar
+        self.sidebar_frame.grid_rowconfigure(1, weight=0)  # Chips label
+        self.sidebar_frame.grid_rowconfigure(2, weight=8)  # Chips area (80%)
+        self.sidebar_frame.grid_rowconfigure(3, weight=0)  # Manage button
+        self.sidebar_frame.grid_columnconfigure(0, weight=1)
 
         self.sidebar_grid = SidebarGrid(columns=2, visible_rows=12, grid_capacity=24)
 
         # Creating sidebar components
-        self.create_search_bar(sidebar_frame)
-        self.create_chips_area(sidebar_frame)
-        self.create_manage_button(sidebar_frame)
+        self.create_search_bar(self.sidebar_frame)
+        self.create_chips_area(self.sidebar_frame)
+        self.create_manage_button(self.sidebar_frame)
 
         self.chip_files_mtimes = get_chip_modification_times()
+
+    def toggle_sidebar(self):
+        if self.is_sidebar_visible:
+            self.sidebar_frame.grid_remove()
+        else:
+            self.sidebar_frame.grid()
+        self.is_sidebar_visible = not self.is_sidebar_visible
 
     def initialize_chip_data(self, current_dict_circuit, chip_images_path) -> None:
         """
