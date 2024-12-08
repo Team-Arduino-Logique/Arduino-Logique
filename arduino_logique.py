@@ -29,7 +29,8 @@ def main():
     win = tk.Tk()
     win.title("Laboratoire virtuel de circuit logique - GIF-1002")
     win.geometry("1500x800")  # Initial window size
-    win.resizable(False, False)  # Disabling window resizing
+    win.minsize(1500, 800)    # Set minimal window size
+    win.resizable(True, True)  # Disabling window resizing
     win.configure(bg="#333333")  # Setting consistent background color
 
     # Configuring grid layout for the main window
