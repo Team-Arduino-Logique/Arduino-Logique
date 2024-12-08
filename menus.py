@@ -754,23 +754,23 @@ class Menus:
             s += " ) "
         elif funcName == "DFlipFlop":  
             s ="("
-            s += inVar[0]['val'] + " & CLK & " + inVar[3]["iset"] + " & " + inVar[2]["irst"] + " | !" + inVar[3]["iset"]
+            s += inVar[0]['val'] + " & CLK & " + inVar[3]['iset'] + " & " + inVar[2]['irst'] + " | !" + inVar[3]['iset']
             s += " ) "
         elif funcName == "JKFlipFlop":  
-            if inVar[4].get("iK"): 
-                    K = f"!{inVar[4]["iK"]}"
+            if inVar[4].get('iK'): 
+                    K = f"!{inVar[4]['iK']}"
             else:   K = inVar[4]["K"]
-            if inVar[1].get("clk"): 
-                    CLK = f"{inVar[1]["clk"]} "
-            else:   CLK = f"!{inVar[3]["iclk"]} "
-            if inVar[3].get("iset"): 
-                    set = f"!{inVar[3]["iset"]}"
-                    iset = f"{inVar[3]["iset"]}"
-                    rst = f"!{inVar[2]["irst"]}"
+            if inVar[1].get('clk'): 
+                    CLK = f"{inVar[1]['clk']} "
+            else:   CLK = f"!{inVar[3]['iclk']} "
+            if inVar[3].get('iset'): 
+                    set = f"!{inVar[3]['iset']}"
+                    iset = f"{inVar[3]['iset']}"
+                    rst = f"!{inVar[2]['irst']}"
             else:   
-                    set = f"!{inVar[2]["iset"]}"
-                    iset = f"{inVar[2]["iset"]}"
-                    rst = f"!{inVar[1]["irst"]}"
+                    set = f"!{inVar[2]['iset']}"
+                    iset = f"{inVar[2]['iset']}"
+                    rst = f"!{inVar[1]['irst']}"
             sT =f"T{self.varTempNum} = "
             sT += "((" + inVar[0]['J'] + f" & !T{self.varTempNum}_precedant) | (!{K} & T{self.varTempNum}_precedant)) & {set} & {rst} & CLK | {iset} " 
             sT += " ); "
@@ -892,14 +892,14 @@ class Menus:
                                         constKey = "enb"
                                 for c in chipInInvReset:
                                     if c == inFunc:
-                                        constKey = "irst"
+                                        constKey = 'irst'
                                 for c in chipInInvSet:
                                     if c == inFunc:
-                                        constKey = "iset"
+                                        constKey = 'iset'
                                         
                                 for c in chipInInvClk:
                                     if c == inFunc:
-                                        constKey = "iclk"
+                                        constKey = 'iclk'
                                 for c in chipInJ:
                                     if c == inFunc:
                                         constKey = "J"
@@ -908,7 +908,7 @@ class Menus:
                                         constKey = "K"
                                 for c in chipInInvK:
                                     if c == inFunc:
-                                        constKey = "iK"
+                                        constKey = 'iK'
                                 if self.is_linked_to(self.pwrP, inFunc):
                                         inFuncConst += [{constKey:pos, "num":n, "numO":no}]
                                 else:   inFuncConst += [{constKey:neg, "num":n, "numO":no}]
@@ -930,17 +930,17 @@ class Menus:
                                                 constKey = "enb"
                                         for c in chipInInvReset:
                                             if c == inFunc:
-                                                constKey = "irst"
+                                                constKey = 'irst'
                                         for c in chipInInvSet:
                                             if c == inFunc:
-                                                constKey = "iset"
+                                                constKey = 'iset'
                                         for c in chipInClock:
                                             if c == inFunc:
-                                                constKey = "clk"
+                                                constKey = 'clk'
                                                 
                                         for c in chipInInvClk:
                                             if c == inFunc:
-                                                constKey = "iclk"
+                                                constKey = 'iclk'
                                         for c in chipInJ:
                                             if c == inFunc:
                                                 constKey = "J"
@@ -949,7 +949,7 @@ class Menus:
                                                 constKey = "K"
                                         for c in chipInInvK:
                                             if c == inFunc:
-                                                constKey = "iK"
+                                                constKey = 'iK'
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         findIn = True
@@ -971,17 +971,17 @@ class Menus:
                                                 constKey = "enb"
                                         for c in chipInInvReset:
                                             if c == inFunc:
-                                                constKey = "irst"
+                                                constKey = 'irst'
                                         for c in chipInInvSet:
                                             if c == inFunc:
-                                                constKey = "iset"
+                                                constKey = 'iset'
                                         for c in chipInClock:
                                             if c == inFunc:
-                                                constKey = "clk"
+                                                constKey = 'clk'
                                                 
                                         for c in chipInInvClk:
                                             if c == inFunc:
-                                                constKey = "iclk"
+                                                constKey = 'iclk'
                                         for c in chipInJ:
                                             if c == inFunc:
                                                 constKey = "J"
@@ -990,7 +990,7 @@ class Menus:
                                                 constKey = "K"
                                         for c in chipInInvK:
                                             if c == inFunc:
-                                                constKey = "iK"
+                                                constKey = 'iK'
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
                                         inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}]
                                         findIn = True
