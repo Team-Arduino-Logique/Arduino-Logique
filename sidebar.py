@@ -18,11 +18,7 @@ from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
 
-if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
-    from tkinter import messagebox, font
-    from tkmacosx import Button # type: ignore
-else:
-    from tkinter import Button, messagebox, font
+from tkinter import Button, messagebox, font
 
 
 @dataclass
