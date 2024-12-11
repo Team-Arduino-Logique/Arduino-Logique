@@ -2036,6 +2036,11 @@ class ComponentSketcher:
         dim["j_input_pin"] = kwargs.get("j_input_pin", None)
         dim["inv_k_input_pin"] = kwargs.get("inv_k_input_pin", None)
         dim["k_input_pin"] = kwargs.get("k_input_pin", None)
+        
+        dim["count_enable_pin"] = kwargs.get("count_enable_pin", None)
+        dim["inv_load_enable_pin"] = kwargs.get("inv_load_enable_pin", None)
+        dim["inv_up_down_input_pin"] = kwargs.get("inv_up_down_input_pin", None)
+        dim["terminal_count_pin"] = kwargs.get("terminal_count_pin", None)
         dim["pwr"] = kwargs.get("pwr", None)
 
         logic_function_name = kwargs.get("logicFunctionName", None)
@@ -2096,6 +2101,12 @@ class ComponentSketcher:
             params["j_input_pin"] = dim["j_input_pin"]
             params["inv_k_input_pin"] = dim["inv_k_input_pin"]
             params["k_input_pin"] = dim["k_input_pin"]
+ 
+            params["count_enable_pin"] = dim["count_enable_pin"]
+            params["inv_load_enable_pin"] = dim["inv_load_enable_pin"]
+            params["inv_up_down_input_pin"] = dim["inv_up_down_input_pin"]
+            params["terminal_count_pin"] = dim["terminal_count_pin"]
+
             num_pins_per_side = dim["pinCount"] // 2
             tag_base = "base" + chip_id
             tag_menu = "menu" + chip_id

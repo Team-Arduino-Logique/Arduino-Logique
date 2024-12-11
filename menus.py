@@ -715,6 +715,7 @@ class Menus:
         return res
     
     def decodeFunc(self,inVar, funcName):
+        s =""
         if funcName == "NandGate":
             s = f"!( {inVar[0]['val']} "
             for v in inVar[1:]:
@@ -789,7 +790,36 @@ class Menus:
             s = inVar[0]["numO"]*" !" + f"T{self.varTempNum} "
             self.varTempNum +=1
             self.varScript += [sT]
-            
+        elif funcName == "BinaryCounter": 
+            if inVar[0]["numO"] == 0:
+                self.numTemp = []
+                CE = inVar[6]["CE"]
+                iU = inVar[8]["iU"]
+                iL = inVar[7]["iL"]
+                D0 = inVar[0]["val"]
+                D1 = inVar[1]["val"]
+                D2 = inVar[0]["val"]
+                D3 = inVar[0]["val"]
+                sT = f"T{self.varTempNum} = {CE} & {iL} & !T{self.varTempNum}_precedant + !{iL} & {D0} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                self.numTemp += [self.varTempNum]
+                self.varTempNum +=1
+                self.varScript += [sT]
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
+                    + f"({CE} & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D1} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                self.numTemp += [self.varTempNum]
+                self.varTempNum +=1
+                self.varScript += [sT]
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
+                    + f"({CE} & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D2} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                self.numTemp += [self.varTempNum]
+                self.varTempNum +=1
+                self.varScript += [sT]
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-3}_precedant  | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
+                    + f"({CE} & T{self.varTempNum - 3}_precedant & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D3} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                self.numTemp += [self.varTempNum]
+                self.varTempNum +=1
+                self.varScript += [sT]
+            s = f"T{self.numTemp[inVar[0]["numO"]]} " 
 
         return s                 
     
@@ -808,6 +838,12 @@ class Menus:
         chip_in_j = params.get("chip_in_j", [])
         chip_in_k = params.get("chip_in_k", [])
         chip_in_inv_k = params.get("chip_in_inv_k", [])
+        
+        chip_in_ce = params.get("count_enable_pin", [])
+        chip_in_inv_L = params.get("inv_load_enable_pin", [])
+        chip_in_inv_U = params.get("inv_up_down_input_pin", [])
+        chip_out_TC = params.get("terminal_count_pin", [])  
+              
         findOut = False
         circuitClose = True
         script = ""
@@ -872,14 +908,38 @@ class Menus:
                   chipInInvK = [(c1,l1) for (c1,l1,nfunc) in chipInInvK if nfunc == nf]
             else: chipInInvK = []
         
+            if chip_in_ce:
+                  chipInCE = chip_in_ce 
+                  [chipInCE] = [list(chipICE[1:]) for chipICE in chipInCE if chipICE[0] == idOut]
+                  chipInCE = [(c1,l1) for (c1,l1,nfunc) in chipInCE if nfunc == nf]
+            else: chipInCE = []
+            
+            if chip_in_inv_L:
+                  chipInInvL = chip_in_inv_L 
+                  [chipInInvL] = [list(chipIIL[1:]) for chipIIL in chipInInvL if chipIIL[0] == idOut]
+                  chipInInvL = [(c1,l1) for (c1,l1,nfunc) in chipInInvL if nfunc == nf]
+            else: chipInInvL = []
+            
+            if chip_in_inv_U:
+                  chipInInvU = chip_in_inv_U 
+                  [chipInInvU] = [list(chipIIU[1:]) for chipIIU in chipInInvU if chipIIU[0] == idOut]
+                  chipInInvU = [(c1,l1) for (c1,l1,nfunc) in chipInInvU if nfunc == nf]
+            else: chipInInvU = []
+            
+            if chip_out_TC:
+                  chipOutTC = chip_out_TC 
+                  [chipOutTC] = [list(chipOTC[1:]) for chipOTC in chipOutTC if chipOTC[0] == idOut]
+                  chipOutTC = [(c1,l1) for (c1,l1,nfunc) in chipOutTC if nfunc == nf]
+            else: chipOutTC = []
+
             if chip_out_inv:
                   chipOutInv = chip_out_inv 
                   [chipOutInv] = [list(chipOI[1:]) for chipOI in chipOutInv if chipOI[0] == idOut]
             else: chipOutInv = []
             
             inLst += chipSel  + chipEnInv + chipEn + chipInClock + chipInInvReset + chipInInvSet + \
-                     chipInInvClk + chipInK + chipInInvK 
-            outLst += chipOutInv
+                     chipInInvClk + chipInK + chipInInvK + chipInCE + chipInInvL + chipInInvU 
+            outLst += chipOutInv + chipOutTC
             for no,out in enumerate(outLst):
                 #if out not in chip_out_checked:
                     if self.is_linked_to(ioZone, out): 
@@ -920,7 +980,19 @@ class Menus:
                                         constKey = "K"
                                 for c in chipInInvK:
                                     if c == inFunc:
-                                        constKey = 'iK'
+                                        constKey = "iK"
+
+                                for c in chipInCE:
+                                    if c == inFunc:
+                                        constKey = "CE"
+                                for c in chipInInvL:
+                                    if c == inFunc:
+                                        constKey = "iL"
+                                for c in chipInInvU:
+                                    if c == inFunc:
+                                        constKey = "iU"
+
+
                                 if self.is_linked_to(self.pwrP, inFunc):
                                         inFuncConst += [{constKey:pos, "num":n, "numO":no}]
                                 else:   inFuncConst += [{constKey:neg, "num":n, "numO":no}]
@@ -961,7 +1033,18 @@ class Menus:
                                                 constKey = "K"
                                         for c in chipInInvK:
                                             if c == inFunc:
-                                                constKey = 'iK'
+                                                constKey = "iK"
+                                                
+                                        for c in chipInCE:
+                                            if c == inFunc:
+                                                constKey = "CE"
+                                        for c in chipInInvL:
+                                            if c == inFunc:
+                                                constKey = "iL"
+                                        for c in chipInInvU:
+                                            if c == inFunc:
+                                                constKey = "iU"
+                                                
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         findIn = True
@@ -1002,7 +1085,18 @@ class Menus:
                                                 constKey = "K"
                                         for c in chipInInvK:
                                             if c == inFunc:
-                                                constKey = 'iK'
+                                                constKey = "iK"
+                                                
+                                        for c in chipInCE:
+                                            if c == inFunc:
+                                                constKey = "CE"
+                                        for c in chipInInvL:
+                                            if c == inFunc:
+                                                constKey = "iL"
+                                        for c in chipInInvU:
+                                            if c == inFunc:
+                                                constKey = "iU"
+                                                
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
                                         inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}]
                                         findIn = True
@@ -1042,7 +1136,11 @@ class Menus:
                                                                     for c in chipEn:
                                                                         if c == inFunc:
                                                                             constKey = "enb"
-                                                                    
+                                                                            
+                                                                    for c in chipOutTC:
+                                                                        if c == inFunc:
+                                                                            constKey = "TC"
+                                                                
                                                                     for c in chipOutInv:
                                                                         if c == pt:
                                                                             outPrev = "!" + outPrev
@@ -1061,7 +1159,11 @@ class Menus:
                                                                 for c in chipEn:
                                                                     if c == inFunc:
                                                                         constKey = "enb"
-                                                                
+
+                                                                    for c in chipOutTC:
+                                                                        if c == inFunc:
+                                                                            constKey = "TC"
+
                                                                 for c in chipOutInv:
                                                                     if c == pt:
                                                                         s = "!" + s 
@@ -1087,7 +1189,11 @@ class Menus:
                                                                     for c in chipEn:
                                                                         if c == inFunc:
                                                                             constKey = "enb"
-                                                                            
+
+                                                                    for c in chipOutTC:
+                                                                        if c == inFunc:
+                                                                            constKey = "TC"
+
                                                                     for c in chipOutInv:
                                                                         if c == pt:
                                                                             outPrev = "!" + outPrev
@@ -1107,7 +1213,11 @@ class Menus:
                                                                         for c in chipEn:
                                                                             if c == inFunc:
                                                                                 constKey = "enb"
-                                                                                
+
+                                                                        for c in chipOutTC:
+                                                                            if c == inFunc:
+                                                                                constKey = "TC"
+
                                                                         for c in chipOutInv:
                                                                             if c == pt:
                                                                                 exp = "!" + exp
@@ -1166,6 +1276,12 @@ class Menus:
         chip_in_j = []
         chip_in_k = []
         chip_in_inv_k = []
+        
+        chip_in_ce = []
+        chip_in_inv_L = []
+        chip_in_inv_U = []
+        chip_out_TC = []        
+
         self.varTempNum = 1
         self.varScript = []
 
@@ -1328,6 +1444,50 @@ class Menus:
                     if ioIK:
                         chip_in_k  += [(id, *ioIK)]
                         self.chip_in += [(id, *ioIK)]
+                
+                    #### l' entrée CE   ###
+                ioInCE = component.get("count_enable_pin", [])
+                if ioInCE:
+                    ioICE = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR),n)
+                        for (n,numPin) in sum(ioInCE, [])
+                    ]
+                    if ioICE:
+                        chip_in_ce  += [(id, *ioICE)]
+                        self.chip_in += [(id, *ioICE)]
+                    
+                    #### l' entrée L   ###
+                ioInInvL = component.get("inv_load_enable_pin", [])
+                if ioInInvL:
+                    ioIIL = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR),n)
+                        for (n,numPin) in sum(ioInInvL, [])
+                    ]
+                    if ioIIL:
+                        chip_in_inv_L  += [(id, *ioIIL)]
+                        self.chip_in += [(id, *ioIIL)]
+                    
+                    #### l' entrée U   ###
+                ioInInvU = component.get("inv_up_down_input_pin", [])
+                if ioInInvU:
+                    ioIIU = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR),n)
+                        for (n,numPin) in sum(ioInInvU, [])
+                    ]
+                    if ioIIU:
+                        chip_in_inv_U  += [(id, *ioIIU)]
+                        self.chip_in += [(id, *ioIIU)]
+                    
+                    #### l' entrée TC   ###
+                ioOutTC = component.get("terminal_count_pin", [])
+                if ioOutTC:
+                    ioOTC = [
+                        (col + numPin  - 1 if numPin <= numPinBR else col + (numPinBR - (numPin % numPinBR) ), line + 1 - (numPin // numPinBR),n)
+                        for (n,numPin) in sum(ioOutTC, [])
+                    ]
+                    if ioOTC:
+                        chip_out_TC  += [(id, *ioOTC)]
+                        self.chip_out += [(id, *ioOTC)]
                     
             elif id[:6] == "_wire_":  # [(col1, line1,col2,line2), ...]
                 self.wire += [(id, *component["coord"][0])]
@@ -1426,7 +1586,7 @@ class Menus:
         for chipAllio in self.chip_out:
             id = chipAllio[0]
             for chipio in chipAllio[1:]:
-                (c1,l1) = chipio
+                c1,l1, *n = chipio
                 if self.is_linked_to(self.pwrM, (c1, l1)):
                     self.chip_ioCC += [(id, chipio)]
                 elif self.is_linked_to(self.pwrP, (c1, l1)):
@@ -1475,7 +1635,7 @@ class Menus:
             id = chipAllio[0]
             inChipOutWire = False
             for chipio in chipAllio[1:]:
-                (c1,l1) = chipio
+                (c1,l1, *n) = chipio
                 for cow in self.chip_out_wire:
                     if self.is_linked_to(cow, (c1, l1)):
                         inChipOutWire = True
@@ -1534,9 +1694,17 @@ class Menus:
                         "chip_in_j" : chip_in_j,
                         "chip_in_k" : chip_in_k,
                         "chip_in_inv_k" : chip_in_inv_k,
-                     }
+                        "count_enable_pin" : chip_in_ce, 
+                        "inv_load_enable_pin" : chip_in_inv_L ,
+                        "inv_up_down_input_pin" : chip_in_inv_U ,
+                        "terminal_count_pin" : chip_out_TC ,                  
+                    }
+            def io_position(io):
+                id,[[p]] = io
+                return p[0]
+            
                     # "chip_in_address_pins":chip_in_address_pins}
-            for no,ioOut in enumerate(self.io_out):
+            for no,ioOut in enumerate(sorted(self.io_out, key=lambda io: io_position(io))):
                #self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "  # f"O{no+1}"
                
                circuitClose, script = self.checkCloseCircuit(ioOut,params)
