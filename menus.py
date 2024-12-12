@@ -800,22 +800,22 @@ class Menus:
                 D1 = inVar[1]["val"]
                 D2 = inVar[0]["val"]
                 D3 = inVar[0]["val"]
-                sT = f"T{self.varTempNum} = {CE} & {iL} & !T{self.varTempNum}_precedant + !{iL} & {D0} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = clk & {CE} & {iL} & !T{self.varTempNum}_precedant | !{iL} & {D0} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedant; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
                 sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
-                    + f"({CE} & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D1} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                    + f"({CE} & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D1} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedant; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
-                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
-                    + f"({CE} & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D2} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & clk & " \
+                    + f"({CE} & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D2} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedant; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
                 sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-3}_precedant  | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
-                    + f"({CE} & T{self.varTempNum - 3}_precedant & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant + T{self.varTempNum}_precedant ) & {iL} + !{iL} & {D3} + !{CE} & {iL} & T{self.varTempNum}_precedant; "
+                    + f"({CE} & T{self.varTempNum - 3}_precedant & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D3} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedant; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
@@ -853,88 +853,118 @@ class Menus:
             idOut, inLst, fName, outLst = deepcopy(f)
             if chip_select:
                   chipSel = chip_select  
-                  [chipSel] = [list(chipS[1:]) for chipS in chipSel if chipS[0] == idOut]
+                  chipSel = [list(chipS[1:]) for chipS in chipSel if chipS[0] == idOut]
+                  if chipSel:
+                      [chipSel] = chipSel
             else: chipSel = []
             
             if chip_in_enable_inv:
                   chipEnInv = chip_in_enable_inv  
-                  [chipEnInv] = [list(chipEI[1:]) for chipEI in chipEnInv if chipEI[0] == idOut]
+                  chipEnInv = [list(chipEI[1:]) for chipEI in chipEnInv if chipEI[0] == idOut]
+                  if chipEnInv:
+                      [chipEnInv] = chipEnInv
             else: chipEnInv = []
             
             if chip_in_enable:
                   chipEn = chip_in_enable  
-                  [chipEn] = [list(chipE[1:]) for chipE in chipEn if chipE[0] == idOut]
+                  chipEn = [list(chipE[1:]) for chipE in chipEn if chipE[0] == idOut]
+                  if chipEn:
+                      [chipEn] = chipEn
             else: chipEn = []
             
             if chip_in_clock:
                   chipInClock = chip_in_clock 
-                  [chipInClock] = [list(chipICLK[1:]) for chipICLK in chipInClock if chipICLK[0] == idOut]
+                  chipInClock = [list(chipICLK[1:]) for chipICLK in chipInClock if chipICLK[0] == idOut]
+                  if chipInClock:
+                      [chipInClock] =chipInClock
                   chipInClock = [(c1,l1) for (c1,l1,nfunc) in chipInClock if nfunc == nf]
             else: chipInClock = []
 
             if chip_in_inv_reset:
                   chipInInvReset = chip_in_inv_reset 
-                  [chipInInvReset] = [list(chipInInvR[1:]) for chipInInvR in chipInInvReset if chipInInvR[0] == idOut]
+                  chipInInvReset = [list(chipInInvR[1:]) for chipInInvR in chipInInvReset if chipInInvR[0] == idOut]
+                  if chipInInvReset:
+                      [chipInInvReset] = chipInInvReset
                   chipInInvReset = [(c1,l1) for (c1,l1,nfunc) in chipInInvReset if nfunc == nf]
             else: chipInInvReset = []
 
             if chip_in_inv_set:
                   chipInInvSet = chip_in_inv_set 
-                  [chipInInvSet] = [list(chipInInvS[1:]) for chipInInvS in chipInInvSet if chipInInvS[0] == idOut]
+                  chipInInvSet = [list(chipInInvS[1:]) for chipInInvS in chipInInvSet if chipInInvS[0] == idOut]
+                  if chipInInvSet:
+                      [chipInInvSet] = chipInInvSet                  
                   chipInInvSet = [(c1,l1) for (c1,l1,nfunc) in chipInInvSet if nfunc == nf]
             else: chipInInvSet = []
 
             if chip_in_inv_clock:
                   chipInInvClk = chip_in_inv_clock 
-                  [chipInInvClk] = [list(chipInIClk[1:]) for chipInIClk in chipInInvClk if chipInIClk[0] == idOut]
+                  chipInInvClk = [list(chipInIClk[1:]) for chipInIClk in chipInInvClk if chipInIClk[0] == idOut]
+                  if chipInInvClk:
+                      [chipInInvClk] = chipInInvClk
                   chipInInvClk = [(c1,l1) for (c1,l1,nfunc) in chipInInvClk if nfunc == nf]
             else: chipInInvClk = []
             
             if chip_in_j:
                   chipInJ = chip_in_j 
-                  [chipInJ] = [list(chipIIJ[1:]) for chipIIJ in chipInJ if chipIIJ[0] == idOut]
+                  chipInJ = [list(chipIJ[1:]) for chipIJ in chipInJ if chipIJ[0] == idOut]
+                  if chipInJ:
+                      [chipInJ] = chipInJ
                   chipInJ = [(c1,l1) for (c1,l1,nfunc) in chipInJ if nfunc == nf]
             else: chipInJ = []
             
             if chip_in_k:
                   chipInK = chip_in_k 
-                  [chipInK] = [list(chipIK[1:]) for chipIK in chipInK if chipIK[0] == idOut]
+                  chipInK = [list(chipIK[1:]) for chipIK in chipInK if chipIK[0] == idOut]
+                  if chipInK:
+                      [chipInK] = chipInK
                   chipInK = [(c1,l1) for (c1,l1,nfunc) in chipInK if nfunc == nf]
             else: chipInK = []
             
             if chip_in_inv_k:
                   chipInInvK = chip_in_inv_k 
-                  [chipInInvK] = [list(chipIIK[1:]) for chipIIK in chipInInvK if chipIIK[0] == idOut]
+                  chipInInvK = [list(chipIIK[1:]) for chipIIK in chipInInvK if chipIIK[0] == idOut]
+                  if chipInInvK:
+                      [chipInInvK] = chipInInvK
                   chipInInvK = [(c1,l1) for (c1,l1,nfunc) in chipInInvK if nfunc == nf]
             else: chipInInvK = []
         
             if chip_in_ce:
                   chipInCE = chip_in_ce 
-                  [chipInCE] = [list(chipICE[1:]) for chipICE in chipInCE if chipICE[0] == idOut]
+                  chipInCE = [list(chipICE[1:]) for chipICE in chipInCE if chipICE[0] == idOut]
+                  if chipInCE:
+                      [chipInCE] = chipInCE
                   chipInCE = [(c1,l1) for (c1,l1,nfunc) in chipInCE if nfunc == nf]
             else: chipInCE = []
             
             if chip_in_inv_L:
                   chipInInvL = chip_in_inv_L 
-                  [chipInInvL] = [list(chipIIL[1:]) for chipIIL in chipInInvL if chipIIL[0] == idOut]
+                  chipInInvL = [list(chipIIL[1:]) for chipIIL in chipInInvL if chipIIL[0] == idOut]
+                  if chipInInvL:
+                      [chipInInvL] = chipInInvL
                   chipInInvL = [(c1,l1) for (c1,l1,nfunc) in chipInInvL if nfunc == nf]
             else: chipInInvL = []
             
             if chip_in_inv_U:
                   chipInInvU = chip_in_inv_U 
-                  [chipInInvU] = [list(chipIIU[1:]) for chipIIU in chipInInvU if chipIIU[0] == idOut]
+                  chipInInvU = [list(chipIIU[1:]) for chipIIU in chipInInvU if chipIIU[0] == idOut]
+                  if chipInInvU:
+                      [chipInInvU] = chipInInvU
                   chipInInvU = [(c1,l1) for (c1,l1,nfunc) in chipInInvU if nfunc == nf]
             else: chipInInvU = []
             
             if chip_out_TC:
                   chipOutTC = chip_out_TC 
-                  [chipOutTC] = [list(chipOTC[1:]) for chipOTC in chipOutTC if chipOTC[0] == idOut]
+                  chipOutTC = [list(chipOTC[1:]) for chipOTC in chipOutTC if chipOTC[0] == idOut]
+                  if chipOutTC:
+                      [chipOutTC] = chipOutTC
                   chipOutTC = [(c1,l1) for (c1,l1,nfunc) in chipOutTC if nfunc == nf]
             else: chipOutTC = []
 
             if chip_out_inv:
                   chipOutInv = chip_out_inv 
-                  [chipOutInv] = [list(chipOI[1:]) for chipOI in chipOutInv if chipOI[0] == idOut]
+                  chipOutInv = [list(chipOI[1:]) for chipOI in chipOutInv if chipOI[0] == idOut]
+                  if chipOutInv:
+                      [chipOutInv] = chipOutInv
             else: chipOutInv = []
             
             inLst += chipSel  + chipEnInv + chipEn + chipInClock + chipInInvReset + chipInInvSet + \
@@ -999,7 +1029,7 @@ class Menus:
                                 findIn = True
                                 print("connecté à pwr")
                             if not findIn:
-                                for io_inZone in self.io_in:
+                                for n_io,io_inZone in enumerate(self.io_in):
                                     id, [zone] = io_inZone
                                     if self.is_linked_to(zone, inFunc):
                                         constKey = 'val'
@@ -1046,12 +1076,12 @@ class Menus:
                                                 constKey = "iU"
                                                 
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
-                                        inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
+                                        inFuncConst += [{constKey:f"I{n_io+1}", "num":n_io, "numO":no}] # [self.mcu_pin[f"I{id[4:]}"]] # ici ajouter n 
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE")
                                         break
                             if not findIn:
-                                for io_chipInZone in self.chip_in_wire:
+                                for n_io, io_chipInZone in enumerate(self.chip_in_wire):
                                     id, zone = io_chipInZone
                                     if self.is_linked_to(zone, inFunc):
                                         constKey = 'val'
@@ -1098,7 +1128,7 @@ class Menus:
                                                 constKey = "iU"
                                                 
                                         #inFuncConst += [{constKey:self.mcu_pin[f"I{id[4:]}"], "num":n, "numO":no}]
-                                        inFuncConst += [{constKey:f"I{n+1}", "num":n, "numO":no}]
+                                        inFuncConst += [{constKey:f"I{n_io+1}", "num":n_io, "numO":no}]
                                         findIn = True
                                         print("connecté à une ENTRÉE EXTERNE par cable") # ici ajouter n {'val':self.mcu_pin[f"I{id[4:]}"], "num":n}
                                         break
@@ -1628,7 +1658,9 @@ class Menus:
                                 ciw += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
                                 self.wireNotUsed.remove(wused)
                                 again = True
-                        self.chip_in_wire += [(ioin[0], ciw)]
+                        elt = (ioin[0], ciw)
+                        if not elt in self.chip_in_wire:
+                            self.chip_in_wire += [elt]
                     
         ###############   Verification des self.chip_out sur chip_out #####################
         for chipAllio in self.chip_out:
@@ -1652,11 +1684,14 @@ class Menus:
                                     cow += deepcopy(self.board.sketcher.matrix[f"{cu2},{lu2}"]["link"])
                                     self.wireNotUsed.remove(wused)
                                     again = True
+                                    if not cow in self.chip_out_wire:
+                                        self.chip_out_wire += [cow]
                             elif  self.is_linked_to(cow, (cu2, lu2)):  
                                     cow += deepcopy(self.board.sketcher.matrix[f"{cu1},{lu1}"]["link"])
                                     self.wireNotUsed.remove(wused)
                                     again = True
-                            self.chip_out_wire += [cow]
+                                    if not cow in self.chip_out_wire:
+                                        self.chip_out_wire += [cow]
                 
         ################# Redefinir les zones des io_out avec les cables non utilisés ##############
         for n,ioOut in enumerate(self.io_out):
