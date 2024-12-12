@@ -760,7 +760,7 @@ class Menus:
             s += " ) "
         elif funcName == "Demux":  
             s ="("
-            out = inVar[0]["numO"]
+            out = inVar[0]['numO']
             v2, v1, v0  = (out & 1)^1, ((out & 2) >> 1)^1, ((out & 4) >> 2)^1
             s += v0*" !" + inVar[0]['val'] + " & " + v1*"!" + inVar[1]['val'] + " & " + v2*"!" + inVar[2]['val'] + \
                  " & " + inVar[3]["einv"] + " & " + inVar[4]["einv"] + " & " + inVar[5]["enb"]
@@ -787,11 +787,11 @@ class Menus:
             sT =f"T{self.varTempNum} = "
             sT += "((" + inVar[0]['J'] + f" & !T{self.varTempNum}_precedant) | (!{K} & T{self.varTempNum}_precedant)) & {set} & {rst} & CLK | {iset} " 
             sT += " ); "
-            s = inVar[0]["numO"]*" !" + f"T{self.varTempNum} "
+            s = inVar[0]['numO']*" !" + f"T{self.varTempNum} "
             self.varTempNum +=1
             self.varScript += [sT]
         elif funcName == "BinaryCounter": 
-            if inVar[0]["numO"] == 0:
+            if inVar[0]['numO'] == 0:
                 self.numTemp = []
                 CE = inVar[6]["CE"]
                 iU = inVar[8]["iU"]
@@ -819,7 +819,7 @@ class Menus:
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
-            s = f"T{self.numTemp[inVar[0]["numO"]]} " 
+            s = f"T{self.numTemp[inVar[0]['numO']]} " 
 
         return s                 
     
@@ -1024,8 +1024,8 @@ class Menus:
 
 
                                 if self.is_linked_to(self.pwrP, inFunc):
-                                        inFuncConst += [{constKey:pos, "num":n, "numO":no}]
-                                else:   inFuncConst += [{constKey:neg, "num":n, "numO":no}]
+                                        inFuncConst += [{constKey:pos, "num":n, 'numO':no}]
+                                else:   inFuncConst += [{constKey:neg, "num":n, 'numO':no}]
                                 findIn = True
                                 print("connecté à pwr")
                             if not findIn:
@@ -1175,7 +1175,7 @@ class Menus:
                                                                         if c == pt:
                                                                             outPrev = "!" + outPrev
                                                                     isPinOut = True
-                                                                    inFuncConst += [{constKey:outPrev, "num":n, "numO":no}] # [self.mcu_pin[f"O{id[4:]}"]] 
+                                                                    inFuncConst += [{constKey:outPrev, "num":n, 'numO':no}] # [self.mcu_pin[f"O{id[4:]}"]] 
                                                                     findNext = True
                                                             if not isPinOut:
                                                                 findNext, s = self.checkCloseCircuit(outZone,params)
@@ -1198,7 +1198,7 @@ class Menus:
                                                                     if c == pt:
                                                                         s = "!" + s 
                                                                         
-                                                                inFuncConst += [{constKey:s, "num":n, "numO":no}]
+                                                                inFuncConst += [{constKey:s, "num":n, 'numO':no}]
                                                                 self.chip_out_script += [(s,outZone)]
                                                         else: 
                                                             # il faut voir si une sortie io n'existe pas sinon var temp
@@ -1228,7 +1228,7 @@ class Menus:
                                                                         if c == pt:
                                                                             outPrev = "!" + outPrev
                                                                             
-                                                                    inFuncConst += [{constKey:outPrev, "num":n, "numO":no}]
+                                                                    inFuncConst += [{constKey:outPrev, "num":n, 'numO':no}]
                                                             if not isPinOut:
                                                                 for coc in self.chip_out_script:
                                                                     if coc[1] == outZone:
@@ -1252,7 +1252,7 @@ class Menus:
                                                                             if c == pt:
                                                                                 exp = "!" + exp
                                                                                 
-                                                                        inFuncConst += [{constKey:exp, "num":n, "numO":no}] 
+                                                                        inFuncConst += [{constKey:exp, "num":n, 'numO':no}] 
                                                                         break
                                                             findNext = True
                                                         break
