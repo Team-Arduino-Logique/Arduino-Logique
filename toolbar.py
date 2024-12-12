@@ -16,11 +16,11 @@ from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
-if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
-    from tkinter import messagebox, colorchooser
-    from tkmacosx import Button # type: ignore
-else:
-    from tkinter import Button, messagebox, colorchooser
+# if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
+#     from tkinter import messagebox, colorchooser
+#     from tkmacosx import Button # type: ignore
+# else:
+from tkinter import Button, messagebox, colorchooser
 
 @dataclass
 class WirePlacementInfo:
