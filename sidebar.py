@@ -22,7 +22,7 @@ if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower
     from tkinter import messagebox, font
     from tkmacosx import Button # type: ignore
 else:
-from tkinter import Button, messagebox, font
+    from tkinter import Button, messagebox, font
 
 
 @dataclass
