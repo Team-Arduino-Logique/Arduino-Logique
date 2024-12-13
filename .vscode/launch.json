@@ -2,7 +2,7 @@
     "configurations": [
         {
             "name": "ArduinoLogique",
-            "type": "debugpy",
+            "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/arduino_logique.py",
             "console": "integratedTerminal"

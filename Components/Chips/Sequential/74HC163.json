@@ -1,0 +1,27 @@
+{
+    "name": "74HC163",
+    "description": "Presettable synchronous 4-bit binary counter; synchronous reset",
+    "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
+    "functions": [
+        {
+            "func_type": "BINARY_COUNTER",
+            "clock_pin": 2, 
+            "clock_type": "RISING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": 1,
+            "count_enable_pin": 7,
+            "inv_count_enable_pin": null,
+            "load_enable_pin": null,
+            "inv_load_enable_pin": 9,
+            "up_down_input_pin": null,
+            "inv_up_down_input_pin": 10,
+            "terminal_count_pin": 15,
+            "ripple_clock_output_pin": null,
+            "data_pins": [3, 4, 5, 6],
+            "output_pins": [14, 13, 12, 11]
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15547/PHILIPS/74HC163.html"
+}

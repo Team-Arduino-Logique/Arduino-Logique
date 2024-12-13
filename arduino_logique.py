@@ -5,6 +5,7 @@ simulating logic circuits using Tkinter. It includes functionality to initialize
 draw a breadboard, etc.
 """
 import os
+import platform
 from pathlib import Path
 import tkinter as tk
 from breadboard import Breadboard
@@ -14,7 +15,7 @@ from sidebar import Sidebar
 from toolbar import Toolbar
 from utils import resource_path
 
-if os.name == "darwin" or os.name == "posix":
+if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
     from tkinter import font
     from tkmacosx import Button # type: ignore
 else:
@@ -29,7 +30,7 @@ def main():
     win = tk.Tk()
     win.title("Laboratoire virtuel de circuit logique - GIF-1002")
     win.geometry("1500x800")  # Initial window size
-    win.minsize(1500, 800)    # Set minimal window size
+    win.minsize(3456, 2234)    # Set minimal window size 3456 × 2234) 1500,800
     win.resizable(True, True)  # Disabling window resizing
     win.configure(bg="#333333")  # Setting consistent background color
 
@@ -103,6 +104,7 @@ def main():
         canvas=canvas,
         board=board,
         current_dict_circuit=sketcher.current_dict_circuit,
+        sketcher=sketcher,
     )
     # Placing the menu_bar in row=0, spanning both columns
     menus.menu_bar.grid(row=0, column=0, columnspan=2, sticky="nsew")
