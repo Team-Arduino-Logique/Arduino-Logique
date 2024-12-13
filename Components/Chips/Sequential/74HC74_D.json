@@ -7,27 +7,27 @@
     "functions": [
         {
             "func_type": "D_FLIP_FLOP",
-            "clock_pin": 3,
+            "clock_pin": [3],
             "clock_type": "RISING_EDGE",
             "reset_pin": null,
-            "inv_reset_pin": 1,
+            "inv_reset_pin": [1],
             "set_pin": null,
-            "inv_set_pin": 4,
-            "data_pin": 2,
-            "output_pin": 5,
-            "inv_output_pin": 6
+            "inv_set_pin": [4],
+            "input_pins": [2],
+            "output_pins": [5],
+            "inv_output_pins": [6]
         },
         {
             "func_type": "D_FLIP_FLOP",
-            "clock_pin": 11,
+            "clock_pin": [11],
             "clock_type": "RISING_EDGE",
             "reset_pin": null,
-            "inv_reset_pin": 13,
+            "inv_reset_pin": [13],
             "set_pin": null,
-            "inv_set_pin": 10,
-            "data_pin": 12,
-            "output_pin": 9,
-            "inv_output_pin": 8
+            "inv_set_pin": [10],
+            "input_pins": [12],
+            "output_pins": [9],
+            "inv_output_pins": [8]
         }
     ],
     "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15659/PHILIPS/74HC74.html"

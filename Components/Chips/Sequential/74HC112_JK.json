@@ -17,8 +17,8 @@
             "inv_j_input_pin": null,
             "k_input_pin": 2,
             "inv_k_input_pin": null,
-            "output_pin": 5,
-            "inv_output_pin": 6
+            "output_pins": 5,
+            "inv_output_pins": 6
         },
         {
             "func_type": "JK_FLIP_FLOP",
@@ -32,8 +32,8 @@
             "inv_j_input_pin": null,
             "k_input_pin": 12,
             "inv_k_input_pin": null,
-            "output_pin": 9,
-            "inv_output_pin": 7
+            "output_pins": 9,
+            "inv_output_pins": 7
         }
     ],
     "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15529/PHILIPS/74HC112.html"
