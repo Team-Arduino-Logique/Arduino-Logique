@@ -12,6 +12,7 @@ import json
 import subprocess
 import platform
 import serial.tools.list_ports  # type: ignore
+import time
 
 from breadboard import Breadboard
 from component_sketch import ComponentSketcher
@@ -92,7 +93,12 @@ class SerialPort:
     def connect(self):
         """Open the serial connection."""
         try:
-            self.connection = serial.Serial(port=self.com_port, baudrate=self.baud_rate, timeout=self.timeout)
+            self.connection = serial.Serial(port=self.com_port, 
+                                            baudrate=self.baud_rate, 
+                                            parity=serial.PARITY_NONE, 
+                                            stopbits=serial.STOPBITS_ONE,
+                                            bytesize=serial.EIGHTBITS,
+                                            timeout=self.timeout)
             print(f"Serial port {self.com_port} opened successfully.")
         except serial.SerialException as e:
             print(f"Error opening port {self.com_port}: {e}")
@@ -143,8 +149,8 @@ class Menus:
 
         self.menu_bar = tk.Frame(parent, bg="#333333")
         """The frame containing the menu bar buttons."""
-
-        self.serial_port = SerialPort(None, 115200, 1, None)
+ 
+        self.serial_port = SerialPort(None, 9600, 1, None)
         """The serial port configuration."""
 
         self.open_file_path: str | None = None
@@ -685,6 +691,10 @@ class Menus:
                 # Convertir la chaîne en bytes et l'envoyer
                 self.serial_port.connection.write(data.encode('utf-8'))
                 print(f"Données envoyées: {data}")
+                #time.sleep(0.5) 
+                #if self.serial_port.connection.in_waiting > 0:  # Vérifie s'il y a des données disponibles
+                data = self.serial_port.connection.readline().decode('utf-8').strip() 
+                print(f"réponse: {data} à {self.serial_port.baud_rate} bauds")
             except serial.SerialException as e:
                 print(f"Erreur lors de l'envoi des données: {e}")
         else:
@@ -702,7 +712,7 @@ class Menus:
         self.checkCircuit()
         self.serial_port.connect()
         self.send_data(self.script)
-        self.close_port()
+        #self.close_port()
         
     def is_linked_to(self, dest, src):
         res = False
@@ -785,7 +795,7 @@ class Menus:
                     iset = f"{inVar[2]['iset']}"
                     rst = f"!{inVar[1]['irst']}"
             sT =f"T{self.varTempNum} = "
-            sT += "((" + inVar[0]['J'] + f" & !T{self.varTempNum}_precedant) | (!{K} & T{self.varTempNum}_precedant)) & {set} & {rst} & CLK | {iset} " 
+            sT += "((" + inVar[0]['J'] + f" & !T{self.varTempNum}_precedent) | (!{K} & T{self.varTempNum}_precedent)) & {set} & {rst} & CLK | {iset} " 
             sT += " ); "
             s = inVar[0]['numO']*" !" + f"T{self.varTempNum} "
             self.varTempNum +=1
@@ -800,22 +810,22 @@ class Menus:
                 D1 = inVar[1]["val"]
                 D2 = inVar[0]["val"]
                 D3 = inVar[0]["val"]
-                sT = f"T{self.varTempNum} = clk & {CE} & {iL} & !T{self.varTempNum}_precedant | !{iL} & {D0} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = clk & {CE} & {iL} & !T{self.varTempNum}_precedent | !{iL} & {D0} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedent; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
-                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
-                    + f"({CE} & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D1} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-1}_precedent | !T{self.varTempNum}_precedent) & " \
+                    + f"({CE} & T{self.varTempNum - 1}_precedent | T{self.varTempNum}_precedent ) & {iL} & clk  | !{iL} & {D1} & clk | !{CE} & {iL} & clk & T{self.varTempNum}_precedent; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
-                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & clk & " \
-                    + f"({CE} & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D2} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-2}_precedent | !T{self.varTempNum-1}_precedent | !T{self.varTempNum}_precedent) & clk & " \
+                    + f"({CE} & T{self.varTempNum - 2}_precedent & T{self.varTempNum - 1}_precedent | T{self.varTempNum}_precedent ) & {iL} & clk  | !{iL} & {D2} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedent; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
-                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-3}_precedant  | !T{self.varTempNum-2}_precedant | !T{self.varTempNum-1}_precedant | !T{self.varTempNum}_precedant) & " \
-                    + f"({CE} & T{self.varTempNum - 3}_precedant & T{self.varTempNum - 2}_precedant & T{self.varTempNum - 1}_precedant | T{self.varTempNum}_precedant ) & {iL} & clk  | !{iL} & {D3} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedant; "
+                sT = f"T{self.varTempNum} = (!{CE} | !T{self.varTempNum-3}_precedent  | !T{self.varTempNum-2}_precedent | !T{self.varTempNum-1}_precedent | !T{self.varTempNum}_precedent) & " \
+                    + f"({CE} & T{self.varTempNum - 3}_precedent & T{self.varTempNum - 2}_precedent & T{self.varTempNum - 1}_precedent | T{self.varTempNum}_precedent ) & {iL} & clk  | !{iL} & {D3} & clk  | !{CE} & {iL} & clk  & T{self.varTempNum}_precedent; "
                 self.numTemp += [self.varTempNum]
                 self.varTempNum +=1
                 self.varScript += [sT]
@@ -1749,7 +1759,7 @@ class Menus:
                             self.script += s 
                         self.varScript = []
                         self.script += f"O{no+1}" + " = "
-                        self.script += f"{script}; "
+                        self.script += f"{script}; \n"
                         print(f"script temp : {self.script}")
                else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
 
@@ -1772,3 +1782,7 @@ class Menus:
         print(f"chip_in_enable_inv : {chip_in_enable_inv}")
         print(f"map pin mcu : {self.mcu_pin}")
         print(f"script final : {self.script}")
+        if self.script:
+            messagebox.showinfo("Script du circuit", f"Circuit= {self.script}")
+        else:
+            messagebox.showinfo("Script du circuit", f"Le circuit présente au moins un défaut et ne peut être téléversé.")
