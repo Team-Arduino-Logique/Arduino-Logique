@@ -8,6 +8,7 @@ interactions for placing wires and pin_ios on a canvas.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+import platform
 import tkinter as tk
 from idlelib.tooltip import Hovertip  # type: ignore
 
@@ -15,11 +16,11 @@ from component_sketch import ComponentSketcher
 from dataCDLT import INPUT, OUTPUT, FREE, CLOCK
 from utils import resource_path
 
-if os.name == "darwin":
-    from tkinter import messagebox, colorchooser
-    from tkmacosx import Button # type: ignore
-else:
-    from tkinter import Button, messagebox, colorchooser
+# if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
+#     from tkinter import messagebox, colorchooser
+#     from tkmacosx import Button # type: ignore
+# else:
+from tkinter import Button, messagebox, colorchooser
 
 @dataclass
 class WirePlacementInfo:
@@ -182,6 +183,16 @@ class Toolbar:
                 self.canvas.itemconfig(self.cursor_indicator_id, fill=self.selected_color)
             # Here y_originu can add logic to apply the selected color to new connections
 
+            self.canvas.itemconfig(self.cursor_circle_id,fill=self.selected_color)
+            if self.wire_start_point:
+                color =self.hex_to_rgb(self.selected_color )
+                encre = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+                contour = f"#{color[0]//2:02x}{color[1]//2:02x}{color[2]//2:02x}"
+                wire_body_tag = f"{self.wire_id}_body"
+                wire_body_shadow_tag = f"{self.wire_id}_body_shadow"
+                self.canvas.itemconfig(wire_body_tag,fill=encre)
+                self.canvas.itemconfig(wire_body_shadow_tag,fill=contour)
+                
     def button_action(self, action_name):
         """
         Defines the action to perform when a button is clicked.

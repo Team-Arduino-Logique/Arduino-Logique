@@ -1,0 +1,79 @@
+
+1. Déclaration des Broches et Variables
+MAX_INPUTS et MAX_OUTPUTS : Constantes définissant le nombre maximum d'entrées (MAX_INPUTS = 8) et de sorties (MAX_OUTPUTS = 6).
+inputPins et outputPins :
+inputPins : Tableau contenant les numéros de broches associés aux entrées (I1 à I8). Par exemple, inputPins[0] correspond à la broche 22, utilisée pour I1.
+outputPins : Tableau contenant les numéros de broches associés aux sorties (O1 à O6). Par exemple, outputPins[0] correspond à la broche 32, utilisée pour O1.
+logicExpressions : Tableau de chaînes de caractères qui stocke les expressions logiques associées à chaque sortie (O1 à O6). Chaque entrée dans le tableau contient l'expression logique pour la sortie correspondante.
+2. Fonction setup()
+Serial.begin(9600) : Initialise la communication série pour que l'Arduino puisse recevoir des instructions via le port série.
+Configuration des broches d'entrée et de sortie :
+Entrées (inputPins) : Les broches d'entrée sont configurées en tant qu'entrées (INPUT) via pinMode(). Cela permet à l'Arduino de lire l'état de chaque broche.
+Sorties (outputPins) : Les broches de sortie sont configurées en tant que sorties (OUTPUT) et initialisées à LOW via digitalWrite(), garantissant que toutes les sorties sont éteintes au démarrage.
+3. Fonction loop()
+Vérification des données disponibles sur le port série :
+Si des données sont disponibles (Serial.available()), elles sont lues via Serial.readStringUntil('\n') jusqu'à ce qu'une nouvelle ligne soit atteinte.
+Appelle la fonction parseMultipleExpressions() pour analyser les expressions logiques reçues et les stocker dans le tableau logicExpressions.
+Appel de updateOutputs() : Cette fonction est appelée en continu pour évaluer les expressions logiques définies et mettre à jour les sorties en conséquence.
+4. Fonction resetOutputs()
+Réinitialisation des sorties : Réinitialise les expressions logiques en définissant chaque entrée de logicExpressions à une chaîne vide ("").
+Mise à jour des sorties : Toutes les sorties sont réinitialisées à LOW (digitalWrite(outputPins[i], LOW)), garantissant qu'elles sont désactivées lorsqu'une nouvelle commande est reçue.
+5. Fonction parseMultipleExpressions(String input)
+Réinitialisation des sorties : Appelle resetOutputs() pour s'assurer que toutes les anciennes expressions sont supprimées avant d'en ajouter de nouvelles.
+Analyse des expressions multiples :
+Divise l'entrée en plusieurs expressions logiques séparées par des points-virgules (;).
+Pour chaque expression trouvée, appelle parseExpression() pour l'analyser.
+6. Fonction parseExpression(String input)
+Analyse d'une expression logique individuelle :
+Recherche le caractère = pour identifier la sortie et l'expression logique associée.
+Si l'expression commence par "O" (par exemple O1, O2, etc.), le code identifie l'indice de sortie et associe l'expression à cette sortie.
+L'expression logique est alors stockée dans le tableau logicExpressions pour la sortie correspondante.
+7. Fonction evaluateExpression(String expr)
+Remplacement des entrées par leurs valeurs actuelles :
+Supprime tous les espaces dans l'expression (expr.replace(" ", "")).
+Remplace chaque occurrence de I1, I2, etc., par leur état actuel (HIGH ou LOW) en utilisant digitalRead().
+Utilise evaluateComplexExpression(expr) pour évaluer l'expression simplifiée.
+8. Fonction evaluateComplexExpression(String expr)
+Évaluation des expressions logiques complexes :
+Utilise une structure de pile (stack) pour gérer les valeurs (0 ou 1) et les opérateurs (&, |, ^, !, (, )).
+Parcours de l'expression :
+Valeurs (0 ou 1) : Ajoute chaque valeur à la pile des valeurs (pushValue()).
+Parenthèses :
+Parenthèses ouvrantes (() : Ajoute à la pile des opérateurs.
+Parenthèses fermantes ()) : Applique les opérateurs en attente jusqu'à la parenthèse ouvrante correspondante.
+Opérateurs (&, |, !, ^) : Ajoute chaque opérateur à la pile des opérateurs après avoir vérifié la priorité.
+Application des opérateurs : Les opérateurs sont appliqués aux valeurs extraites de la pile en fonction de leur priorité.
+9. Fonction applyOperator(bool a, bool b, char op)
+Application d'un opérateur logique :
+Applique les opérateurs logiques aux valeurs booléennes a et b :
+& (ET logique) : Retourne a && b.
+| (OU logique) : Retourne a || b.
+^ (XOR logique) : Retourne a != b.
+! (NON logique) : Retourne !b (inverse b).
+Cette fonction est utilisée lors de l'évaluation d'une expression pour appliquer les opérations logiques aux valeurs booléennes.
+10. Fonction precedence(char op)
+Détermine la priorité des opérateurs :
+! (NON logique) : Priorité la plus élevée (4).
+& (ET logique) : Priorité suivante (3).
+^ (XOR logique) : Priorité inférieure à & mais supérieure à | (2).
+| (OU logique) : Priorité la plus faible (1).
+Cette fonction est utilisée pour s'assurer que les opérateurs sont appliqués dans le bon ordre lors de l'évaluation d'une expression.
+11. Fonction updateOutputs()
+Mise à jour des sorties :
+Parcourt chaque sortie (O1 à O6) définie dans le tableau logicExpressions.
+Si une expression logique est définie pour une sortie, elle est évaluée à l'aide de evaluateExpression().
+En fonction du résultat (true ou false), la sortie est activée (HIGH) ou désactivée (LOW) via digitalWrite().
+Fonctionnement Global du Code
+Réception des expressions logiques :
+L'utilisateur envoie une ou plusieurs expressions logiques via le port série, par exemple :
+scss
+Copier le code
+O2 = (I1 & I2) | (I2 & I3); O1 = (I1 ^ I2) ^ I3;
+Ces expressions sont lues par l'Arduino et analysées.
+Stockage des expressions logiques :
+Chaque expression est associée à une sortie spécifique (O1 à O6).
+Lecture des entrées et mise à jour des sorties :
+Les valeurs des entrées (I1 à I8) sont continuellement lues avec digitalRead().
+Les sorties (O1 à O6) sont mises à jour dynamiquement en fonction des valeurs actuelles des entrées et des expressions logiques définies.
+Cela transforme l'Arduino en un simulateur logique programmable, capable de gérer des expressions complexes et de les évaluer en temps réel.
+En résumé, ce code permet de programmer l'Arduino Mega pour simuler des circuits logiques, en permettant à l'utilisateur de définir dynamiquement des expressions logiques pour chaque sortie, qui sont continuellement mises à jour en fonction des états des entrées.

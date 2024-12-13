@@ -184,7 +184,7 @@ class Chip:
                 data["inv_enable_pins"],
             ),
             "DEMUX": lambda data: Demux(
-                data["address_pins"],
+                data["input_pins"],
                 data["output_pins"],
                 data["enable_pins"],
                 data["inv_enable_pins"],
@@ -196,9 +196,9 @@ class Chip:
                 data["inv_reset_pin"],
                 data["set_pin"],
                 data["inv_set_pin"],
-                data["data_pin"],
-                data["output_pin"],
-                data["inv_output_pin"],
+                data["input_pins"],
+                data["output_pins"],
+                data["inv_output_pins"],
             ),
             "JK_FLIP_FLOP": lambda data: JKFlipFlop(
                 data["clock_pin"],
@@ -211,12 +211,14 @@ class Chip:
                 data["inv_j_input_pin"],
                 data["k_input_pin"],
                 data["inv_k_input_pin"],
-                data["output_pin"],
-                data["inv_output_pin"],
+                data["output_pins"],
+                data["inv_output_pins"],
             ),
             "BINARY_COUNTER": lambda data: BinaryCounter(
                 data["clock_pin"],
                 data["clock_type"],
+                data["reset_pin"],
+                data["inv_reset_pin"],
                 data["count_enable_pin"],
                 data["inv_count_enable_pin"],
                 data["load_enable_pin"],
@@ -270,10 +272,107 @@ class Chip:
         if self.functions:
             attr_dict["logicFunctionName"] = self.functions[0].__class__.__name__
             attr_dict["io"] = [
-                ([pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins])
+                (   [pin.pin_num for pin in func.input_pins], [pin.pin_num for pin in func.output_pins] + \
+                    [pin.pin_num for pin in getattr(func, 'inv_output_pins', [])]
+                )
                 for func in self.functions
-                if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                #if isinstance(func, LogicalFunction) or  isinstance(func, Mux) or isinstance(func, Demux) or isinstance(func, DFlipFlop)
             ]
+            # if isinstance(self.functions, DFlipFlop):
+            #     attr_dict["io"] = [([2], [5])]
+            attr_dict["io_select"] = [
+                [pin.pin_num for pin in func.select_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) 
+            ]
+            attr_dict["io_out_inv"] = [
+                [pin.pin_num for pin in func.inv_output_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or isinstance(func, DFlipFlop) 
+            ]
+            attr_dict["io_enable"] = [
+                [pin.pin_num for pin in func.enable_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["io_enable_inv"] = [
+                [pin.pin_num for pin in func.inv_enable_pins]
+                for func in self.functions
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, Mux) or  isinstance(func, Demux)
+            ]
+            attr_dict["clock_pin"] = [
+                [(n,pin.pin_num) for pin in func.clock_pin]
+                for n,func in enumerate(self.functions) if getattr(func,"clock_type", "") == "RISING_EDGE"
+                #self.functions.clock_pin
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, DFlipFlop) or isinstance(func, JKFlipFlop) or  isinstance(func, BinaryCounter) 
+            ]
+            attr_dict["inv_clock_pin"] = [
+                [(n,pin.pin_num) for pin in func.clock_pin]
+                for n,func in enumerate(self.functions) if getattr(func,"clock_type", "") == "FALLING_EDGE"
+                #self.functions.clock_pin
+                #if isinstance(func, LogicalFunction) and not isinstance(func, Mux) and not isinstance(func, Demux)
+                if isinstance(func, JKFlipFlop) 
+            ]
+            attr_dict["inv_reset_pin"] = [
+                [(n,pin.pin_num) for pin in func.inv_reset_pin]
+                for n,func in enumerate(self.functions)
+
+                if isinstance(func, DFlipFlop) or isinstance(func, JKFlipFlop) or  isinstance(func, BinaryCounter) 
+            ]
+            attr_dict["inv_set_pin"] = [
+                [(n,pin.pin_num)for pin in func.inv_set_pin]
+                for n,func in enumerate(self.functions)
+
+                if isinstance(func, DFlipFlop) or isinstance(func, JKFlipFlop)
+            ]
+            attr_dict["j_input_pin"] = [
+                [(n,pin.pin_num)for pin in func.j_input_pin]
+                for n,func in enumerate(self.functions)
+
+                if  isinstance(func, JKFlipFlop)
+            ]
+            attr_dict["inv_k_input_pin"] = [
+                [(n,pin.pin_num)for pin in func.inv_k_input_pin if func.inv_k_input_pin[0] ]
+                for n,func in enumerate(self.functions)
+
+                if  isinstance(func, JKFlipFlop)
+            ]
+            attr_dict["k_input_pin"] = [
+                [(n,pin.pin_num)for pin in func.k_input_pin if pin]
+                for n,func in enumerate(self.functions) 
+
+                if  isinstance(func, JKFlipFlop)
+            ] 
+            attr_dict["count_enable_pin"] = [
+                [(n,pin.pin_num)for pin in func.count_enable_pin if pin]
+                for n,func in enumerate(self.functions) 
+
+                if  isinstance(func, BinaryCounter)
+            ] 
+            attr_dict["inv_load_enable_pin"] = [
+                [(n,pin.pin_num)for pin in func.inv_load_enable_pin if pin]
+                for n,func in enumerate(self.functions) 
+
+                if  isinstance(func, BinaryCounter)
+            ] 
+            attr_dict["inv_up_down_input_pin"] = [
+                [(n,pin.pin_num)for pin in func.inv_up_down_input_pin if pin]
+                for n,func in enumerate(self.functions) 
+
+                if  isinstance(func, BinaryCounter)
+            ] 
+            attr_dict["terminal_count_pin"] = [
+                [(n,pin.pin_num)for pin in func.terminal_count_pin if pin]
+                for n,func in enumerate(self.functions) 
+
+                if  isinstance(func, BinaryCounter)
+            ] # 
         return attr_dict
 
     def __str__(self):

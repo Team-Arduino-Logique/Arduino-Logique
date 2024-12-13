@@ -9,6 +9,8 @@
             "func_type": "BINARY_COUNTER",
             "clock_pin": 14,
             "clock_type": "RISING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": null,
             "count_enable_pin": null,
             "inv_count_enable_pin": 4,
             "load_enable_pin": null,

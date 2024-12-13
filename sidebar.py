@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
 import os
+import platform
 from typing import Callable, Tuple
 import subprocess
 import sys
@@ -17,12 +18,13 @@ from component_sketch import ComponentSketcher
 from dataCDLT import FREE, USED
 from object_model.circuit_object_model import Chip, get_all_available_chips, get_chip_modification_times
 
-if os.name == "darwin":
-    from tkinter import messagebox, font
-    from tkmacosx import Button # type: ignore
-else:
-    from tkinter import Button, messagebox, font
+# if (os.name in ("posix", "darwin")) and "linux" not in platform.platform().lower():
+#     from tkinter import messagebox, font
+#     from tkmacosx import Button # type: ignore
+# else:
+#     from tkinter import Button, messagebox, font
 
+from tkinter import Button, messagebox, font
 
 @dataclass
 class SidebarGrid:
@@ -501,7 +503,7 @@ class Sidebar:
                 os.startfile(path)
             except AttributeError:
                 pass
-        elif os.name == "posix":  # For macOS and Linux  # type: ignore
+        elif os.name == "posix" or os.name=="darwin":  # For macOS and Linux  # type: ignore
             with subprocess.Popen(["open", path] if sys.platform == "darwin" else ["xdg-open", path]):
                 pass
         else:
@@ -535,5 +537,5 @@ class Sidebar:
             self.initialize_chip_data(self.current_dict_circuit, self.chip_images_path)
             self.on_search(None)
             print("Sidebar refreshed with updated chips.")
-        else:
-            print("No changes detected. Sidebar not refreshed.")
+        #else: 
+            #print("No changes detected. Sidebar not refreshed.")
