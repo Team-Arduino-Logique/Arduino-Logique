@@ -1,0 +1,40 @@
+{
+    "name": "74HC114",
+    "description": "Dual JK flip-flop with set and reset; negative-edge trigger",
+    "package": "DIP16",
+    "vcc_pin": 16,
+    "gnd_pin": 8,
+    "functions": [
+        {
+            "func_type": "JK_FLIP_FLOP",
+            "clock_pin": 1,
+            "clock_type": "FALLING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": 15,
+            "set_pin": null,
+            "inv_set_pin": 4,
+            "j_input_pin": 3,
+            "inv_j_input_pin": null,
+            "k_input_pin": 2,
+            "inv_k_input_pin": null,
+            "output_pins": 5,
+            "inv_output_pins": 6
+        },
+        {
+            "func_type": "JK_FLIP_FLOP",
+            "clock_pin": 13,
+            "clock_type": "FALLING_EDGE",
+            "reset_pin": null,
+            "inv_reset_pin": 14,
+            "set_pin": null,
+            "inv_set_pin": 10,
+            "j_input_pin": 11,
+            "inv_j_input_pin": null,
+            "k_input_pin": 12,
+            "inv_k_input_pin": null,
+            "output_pins": 9,
+            "inv_output_pins": 7
+        }
+    ],
+    "datasheet": "https://www.alldatasheet.com/datasheet-pdf/view/15529/PHILIPS/74HC112.html"
+}
