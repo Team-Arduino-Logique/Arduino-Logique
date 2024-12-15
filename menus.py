@@ -298,7 +298,7 @@ class Menus:
         # Create a new window for the correspondence table
         table_window = tk.Toplevel(self.parent)
         table_window.withdraw()
-        table_window.title("Correspondence Table")
+        table_window.title("Table de correspondance")
         table_window.geometry("500x350")
 
         # if show:
@@ -310,9 +310,9 @@ class Menus:
         tree.column("ID", anchor="center", width=120)
         tree.column("Type", anchor="center", width=120)
         tree.column("MCU Pin", anchor="center", width=120)
-        tree.heading("ID", text="Pin IO ID")
+        tree.heading("ID", text="Id de l'entrée/sortie")
         tree.heading("Type", text="Type")
-        tree.heading("MCU Pin", text="MCU Pin")
+        tree.heading("MCU Pin", text="Pin du microcontrôleur")
 
         #self.map_mcu_pin(tree, input_pin_ios, output_pin_ios, input_pins, output_pins)
         # Populate the table with input and output pin mappings
@@ -321,14 +321,14 @@ class Menus:
             mcu_pin = input_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
             # if show:
-            tree.insert("", "end", values=(pin_number, "Input", mcu_pin))
+            tree.insert("", "end", values=(pin_number, "Entrée", mcu_pin))
             self.mcu_pin.update({f"I{pin_number}":f"I{mcu_pin}"})
             
 
         for idx, pin_io in enumerate(output_pin_ios):
             mcu_pin = output_pins[idx]
             pin_number = pin_io["id"].split("_")[-1]
-            tree.insert("", "end", values=(pin_number, "Output", mcu_pin))
+            tree.insert("", "end", values=(pin_number, "Sortie", mcu_pin))
             self.mcu_pin.update({f"O{pin_number}":f"O{mcu_pin}"})
 
         if show:
