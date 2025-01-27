@@ -1749,21 +1749,26 @@ class Menus:
                 return p[0]
             
                     # "chip_in_address_pins":chip_in_address_pins}
-            for no,ioOut in enumerate(sorted(self.io_out, key=lambda io: io_position(io))):
-               #self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "  # f"O{no+1}"
+            # for no,ioOut in enumerate(sorted(self.io_out, key=lambda io: io_position(io))):
+            #    #self.script += self.mcu_pin[f"O{ioOut[0][4:]}"] + " = "  # f"O{no+1}"
                
-               circuitClose, script = self.checkCloseCircuit(ioOut,params)
-               if circuitClose :
-                        print(f"le circuit est fermée sur la sortie {ioOut}")
-                        for s in self.varScript:
-                            self.script += s 
-                        self.varScript = []
-                        self.script += f"O{no+1}" + " = "
-                        self.script += f"{script}; \n"
-                        print(f"script temp : {self.script}")
-               else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
-
-                                    
+            #    circuitClose, script = self.checkCloseCircuit(ioOut,params)
+            #    if circuitClose :
+            #             print(f"le circuit est fermée sur la sortie {ioOut}")
+            #             for s in self.varScript:
+            #                 self.script += s 
+            #             self.varScript = []
+            #             self.script += f"O{no+1}" + " = "
+            #             self.script += f"{script}; \n"
+            #             print(f"script temp : {self.script}")
+            #    else:    print(f"le circuit est ouvert sur la sortie {ioOut}")
+        self.script = "T1 = (( 1 & !T1_precedent) | (!T2_precedent & I1) & T1_precedent) & 1 & 1 & clk | 0; \n"
+        self.script += "O1 = T1; \n"
+        self.script += "T2 = (( !T3_precedent & T1_precedent & I1 & !T2_precedent) | (T3_precedent | T1_precedent) & T2_precedent) & 1 & 1 & clk | 0; \n"
+        self.script += "O2 = T2; \n"
+        self.script += "T3 = (( !T2_precedent & T1_precedent & !I1 & !T3_precedent) |  (T2_precedent | T1_precedent) & T3_precedent) & 1 & 1 & clk | 0; \n"
+        self.script += "O3 = T3; \n"
+        messagebox.showinfo("Script du circuit", f"Circuit= {self.script}")                            
         print(f"pwrChipConnected : {self.pwrChip['pwrConnected']}")
         print(f"pwrChipNotConnected : {self.pwrChip['pwrNotConnected']}")
         print(f"pwrChipMissConnected : {self.pwrChip['pwrMissConnected']}")
@@ -1782,7 +1787,7 @@ class Menus:
         print(f"chip_in_enable_inv : {chip_in_enable_inv}")
         print(f"map pin mcu : {self.mcu_pin}")
         print(f"script final : {self.script}")
-        if self.script:
-            messagebox.showinfo("Script du circuit", f"Circuit= {self.script}")
-        else:
-            messagebox.showinfo("Script du circuit", f"Le circuit présente au moins un défaut et ne peut être téléversé.")
+        # if self.script:
+        #     messagebox.showinfo("Script du circuit", f"Circuit= {self.script}")
+        # else:
+        #     messagebox.showinfo("Script du circuit", f"Le circuit présente au moins un défaut et ne peut être téléversé.")

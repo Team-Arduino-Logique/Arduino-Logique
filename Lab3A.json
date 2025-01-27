@@ -1,0 +1,826 @@
+{
+    "_battery": {},
+    "_battery_neg_wire": {
+        "start": [
+            1100,
+            326.2
+        ],
+        "end": [
+            972.5,
+            302.5
+        ],
+        "color": [
+            0,
+            0,
+            0
+        ],
+        "terminal_type": "neg",
+        "endpoint_tag": "_battery_neg_wire_endpoint"
+    },
+    "_battery_pos_wire": {
+        "start": [
+            1100,
+            374.8
+        ],
+        "end": [
+            972.5,
+            317.5
+        ],
+        "color": [
+            255,
+            0,
+            0
+        ],
+        "terminal_type": "pos",
+        "endpoint_tag": "_battery_pos_wire_endpoint"
+    },
+    "_wire_0": {
+        "mode": 0,
+        "coord": [
+            [
+                23,
+                2,
+                23,
+                3
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            53,
+            53
+        ],
+        "wire_body_tag": "_wire_0_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    402.5,
+                    47.5
+                ],
+                "tag": "_wire_0_start"
+            },
+            "end": {
+                "position": [
+                    402.5,
+                    92.5
+                ],
+                "tag": "_wire_0_end"
+            }
+        }
+    },
+    "_wire_1": {
+        "mode": 0,
+        "coord": [
+            [
+                30,
+                12,
+                30,
+                13
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            0,
+            0,
+            0
+        ],
+        "wire_body_tag": "_wire_1_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    507.5,
+                    257.5
+                ],
+                "tag": "_wire_1_start"
+            },
+            "end": {
+                "position": [
+                    507.5,
+                    302.5
+                ],
+                "tag": "_wire_1_end"
+            }
+        }
+    },
+    "_io_0": {
+        "coord": [
+            [
+                28,
+                3
+            ]
+        ],
+        "XY": [
+            427.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#40db72",
+        "outline_tag": "pin_io_outline__io_0",
+        "tag": "pin_io__io_0",
+        "label_tag": "_io_0_label"
+    },
+    "_io_1": {
+        "coord": [
+            [
+                29,
+                3
+            ]
+        ],
+        "XY": [
+            442.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#40db72",
+        "outline_tag": "pin_io_outline__io_1",
+        "tag": "pin_io__io_1",
+        "label_tag": "_io_1_label"
+    },
+    "_io_2": {
+        "coord": [
+            [
+                30,
+                3
+            ]
+        ],
+        "XY": [
+            457.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#40db72",
+        "outline_tag": "pin_io_outline__io_2",
+        "tag": "pin_io__io_2",
+        "label_tag": "_io_2_label"
+    },
+    "_io_3": {
+        "coord": [
+            [
+                9,
+                3
+            ]
+        ],
+        "XY": [
+            142.5,
+            82.5
+        ],
+        "controller_pin": "IO",
+        "type": 0,
+        "color": "#40db72",
+        "outline_tag": "pin_io_outline__io_3",
+        "tag": "pin_io__io_3",
+        "label_tag": "_io_3_label"
+    },
+    "_wire_2": {
+        "mode": 0,
+        "coord": [
+            [
+                4,
+                2,
+                4,
+                3
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            28,
+            28
+        ],
+        "wire_body_tag": "_wire_2_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    117.5,
+                    47.5
+                ],
+                "tag": "_wire_2_start"
+            },
+            "end": {
+                "position": [
+                    117.5,
+                    92.5
+                ],
+                "tag": "_wire_2_end"
+            }
+        }
+    },
+    "_wire_3": {
+        "mode": 0,
+        "coord": [
+            [
+                10,
+                12,
+                10,
+                13
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            0,
+            0,
+            0
+        ],
+        "wire_body_tag": "_wire_3_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    207.5,
+                    257.5
+                ],
+                "tag": "_wire_3_start"
+            },
+            "end": {
+                "position": [
+                    207.5,
+                    302.5
+                ],
+                "tag": "_wire_3_end"
+            }
+        }
+    },
+    "_wire_4": {
+        "mode": 0,
+        "coord": [
+            [
+                26,
+                9,
+                24,
+                9
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            159,
+            159
+        ],
+        "wire_body_tag": "_wire_4_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    447.5,
+                    212.5
+                ],
+                "tag": "_wire_4_start"
+            },
+            "end": {
+                "position": [
+                    417.5,
+                    212.5
+                ],
+                "tag": "_wire_4_end"
+            }
+        }
+    },
+    "_wire_5": {
+        "mode": 0,
+        "coord": [
+            [
+                24,
+                12,
+                24,
+                14
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            159,
+            159
+        ],
+        "wire_body_tag": "_wire_5_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    417.5,
+                    257.5
+                ],
+                "tag": "_wire_5_start"
+            },
+            "end": {
+                "position": [
+                    417.5,
+                    317.5
+                ],
+                "tag": "_wire_5_end"
+            }
+        }
+    },
+    "_wire_6": {
+        "mode": 0,
+        "coord": [
+            [
+                60,
+                14,
+                60,
+                2
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            9,
+            9
+        ],
+        "wire_body_tag": "_wire_6_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    957.5,
+                    317.5
+                ],
+                "tag": "_wire_6_start"
+            },
+            "end": {
+                "position": [
+                    957.5,
+                    47.5
+                ],
+                "tag": "_wire_6_end"
+            }
+        }
+    },
+    "_wire_7": {
+        "mode": 0,
+        "coord": [
+            [
+                27,
+                3,
+                27,
+                2
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            138,
+            138
+        ],
+        "wire_body_tag": "_wire_7_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    462.5,
+                    92.5
+                ],
+                "tag": "_wire_7_start"
+            },
+            "end": {
+                "position": [
+                    462.5,
+                    47.5
+                ],
+                "tag": "_wire_7_end"
+            }
+        }
+    },
+    "_wire_8": {
+        "mode": 0,
+        "coord": [
+            [
+                26,
+                3,
+                27,
+                4
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            255,
+            138,
+            138
+        ],
+        "wire_body_tag": "_wire_8_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    447.5,
+                    92.5
+                ],
+                "tag": "_wire_8_start"
+            },
+            "end": {
+                "position": [
+                    462.5,
+                    107.5
+                ],
+                "tag": "_wire_8_end"
+            }
+        }
+    },
+    "_wire_9": {
+        "mode": 0,
+        "coord": [
+            [
+                9,
+                6,
+                25,
+                10
+            ]
+        ],
+        "multipoints": [
+            253,
+            134,
+            251,
+            219
+        ],
+        "color": [
+            194,
+            245,
+            148
+        ],
+        "wire_body_tag": "_wire_9_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    192.5,
+                    137.5
+                ],
+                "tag": "_wire_9_start"
+            },
+            "end": {
+                "position": [
+                    432.5,
+                    227.5
+                ],
+                "tag": "_wire_9_end"
+            }
+        }
+    },
+    "_wire_10": {
+        "mode": 0,
+        "coord": [
+            [
+                24,
+                4,
+                9,
+                4
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            194,
+            245,
+            148
+        ],
+        "wire_body_tag": "_wire_10_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    417.5,
+                    107.5
+                ],
+                "tag": "_wire_10_start"
+            },
+            "end": {
+                "position": [
+                    192.5,
+                    107.5
+                ],
+                "tag": "_wire_10_end"
+            }
+        }
+    },
+    "_wire_11": {
+        "mode": 0,
+        "coord": [
+            [
+                23,
+                9,
+                10,
+                5
+            ]
+        ],
+        "multipoints": [
+            272,
+            205,
+            263,
+            119
+        ],
+        "color": [
+            155,
+            166,
+            238
+        ],
+        "wire_body_tag": "_wire_11_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    402.5,
+                    212.5
+                ],
+                "tag": "_wire_11_start"
+            },
+            "end": {
+                "position": [
+                    207.5,
+                    122.5
+                ],
+                "tag": "_wire_11_end"
+            }
+        }
+    },
+    "_wire_12": {
+        "mode": 0,
+        "coord": [
+            [
+                10,
+                3,
+                25,
+                3
+            ]
+        ],
+        "multipoints": [],
+        "color": [
+            155,
+            166,
+            238
+        ],
+        "wire_body_tag": "_wire_12_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    207.5,
+                    92.5
+                ],
+                "tag": "_wire_12_start"
+            },
+            "end": {
+                "position": [
+                    432.5,
+                    92.5
+                ],
+                "tag": "_wire_12_end"
+            }
+        }
+    },
+    "_io_4": {
+        "coord": [
+            [
+                27,
+                12
+            ]
+        ],
+        "XY": [
+            412.5,
+            247.5
+        ],
+        "controller_pin": "IO",
+        "type": 1,
+        "color": "#479dff",
+        "outline_tag": "pin_io_outline__io_4",
+        "tag": "pin_io__io_4",
+        "label_tag": "_io_4_label"
+    },
+    "_wire_13": {
+        "mode": 0,
+        "coord": [
+            [
+                29,
+                12,
+                29,
+                13
+            ]
+        ],
+        "multipoints": [
+            446,
+            287
+        ],
+        "color": [
+            122,
+            122,
+            122
+        ],
+        "wire_body_tag": "_wire_13_body",
+        "endpoints": {
+            "start": {
+                "position": [
+                    492.5,
+                    257.5
+                ],
+                "tag": "_wire_13_start"
+            },
+            "end": {
+                "position": [
+                    492.5,
+                    302.5
+                ],
+                "tag": "_wire_13_end"
+            }
+        }
+    },
+    "_chip_0": {
+        "XY": [
+            400.5,
+            161.5
+        ],
+        "pinUL_XY": [
+            402.5,
+            152.5
+        ],
+        "chipWidth": 2.4,
+        "pinCount": 16,
+        "label": "74HC151",
+        "type": "74HC151",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ],
+        "symbScript": "Mux",
+        "io": [
+            [
+                [
+                    4,
+                    3,
+                    2,
+                    1,
+                    15,
+                    14,
+                    13,
+                    12
+                ],
+                [
+                    5,
+                    6
+                ]
+            ]
+        ],
+        "pwr": [
+            [
+                16,
+                "+"
+            ],
+            [
+                8,
+                "-"
+            ]
+        ],
+        "logicFunctionName": "Mux",
+        "io_select": [
+            [
+                11,
+                10,
+                9
+            ]
+        ],
+        "io_out_inv": [
+            [
+                6
+            ]
+        ],
+        "io_enable": [
+            []
+        ],
+        "io_enable_inv": [
+            [
+                7
+            ]
+        ],
+        "clock_pin": [],
+        "inv_reset_pin": [],
+        "inv_set_pin": [],
+        "inv_clock_pin": [],
+        "j_input_pin": [],
+        "inv_k_input_pin": [],
+        "k_input_pin": [],
+        "count_enable_pin": [],
+        "inv_load_enable_pin": [],
+        "inv_up_down_input_pin": [],
+        "terminal_count_pin": [],
+        "occupied_holes": [
+            "23,7",
+            "23,8",
+            "24,7",
+            "24,8",
+            "25,7",
+            "25,8",
+            "26,7",
+            "26,8",
+            "27,7",
+            "27,8",
+            "28,7",
+            "28,8",
+            "29,7",
+            "29,8",
+            "30,7",
+            "30,8"
+        ]
+    },
+    "_chip_1": {
+        "XY": [
+            115.5,
+            161.5
+        ],
+        "pinUL_XY": [
+            117.5,
+            152.5
+        ],
+        "chipWidth": 2.4,
+        "pinCount": 14,
+        "label": "74HC04",
+        "type": "74HC04",
+        "btnMenu": [
+            1,
+            1,
+            0
+        ],
+        "symbScript": "NotGate",
+        "io": [
+            [
+                [
+                    1
+                ],
+                [
+                    2
+                ]
+            ],
+            [
+                [
+                    3
+                ],
+                [
+                    4
+                ]
+            ],
+            [
+                [
+                    5
+                ],
+                [
+                    6
+                ]
+            ],
+            [
+                [
+                    9
+                ],
+                [
+                    8
+                ]
+            ],
+            [
+                [
+                    11
+                ],
+                [
+                    10
+                ]
+            ],
+            [
+                [
+                    13
+                ],
+                [
+                    12
+                ]
+            ]
+        ],
+        "pwr": [
+            [
+                14,
+                "+"
+            ],
+            [
+                7,
+                "-"
+            ]
+        ],
+        "logicFunctionName": "NotGate",
+        "io_select": [],
+        "io_out_inv": [],
+        "io_enable": [],
+        "io_enable_inv": [],
+        "clock_pin": [],
+        "inv_reset_pin": [],
+        "inv_set_pin": [],
+        "inv_clock_pin": [],
+        "j_input_pin": [],
+        "inv_k_input_pin": [],
+        "k_input_pin": [],
+        "count_enable_pin": [],
+        "inv_load_enable_pin": [],
+        "inv_up_down_input_pin": [],
+        "terminal_count_pin": [],
+        "occupied_holes": [
+            "4,7",
+            "4,8",
+            "5,7",
+            "5,8",
+            "6,7",
+            "6,8",
+            "7,7",
+            "7,8",
+            "8,7",
+            "8,8",
+            "9,7",
+            "9,8",
+            "10,7",
+            "10,8"
+        ]
+    }
+}
